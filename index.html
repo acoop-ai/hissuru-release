@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>ヒッスル（PDCA）</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  /* 前回開発機（acoop-platform /pdca・c-section-table.tsx）の見た目を踏襲 */
+  :root{
+    --border:#e2e8f0; --muted:#64748b; --fg:#0f172a; --card:#fff; --bg-muted:#f1f5f9;
+    --sky50:#f0f9ff; --sky100:#e0f2fe; --sky700:#0369a1; --sky800:#075985;
+    --emer100:#dcfce7; --emer800:#166534; --violet100:#ede9fe; --violet800:#5b21b6;
+    --good:#1565c0; --bad:#c62828; --amber:#b45309;
+    --total-dark:#263238; --subtotal:#f1f5f9;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","Hiragino Sans","Yu Gothic UI",sans-serif;color:var(--fg);background:#fff;}
+  header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;}
+  header .logo{background:#0f172a;color:#fff;font-weight:700;font-size:12px;border-radius:6px;padding:5px 7px;}
+  header h1{font-size:15px;margin:0;} header .sub{font-size:11px;color:var(--muted);}
+  header .user{margin-left:auto;font-size:11px;color:var(--muted);}
+  .page{transition:background-color .3s;min-height:calc(100vh - 55px);}
+  main{max-width:1400px;margin:0 auto;padding:20px 16px 40px;}
+  h2.title{font-size:20px;font-weight:600;margin:0;} .subtitle{font-size:13px;color:var(--muted);margin:2px 0 0;}
+  .btn{border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;padding:6px 12px;color:#334155;}
+  .btn.primary{background:#0284c7;border-color:#0284c7;color:#fff;font-weight:600;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  select{font-size:13px;padding:5px 7px;border:1px solid var(--border);border-radius:6px;background:#fff;}
+  label.lb{font-size:11px;color:var(--muted);}
+
+  /* 入室ゲート */
+  .gate-wrap{display:flex;min-height:70vh;align-items:center;justify-content:center;padding:16px;}
+  .card{width:100%;max-width:640px;border:1px solid var(--border);border-radius:14px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .card .chead{padding:20px 20px 6px;text-align:center;}
+  .card .cico{margin:0 auto 6px;width:40px;height:40px;border-radius:999px;background:var(--sky100);display:flex;align-items:center;justify-content:center;color:var(--sky700);font-size:20px;}
+  .card h3{font-size:18px;margin:4px 0;} .card .cdesc{font-size:13px;color:var(--muted);}
+  .card .cbody{padding:8px 20px 20px;}
+  .roles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0;}
+  .role{border:1px solid var(--border);border-radius:10px;padding:12px;text-align:left;cursor:pointer;background:#fff;transition:.15s;}
+  .role:hover{background:#f8fafc;} .role.on{border-color:#0ea5e9;background:var(--sky50);box-shadow:0 0 0 1px #0ea5e9 inset;}
+  .role .rt{display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;}
+  .role .rd{margin:6px 0 0;font-size:11px;line-height:1.4;color:var(--muted);}
+  .gate-selects{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0;}
+  .warn{color:var(--amber);font-size:12px;text-align:center;} .hint{color:var(--muted);font-size:12px;text-align:center;}
+
+  /* 入室後バー */
+  .asgbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;}
+  .asgbar .role-badge{border-radius:6px;padding:2px 8px;font-weight:600;}
+  .rb-buyer{background:var(--sky100);color:var(--sky800);} .rb-admin{background:#fef3c7;color:#92400e;} .rb-viewer{background:#f1f5f9;color:#475569;}
+
+  /* モードタブ */
+  .modes{display:flex;flex-wrap:wrap;gap:4px;margin:18px 0 0;}
+  .modes button{border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;padding:6px 11px;color:#334155;}
+  .modes button.on{background:#0284c7;border-color:#0284c7;color:#fff;font-weight:600;}
+
+  /* 選択バー・タブ */
+  .selbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0;}
+  .tabs2{display:flex;flex-wrap:wrap;gap:3px;margin:10px 0;}
+  .tabs2 button{border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:12px;padding:4px 9px;color:#475569;}
+  .tabs2 button.on{background:#0369a1;border-color:#0369a1;color:#fff;font-weight:600;}
+  .chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px;margin:10px 0;}
+  .chip{border-radius:6px;padding:2px 8px;font-weight:700;}
+  .chip.a{background:var(--sky100);color:var(--sky800);} .chip.d{background:var(--emer100);color:var(--emer800);} .chip.s{background:var(--violet100);color:var(--violet800);}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--muted);margin:8px 0;align-items:center;}
+  .legend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:middle;margin-right:3px;}
+  .sokuho{display:flex;gap:8px;border-left:4px solid #f59e0b;background:#fffbeb;color:#78350f;padding:10px 14px;border-radius:8px;font-size:13px;margin:8px 0;}
+  .note{font-size:13px;color:var(--muted);background:#fff;border:1px dashed var(--border);border-radius:10px;padding:14px;}
+  .err{color:var(--bad);font-size:13px;padding:12px;}
+
+  /* C表 */
+  .tbl-wrap{max-height:70vh;overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff;}
+  table.c{width:100%;border-collapse:collapse;font-size:12px;}
+  table.c thead th{position:sticky;top:0;z-index:20;background:var(--bg-muted);color:var(--muted);font-weight:600;padding:6px 10px;text-align:right;border-left:1px solid var(--border);white-space:nowrap;}
+  table.c thead th.h{text-align:left;left:0;z-index:30;} table.c thead th .u{font-size:10px;font-weight:400;color:#94a3b8;margin-left:2px;}
+  table.c td{border-left:1px solid var(--border);border-top:1px solid var(--border);padding:2px 10px;vertical-align:top;text-align:right;}
+  table.c td.h{text-align:left;font-weight:600;position:sticky;left:0;background:#fff;z-index:10;white-space:nowrap;}
+  tr.total td{background:var(--total-dark);color:#fff;font-weight:700;border-top:2px solid #0f172a;}
+  tr.total td.h{background:var(--total-dark);color:#fff;}
+  tr.subtotal td{background:var(--subtotal);font-weight:600;} tr.subtotal td.h{background:var(--subtotal);}
+  tr.datarow:hover td{background:#f8fafc;}
+  .cell{display:flex;flex-direction:column;gap:1px;text-align:right;line-height:1.25;font-variant-numeric:tabular-nums;padding:3px 0;}
+  .cell .act{font-weight:700;font-size:12px;background:rgba(224,242,254,.6);margin:0 -10px;padding:0 10px;}
+  tr.total .cell .act{background:transparent;color:#fff;} .cell .prev{color:var(--muted);font-size:11px;}
+  tr.total .cell .prev{color:#cbd5e1;}
+  .cell .bud{color:var(--amber);font-size:11px;} tr.total .cell .bud{color:#fcd34d;}
+  .g{color:var(--good);} .b{color:var(--bad);} .n{color:var(--muted);}
+  tr.total .g{color:#7dd3fc;} tr.total .b{color:#fca5a5;}
+  .badge{display:inline-block;border-radius:4px;padding:0 4px;font-size:10px;font-weight:500;margin-top:2px;}
+  .bd-loss{background:#ffe4e6;color:#be123c;} .bd-inv{background:#ffedd5;color:#c2410c;}
+  td.gp-neg{background:#fff7ed;} td.gp-loss{background:#fefce8;}
+  .catcol{color:var(--muted);}
+  input[type=number]{width:64px;font-size:13px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;}
+
+  /* コメントパネル（G2）・データ管理（G3） */
+  .cmcard{border:1px solid var(--border);border-radius:12px;background:#fff;padding:12px 14px;margin-top:14px;}
+  .cmhead{display:flex;gap:8px;align-items:baseline;margin-bottom:4px;flex-wrap:wrap;}
+  .cmsechead{font-weight:600;font-size:13px;margin-bottom:6px;}
+  .cmempty{color:var(--muted);font-size:12px;}
+  /* 課題グリッド: 行=課題（①②…）× 列=A/P/D。済は行単位 */
+  table.cmt{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+  table.cmt th{background:var(--bg-muted);color:var(--muted);font-weight:600;padding:6px 8px;text-align:left;border:1px solid var(--border);}
+  table.cmt td{border:1px solid var(--border);padding:6px 8px;vertical-align:top;background:#fff;}
+  table.cmt td.cmmark{width:26px;text-align:center;}
+  tr.cmresolved td{background:#f0fdf4;}
+  .cmmark{font-size:13px;color:var(--sky700);padding-top:2px;}
+  .cmtext{font-size:13px;white-space:pre-wrap;line-height:1.5;}
+  .cmmeta{font-size:11px;color:var(--muted);margin-top:2px;}
+  .cmbtns{display:flex;gap:4px;margin-top:2px;} .cmbtns .btn{padding:2px 8px;font-size:12px;}
+  .cmadd{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap;}
+  .cmcell{width:100%;min-height:26px;border:none;background:transparent;font-family:inherit;font-size:13px;line-height:1.5;resize:none;padding:2px 3px;outline:none;box-sizing:border-box;display:block;}
+  .cmcell:focus{background:#fff;box-shadow:0 0 0 2px #7dd3fc inset;border-radius:4px;}
+  .badge.bd-ok{background:#dcfce7;color:#166534;}
+  #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:13px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .3s;z-index:99;pointer-events:none;}
+  #toast.bad{background:#b91c1c;}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">AC</span>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-17a</span></h1></div>
+  <span class="user" id="user"></span>
+</header>
+<div class="page" id="page">
+<main id="app"><div class="note">読み込み中…</div></main>
+</div>
+
+<script>
+/* 起動エラー可視化＋該当ソース取得: エラー行の実物を画面に出す（同一オリジンの生HTMLをfetch）。 */
+window.addEventListener("error", function(ev){
+  var ln = ev.lineno || 0;
+  var esc2 = function(s){ return String(s).replace(/[&<>]/g, function(c){ return c==="&"?"&amp;":c==="<"?"&lt;":"&gt;"; }); };
+  var show = function(src){
+    var a = document.getElementById("app");
+    if (a) a.innerHTML = '<div class="err" style="white-space:pre-wrap;font-size:11px;line-height:1.5">起動エラー：' + esc2(ev.message||"不明") + '\n行' + ln + '\n--- 該当ソース（前後） ---\n' + src + '</div>';
+  };
+  try{
+    fetch(location.href).then(function(r){ return r.text(); }).then(function(t){
+      var lines = t.split("\n");
+      var out = [];
+      for (var i = Math.max(0, ln-4); i < Math.min(lines.length, ln+2); i++){ out.push((i+1) + ": " + esc2(lines[i])); }
+      show(out.join("\n"));
+    }).catch(function(e){ show("(ソース取得失敗: " + esc2(e.message) + ")"); });
+  }catch(e){ show("(取得例外: " + esc2(e.message) + ")"); }
+});
+</script>
+<script>
+"use strict";
+/* ヒッスル＝PDCA。部門損益可視化(soneki)は別の第3システム（混同禁止）。 */
+/* ── 構成（2026-07-17 転換）: 画面=GitHub Pages ／ データ=GAS API（毎回トークン検証）／ localhost=ミラーデータ（認証なし） ── */
+const IS_LOCAL = (location.hostname==="localhost"||location.hostname==="127.0.0.1"||location.protocol==="file:");
+const IS_GAS = !IS_LOCAL;  // 既存分岐の互換名（true=本番=GAS APIを使用）
+const CONFIG = {
+  GAS_URL: "https://script.google.com/macros/s/AKfycbys6DvxxaIKI914q-DNHhbTeett0g8NWta6gQlgbcd16ihXFSrCEEDX4U5hnO54ocvk/exec",
+  GOOGLE_CLIENT_ID: "1072945615483-74jadmaet56chvhkfh2cpt4ae9dvh140.apps.googleusercontent.com",
+  ALLOWED_DOMAINS: ["jaz-acoop.co.jp","jaz-acoop1.jp","jaz-acoop2.jp","jaz-acoop3.jp"]
+};
+
+/* ── OAuth2 認証（スマレコ方式: アクセストークン＋silent更新＋端末保存） ── */
+let currentAccessToken=null, accessTokenExpiry=0, oauthTokenClient=null, tokenRefreshTimer=null, authedEmail="";
+const TOKEN_STORE_KEY = "hissuru_oauth_token_v1";
+function persistAccessToken_(){ try{ if(currentAccessToken&&accessTokenExpiry) localStorage.setItem(TOKEN_STORE_KEY, JSON.stringify({t:currentAccessToken,e:accessTokenExpiry})); }catch(e){} }
+function restoreAccessToken_(){ try{ const raw=localStorage.getItem(TOKEN_STORE_KEY); if(!raw) return false; const o=JSON.parse(raw); if(!o||!o.t||!o.e||Date.now()>o.e-60000) return false; currentAccessToken=o.t; accessTokenExpiry=o.e; scheduleAccessTokenRefresh_(Math.floor((o.e-Date.now())/1000)+30); return true; }catch(e){ return false; } }
+function clearStoredToken_(){ try{ localStorage.removeItem(TOKEN_STORE_KEY); }catch(e){} }
+function ensureOAuthTokenClient_(){
+  if(oauthTokenClient) return;
+  if(!(window.google && google.accounts && google.accounts.oauth2)) throw new Error("Googleログイン部品が読み込めていません。ページを再読み込みしてください");
+  oauthTokenClient = google.accounts.oauth2.initTokenClient({ client_id: CONFIG.GOOGLE_CLIENT_ID, scope: "openid email profile", callback: ()=>{} });
+}
+function requestAccessTokenOnce_(opts){
+  return new Promise((resolve,reject)=>{
+    try{ ensureOAuthTokenClient_(); }catch(e){ return reject(e); }
+    const silent = !!(opts && opts.silent);
+    let settled=false, guard=null;
+    if(silent) guard=setTimeout(()=>{ if(!settled){ settled=true; reject(new Error("silent token timeout")); } }, 10000);
+    oauthTokenClient.callback = (resp)=>{
+      if(settled) return; settled=true; if(guard) clearTimeout(guard);
+      if(!resp || resp.error || !resp.access_token) return reject(new Error((resp&&(resp.error_description||resp.error))||"トークン取得失敗"));
+      currentAccessToken = resp.access_token;
+      const ei = Number(resp.expires_in)||3600;
+      accessTokenExpiry = Date.now() + (ei-30)*1000;
+      persistAccessToken_(); scheduleAccessTokenRefresh_(ei);
+      resolve(resp);
+    };
+    try{ const req={}; if(silent) req.prompt=""; oauthTokenClient.requestAccessToken(req); }
+    catch(e){ if(!settled){ settled=true; if(guard) clearTimeout(guard); reject(e); } }
+  });
+}
+function scheduleAccessTokenRefresh_(expiresInSec){
+  if(tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+  const after = Math.min(Math.max((expiresInSec-300)*1000, 5000), 55*60*1000);
+  tokenRefreshTimer = setTimeout(()=>{ requestAccessTokenOnce_({silent:true}).catch(()=>{}); }, after);
+}
+async function fetchUserInfo_(){
+  if(!currentAccessToken) throw new Error("未ログイン");
+  const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", { headers:{ Authorization: "Bearer "+currentAccessToken } });
+  if(!res.ok) throw new Error("userinfo HTTP "+res.status);
+  return res.json();
+}
+
+/* ── GAS API 呼び出し（POST text/plain＝プリフライト回避・毎回トークン添付・期限切れは自動再取得） ── */
+async function gsCall(fn, ...args){
+  const noToken = !currentAccessToken, near = accessTokenExpiry && Date.now() > accessTokenExpiry - 60000;
+  if(noToken || near){ try{ await requestAccessTokenOnce_({silent:true}); }catch(e){} }
+  if(!currentAccessToken){ renderLogin_("セッションの有効期限が切れました。再度ログインしてください。"); throw new Error("セッション切れです"); }
+  const res = await fetch(CONFIG.GAS_URL, { method:"POST", headers:{ "Content-Type":"text/plain;charset=UTF-8" }, body: JSON.stringify({ action:fn, args:args, accessToken: currentAccessToken }), redirect:"follow" });
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  const json = await res.json();
+  if(json && json.error){
+    if(String(json.error).indexOf("認証失敗")>=0){ currentAccessToken=null; accessTokenExpiry=0; clearStoredToken_(); }
+    throw new Error(json.error);
+  }
+  return json.result;
+}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* \u2500\u2500 データアダプタ（本番outbox命名＝HQ確定 / ローカルはサンプル） \u2500\u2500 */
+const SLUG={area:{},dept:{}};
+const FB={area:{"北東北":"kitatohoku","北関東":"kitakanto","宮城":"miyagi","山形":"yamagata","首都圏":"shutoken"},
+          dept:{"農産":"nosan","畜産":"chikusan","水産":"suisan","惣菜":"sozai","日配":"nippai","グロッサリー":"grocery","ベーカリー":"bakery"}};
+const aslug=a=>SLUG.area[a]||FB.area[a]||a, dslug=d=>SLUG.dept[d]||FB.dept[d]||d, s8=s=>(s||"").slice(0,8);
+async function loadJson(prod,sample){
+  if(IS_GAS) return JSON.parse(await gsCall("getJson",prod));
+  // ローカル: 本番outboxミラー（本番と同一命名）を優先、無ければサンプル
+  const m=await fetch("../outbox_mirror/"+prod); if(m.ok) return m.json();
+  const r=await fetch("../samples/"+sample); if(!r.ok) throw new Error("サンプル未収載（ローカルは北関東・農産等の一部のみ）"); return r.json();
+}
+const API={
+  meta:()=>loadJson("meta.json","meta.json"),
+  snapshots:(a,ym)=>loadJson(`snapshots/${aslug(a)}__${ym}.json`,`snapshots__${aslug(a)}_${ym}.json`),
+  stores:(a,ym)=>loadJson(`stores/${aslug(a)}__${ym}.json`,`stores__${aslug(a)}.json`),
+  detail:(a,ym,sp,d)=>loadJson(`c/shohin_detail__${aslug(a)}__${dslug(d)}__${ym}__${s8(sp)}.json`,`c__shohin_detail__${aslug(a)}_${dslug(d)}.json`),
+  detailStore:(a,ym,sp,d,slug)=>loadJson(`c/shohin_detail__${aslug(a)}__${dslug(d)}__${ym}__${s8(sp)}__${slug}.json`,`c__shohin_detail_store__${aslug(a)}_${dslug(d)}_${slug}.json`),
+  byStore:(a,ym,sp,d)=>loadJson(`c/by_store__${aslug(a)}__${dslug(d)}__${ym}__${s8(sp)}.json`,`c__by_store__${aslug(a)}_${dslug(d)}.json`),
+  byDept:(a,ym,sp)=>loadJson(`c/by_dept__${aslug(a)}__${ym}__${s8(sp)}.json`,`c__by_dept__${aslug(a)}.json`),
+  uneibu:(a,ym,sp)=>loadJson(`c/uneibu_zentai__${aslug(a)}__${ym}__${s8(sp)}.json`,`c__uneibu_zentai__${aslug(a)}.json`),
+  jigyo:(a,ym,sp)=>loadJson(`jigyo/${aslug(a)}__${ym}__${s8(sp)}__AREA.json`,`jigyo__${aslug(a)}.json`),
+  jigyoStore:(a,ym,sp,slug)=>loadJson(`jigyo/${aslug(a)}__${ym}__${s8(sp)}__${slug}.json`,`jigyo__${aslug(a)}.json`),
+  shiire:(a,ym,sp,d)=>loadJson(`shiire/${aslug(a)}__${dslug(d)}__${ym}__${s8(sp)}.json`,`shiire__${aslug(a)}_${dslug(d)}.json`),
+};
+
+/* \u2500\u2500 フォーマッタ・判定（c-section-table.tsx 準拠） \u2500\u2500 */
+const kyen=v=>Math.round((v||0)/1000).toLocaleString();
+const dkyen=v=>{const x=Math.round((v||0)/1000);return (x>=0?"+":"")+x.toLocaleString();};
+const pct=v=>v==null?"\u2014":v.toFixed(2)+"%";
+const ppt=v=>(v>=0?"+":"")+v.toFixed(2)+"pt";
+const ratio=(c,b)=>!b?"\u2014":(c/b*100).toFixed(1)+"%";
+function judge(hib,diff){ if(Math.abs(diff)<1e-9) return "n"; const good=(hib!==false)?diff>0:diff<0; return good?"g":"b"; }
+
+/* 縦積みセル（金額=計/実績/前/計比/前比、率=実績/前/前差/計差） */
+function cellHtml(cell,col,dark){
+  if(!cell||cell.current==null) return `<div class="cell n">\u2014</div>`;
+  const hib=col.higher_is_better; const cur=cell.current, yoy=cell.yoy, bud=cell.budget;
+  const yDiff=cur-(yoy||0); const hasB=bud!=null && bud!==0; const pDiff=hasB?cur-bud:0;
+  if(col.type==="rate"){
+    let h=`<div class="cell">`;
+    h+=`<div class="act">${pct(cur)}</div><div class="prev">前 ${pct(yoy)}</div>`;
+    h+=`<div class="${judge(hib,yDiff)}">前差 ${ppt(yDiff)}</div>`;
+    if(hasB) h+=`<div class="${judge(hib,pDiff)}">計差 ${ppt(pDiff)}</div>`;
+    return h+`</div>`;
+  }
+  let h=`<div class="cell">`;
+  if(hasB) h+=`<div class="bud">計 ${kyen(bud)}</div>`;
+  h+=`<div class="act">${kyen(cur)}</div><div class="prev">前 ${kyen(yoy)}</div>`;
+  if(hasB) h+=`<div class="${judge(hib,pDiff)}">計比 ${ratio(cur,bud)} <span style="opacity:.8">${dkyen(pDiff)}</span></div>`;
+  h+=`<div class="${judge(hib,yDiff)}">前比 ${ratio(cur,yoy)} <span style="opacity:.8">${dkyen(yDiff)}</span></div>`;
+  return h+`</div>`;
+}
+
+function legend(){
+  return `<div class="legend"><span>セル: <b style="color:var(--fg)">実績</b> / 前年 / 前比（差分）・計＝予算</span>`+
+    `<span><span class="sw" style="background:var(--good)"></span>改善</span>`+
+    `<span><span class="sw" style="background:var(--bad)"></span>悪化</span>`+
+    `<span class="badge bd-loss">\u26A0差損%</span><span class="badge bd-inv">\u26A0棚卸原価ゼロ</span></div>`;
+}
+
+/* カテゴリ縦積み表（shohin_detail）: \u25C6全体合計\u2192\u25B6部門小計\u2192カテゴリ行 */
+function renderSection(d){
+  const cols=d.columns;
+  let h=`<div class="tbl-wrap"><table class="c"><thead><tr>`+
+    `<th class="h" style="left:0">部門</th><th class="h" style="left:56px">カテゴリ</th>`+
+    cols.map(c=>`<th>${esc(c.label)}<span class="u">${c.type==="amount"?"千円":"%"}</span></th>`).join("")+`</tr></thead><tbody>`;
+  /* 部門絞込データの grand_total は部門合計の重複（ラベルだけ「全部門合計」）のため表示しない */
+  const dup=d.grand_total&&(d.dept_totals||[]).length===1&&
+    (d.grand_total.cells.sales_month||{}).current===(d.dept_totals[0].cells.sales_month||{}).current;
+  if(d.grand_total&&!dup) h+=totalRow(d.grand_total,cols,true,2);
+  const dtMap={}; (d.dept_totals||[]).forEach(t=>dtMap[t.dept]=t);
+  let prevDept=null;
+  d.rows.forEach(r=>{
+    if(r.dept!==prevDept && dtMap[r.dept]){ h+=totalRow(dtMap[r.dept],cols,false,2); }
+    prevDept=r.dept;
+    h+=`<tr class="datarow"><td class="h" style="left:0"></td><td class="h catcol" style="left:56px">${esc(r.category)}`;
+    if(r.alerts&&r.alerts.loss_alert) h+=`<br><span class="badge bd-loss">\u26A0差損${(r.alerts.loss_rate||0).toFixed(1)}%</span>`;
+    if(r.alerts&&r.alerts.inv_cost_zero) h+=`<br><span class="badge bd-inv">\u26A0棚卸原価ゼロ</span>`;
+    h+=`</td>`;
+    h+=cols.map(c=>{
+      let cls=""; if(c.key==="gross_profit_month"&&r.alerts){ cls=r.alerts.gp_negative?" gp-neg":(r.alerts.loss_alert?" gp-loss":""); }
+      return `<td class="${cls}">${cellHtml(r.cells[c.key],c,false)}</td>`;
+    }).join("");
+    h+=`</tr>`;
+  });
+  return h+`</tbody></table></div>`;
+}
+function totalRow(t,cols,dark,hspan){
+  return `<tr class="${dark?"total":"subtotal"}"><td class="h" colspan="${hspan}" style="left:0">${esc(t.label)}</td>`+
+    cols.map(c=>`<td>${cellHtml(t.cells[c.key],c,dark)}</td>`).join("")+`</tr>`;
+}
+/* 集計表（by_store 行=店舗 / by_dept 行=部門）: \u25C6合計\u2192行 */
+function renderRollup(d,headLabel,labelOf){
+  const cols=d.columns;
+  let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" style="left:0">${esc(headLabel)}</th>`+
+    cols.map(c=>`<th>${esc(c.label)}<span class="u">${c.type==="amount"?"千円":"%"}</span></th>`).join("")+`</tr></thead><tbody>`;
+  if(d.grand_total) h+=`<tr class="total"><td class="h" style="left:0">${esc(d.grand_total.label||"\u25C6 合計")}</td>`+cols.map(c=>`<td>${cellHtml(d.grand_total.cells[c.key],c,true)}</td>`).join("")+`</tr>`;
+  d.rows.forEach(r=>{
+    h+=`<tr class="datarow"><td class="h" style="left:0">${esc(labelOf(r))}</td>`+cols.map(c=>{
+      let cls=""; if(c.key==="gross_profit_month"&&r.alerts){ cls=r.alerts.gp_negative?" gp-neg":(r.alerts.loss_alert?" gp-loss":""); }
+      return `<td class="${cls}">${cellHtml(r.cells[c.key],c,false)}</td>`;
+    }).join("")+`</tr>`;
+  });
+  return h+`</tbody></table></div>`;
+}
+/* 運営部全体（逆ピボット 行=部門/カテゴリ \u00D7 列=店舗・指標選択） */
+let _uneibu=null;
+function renderUneibu(d){
+  _uneibu=d;
+  const opts=d.columns.map(c=>`<option value="${esc(c.key)}">${esc(c.label)}</option>`).join("");
+  return `<div style="margin-bottom:8px"><label class="lb">指標 </label><select id="uMetric" onchange="drawUneibu(this.value)">${opts}</select> <span class="lb">行=部門・カテゴリ \u00D7 列=店舗</span></div><div id="uTbl"></div>`;
+}
+function drawUneibu(mkey){
+  const d=_uneibu,col=d.columns.find(c=>c.key===mkey),st=d.stores||[];
+  let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" style="left:0">部門・カテゴリ</th><th>合計</th>`+st.map(s=>`<th>${esc(s.short)}</th>`).join("")+`</tr></thead><tbody>`;
+  d.rows.forEach(r=>{
+    h+=`<tr class="${r.type==="dept"?"subtotal":"datarow"}"><td class="h" style="left:0">${esc(r.label)}</td>`;
+    h+=`<td>${cellHtml((r.grand||{})[mkey],col,false)}</td>`;
+    h+=st.map(s=>`<td>${cellHtml((r.stores&&r.stores[s.short]||{})[mkey],col,false)}</td>`).join("")+`</tr>`;
+  });
+  const gt=d.grand_total; if(gt){ h+=`<tr class="total"><td class="h" style="left:0">${esc(gt.label||"\u25C6 合計")}</td><td>${cellHtml((gt.grand||{})[mkey],col,true)}</td>`+st.map(s=>`<td>${cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true)}</td>`).join("")+`</tr>`; }
+  $("uTbl").innerHTML=h+`</tbody></table></div>`;
+}
+/* 事業部会議（18列2段＋前年比較3列） */
+function cmpCell(cur,prev,isRate,hib){
+  if(cur==null) return `<div class="cell n">\u2014</div>`;
+  const cls=prev!=null?judge(hib,cur-prev):"n";
+  let h=`<div class="cell"><div class="act ${cls}">${isRate?pct(cur):kyen(cur)}</div>`;
+  if(prev!=null){ const c=isRate?ppt(cur-prev):ratio(cur,prev); h+=`<div class="prev">前 ${isRate?pct(prev):kyen(prev)}（${c}）</div>`; }
+  return h+`</div>`;
+}
+function renderJigyo(d){
+  const cols=d.columns, cmp=d.compare||[]; const grp=[];
+  cols.forEach(c=>{ const g=c.group||""; if(g===""&&grp.length) grp[grp.length-1].span++; else grp.push({g,span:1}); });
+  const fv=(c,v)=>v==null?"\u2014":(c.type==="rate"?pct(v):kyen(v));
+  let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" rowspan="2" style="left:0">部門・カテゴリ</th>`+
+    grp.map(g=>`<th colspan="${g.span}" style="text-align:center">${esc(g.g)}</th>`).join("")+(cmp.length?`<th colspan="${cmp.length}" style="text-align:center">前年比較</th>`:"")+`</tr><tr>`+
+    cols.map(c=>`<th>${esc(c.sub_header||"")}</th>`).join("")+cmp.map(c=>`<th>${esc(c.label)}</th>`).join("")+`</tr></thead><tbody>`;
+  const row=(r,cls)=>{ const v=r.values||{},y=r.yoy||{}; return `<tr class="${cls}"><td class="h" style="left:0">${esc(r.label)}</td>`+cols.map(c=>`<td>${fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better)}</td>`).join("")+`</tr>`; };
+  d.rows.forEach(r=>h+=row(r,r.type==="dept"?"subtotal":"datarow"));
+  if(d.grand) h+=row({label:d.grand.label||"\u25C6 合計",values:d.grand.values,yoy:d.grand.yoy},"total");
+  return h+`</tbody></table></div>`;
+}
+/* 仕入分析（目標粗利率・在庫日数\u2192計算・\u00B110%色） */
+const BDAYS=25; let _shiire=null;
+const shKey=()=>`sh_${S.area}_${S.dept}`;
+function renderShiire(d){
+  _shiire=d; let cfg={gp:30,inv:2}; try{const s=localStorage.getItem(shKey());if(s)cfg=JSON.parse(s);}catch(e){}
+  setTimeout(()=>{ if($("shGp")){ $("shGp").value=cfg.gp; $("shInv").value=cfg.inv; const on=()=>{const gp=parseFloat($("shGp").value)||0,inv=parseFloat($("shInv").value)||0;try{localStorage.setItem(shKey(),JSON.stringify({gp,inv}));}catch(e){}drawShiire(gp,inv);}; $("shGp").oninput=on;$("shInv").oninput=on; drawShiire(cfg.gp,cfg.inv);} },0);
+  return `<div class="note" style="margin-bottom:8px">目標粗利率と在庫日数から「月間原価・目標在庫・目標仕入」を計算（営業日数=${BDAYS}）。仕入が目標\u00B110%外は色付き（青=少/赤=多/緑=適正）。</div>`+
+    `<div style="margin-bottom:8px">目標粗利率 <input id="shGp" type="number" step="0.1">%　在庫日数 <input id="shInv" type="number" step="0.1">日</div><div id="shTbl"></div>`;
+}
+function drawShiire(gp,inv){
+  const d=_shiire; const calc=r=>{const mc=(r.sales||0)*(1-gp/100);const ti=mc/BDAYS*inv;return{mc,ti,tp:mc+ti-(r.carryover||0)};};
+  const cols=["店舗","売上","繰越","在庫原価","仕入","実績粗利率","月間原価","目標在庫","目標仕入"];
+  let h=`<div class="tbl-wrap"><table class="c"><thead><tr>`+cols.map((c,i)=>`<th class="${i===0?'h':''}" ${i===0?'style="left:0"':''}>${c}</th>`).join("")+`</tr></thead><tbody>`;
+  const row=(r,g)=>{const c=calc(r);let pc="";if(c.tp>0){const rt=(r.purchase||0)/c.tp;pc=rt>1.1?"background:#ffe4e6":rt<0.9?"background:#e0f2fe":"background:#dcfce7";}
+    return `<tr class="${g?'total':(r.is_merged?'subtotal':'datarow')}"><td class="h" style="left:0">${esc(r.label||(g?"\u25C6 合計":r.short||""))}</td>`+
+      `<td>${kyen(r.sales||0)}</td><td>${kyen(r.carryover||0)}</td><td>${kyen(r.inv_cost||0)}</td><td>${kyen(r.purchase||0)}</td>`+
+      `<td>${r.actual_gp_rate!=null?r.actual_gp_rate.toFixed(2)+"%":"\u2014"}</td><td>${kyen(c.mc)}</td><td>${kyen(c.ti)}</td><td style="${pc}">${kyen(c.tp)}</td></tr>`;};
+  d.rows.forEach(r=>h+=row(r,false)); if(d.grand) h+=row(d.grand,true);
+  $("shTbl").innerHTML=h+`</tbody></table></div>`;
+}
+
+/* \u2500\u2500 状態・入室 \u2500\u2500 */
+/* role/area/dept は入室ゲートの選択値。入室確定で asg（担当）へ固定コピーし、以後 area/dept は表示側の選択として独立に動く */
+const S={ meta:null, viewMode:"hq", entered:false, asg:null, role:"buyer", area:"", dept:"",
+  mode:"商品部詳細", ym:"", snap:"", snaps:[], stores:[], storeTab:"__total__" };
+const MODE_BG={ "商品部詳細":"#E1F5FE","商品部全体":"#E1F5FE","運営部詳細":"#E8F5E9","運営部全体":"#E8F5E9","店舗事業部会議":"#EDE7F6" };
+const MODES=["商品部詳細","商品部全体","運営部詳細","運営部全体","仕入分析","店舗事業部会議"];
+const ROLES=[
+  {k:"buyer",label:"部門担当",icon:"\u270E",desc:"担当部門のコメントを記入できます（バイヤー・店長・主任）"},
+  {k:"admin",label:"全体管理者",icon:"\uD83D\uDEE1",desc:"課長以上。担当エリアの全部門を記入できます"},
+  {k:"viewer",label:"閲覧者",icon:"\uD83D\uDC41",desc:"閲覧のみ（コメントの記入はできません）"},
+];
+
+async function boot(){
+  if(!IS_GAS){ $("user").textContent="ローカル開発（サンプル）"; startApp_(); return; }
+  // 本番: まず端末保存トークンで自動復帰を試み、ダメならログイン画面
+  window.__bootStep="ログイン確認";
+  if(restoreAccessToken_()){
+    try{
+      const u=await fetchUserInfo_();
+      const d=String(u.email||"").split("@")[1]||"";
+      if(CONFIG.ALLOWED_DOMAINS.includes(d)){ authedEmail=u.email; $("user").textContent=u.email; startApp_(); return; }
+    }catch(e){ /* 復元不可→ログイン画面へ */ }
+  }
+  renderLogin_();
+}
+
+/* ログイン画面（会社Google・4ドメイン限定） */
+function renderLogin_(msg){
+  $("page").style.background="";
+  $("app").innerHTML=
+    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check — 数値確認（本番データ）</p></div>`+
+    `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">🔐</div><h3>会社アカウントでログイン</h3>`+
+    `<p class="cdesc">会社の Google アカウント（jaz-acoop 系4ドメイン）でログインしてください。個人の Gmail ではご利用いただけません。</p></div>`+
+    `<div class="cbody"><button class="btn primary" style="width:100%;padding:12px;font-size:15px" onclick="doLogin_()">Google でログイン</button>`+
+    `<p class="warn" id="loginErr" style="${msg?"":"display:none;"}margin-top:10px">${esc(msg||"")}</p>`+
+    `<p class="hint">初回のみ許可の確認が表示されます。2回目以降は自動でログインします。</p></div></div></div>`;
+}
+async function doLogin_(){
+  const err=$("loginErr");
+  const showErr=t=>{ if(err){ err.textContent=t; err.style.display="block"; } };
+  try{
+    await requestAccessTokenOnce_({});
+    const u=await fetchUserInfo_();
+    const d=String(u.email||"").split("@")[1]||"";
+    if(!CONFIG.ALLOWED_DOMAINS.includes(d)){
+      currentAccessToken=null; accessTokenExpiry=0; clearStoredToken_();
+      showErr("社内ドメインのアカウントでログインしてください（個人Gmailは不可）。");
+      return;
+    }
+    authedEmail=u.email; $("user").textContent=u.email;
+    startApp_();
+  }catch(e){ showErr("ログインできませんでした: "+String(e&&e.message||e)); }
+}
+
+/* ログイン後（ローカルは直接ここ）: データ読込→入口表示 */
+async function startApp_(){
+  // 起動見張り: 12秒たっても起動が終わらなければ、どの段階で止まったかを表示
+  let booted=false; window.__bootStep="起動";
+  setTimeout(()=>{ if(!booted){ const a=$("app"); if(a) a.innerHTML=`<div class="err">起動に時間がかかっています（「${esc(window.__bootStep)}」で停止中）。<br>通信状況をご確認のうえ、再読み込みしてください。</div>`; } }, 12000);
+  $("app").innerHTML=`<div class="note">読み込み中…</div>`;
+  capi("getCommentsSheetUrl").then(u=>{S.sheetUrl=u||"";}).catch(()=>{S.sheetUrl="";});
+  try{
+    window.__bootStep="データ(meta)取得";
+    S.meta=await Promise.race([ API.meta(),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error("データ取得が返りません（サーバーAPIの応答なし）。時間をおいて再読み込みしてください。")),15000)) ]);
+    if(S.meta.slugs){SLUG.area=S.meta.slugs.areas||{};SLUG.dept=S.meta.slugs.departments||{};}
+    // 既定エリア＝データのある北関東（無ければ先頭）
+    S.area=(S.meta.areas.includes("北関東")?"北関東":S.meta.areas[0])||"";
+    S.dept=S.meta.departments[0]||"";
+    S.ym=S.meta.year_months[0]||"";
+    window.__bootStep="モード判定";
+    S.viewMode=detectMode();
+    booted=true;
+    if(S.viewMode==="viewer") renderViewerGate(); else renderGate();
+  }catch(e){ booted=true; $("app").innerHTML=`<div class="err">初期化エラー：${esc(e.message||e)}</div>`; }
+}
+
+/* 入室ゲート */
+function renderGate(){
+  $("page").style.background="";
+  const roleCards=ROLES.map(r=>`<button class="role ${S.role===r.k?'on':''}" onclick="setRole('${r.k}')"><div class="rt">${r.icon} ${r.label}</div><div class="rd">${r.desc}</div></button>`).join("");
+  const areaSel=`<select id="gArea" onchange="S.area=this.value"><option value="">担当エリアを選択</option>`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
+  const deptSel=`<select id="gDept" onchange="S.dept=this.value"><option value="">担当部門を選択</option>`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`;
+  const selects=S.role==="viewer"?"":`<div class="gate-selects"><span class="lb">エリア：</span>${areaSel}${S.role==="buyer"?`<span class="lb">部門：</span>${deptSel}`:""}</div>`;
+  $("app").innerHTML=
+    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
+    `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">\uD83D\uDEAA</div><h3>担当を選んで入室してください</h3>`+
+    `<p class="cdesc">あなたの担当（何者として使うか）を選ぶと中に入れます。編集は本部管理者・部門担当、閲覧は店舗の方向けです。</p></div>`+
+    `<div class="cbody"><div class="roles">${roleCards}</div>${selects}`+
+    `<div style="margin-top:10px"><button class="btn primary" style="width:100%;padding:10px" id="gEnter" onclick="enter()">\uD83D\uDEAA ${S.role==="viewer"?"閲覧者として入室する":"この担当で入室する"}</button>`+
+    `<p class="warn" id="gWarn" style="display:none"></p>`+
+    `<p class="hint">入室後も上部のバーから担当を変更できます。コメントの記入は担当範囲のみ。</p></div></div></div></div>`;
+  updateGate();
+}
+function setRole(k){ S.role=k; renderGate(); }
+function updateGate(){
+  const ready=S.role==="viewer"||(S.role==="admin"&&S.area)||(S.role==="buyer"&&S.area&&S.dept);
+  const b=$("gEnter"); if(b) b.disabled=!ready;
+  const w=$("gWarn"); if(w){ if(!ready){ w.style.display="block"; w.textContent=S.role==="buyer"?"担当エリアと担当部門を選択してください":"担当エリアを選択してください"; } else w.style.display="none"; }
+}
+document.addEventListener("change",updateGate);
+function enter(){
+  const ready=S.role==="viewer"||(S.role==="admin"&&S.area)||(S.role==="buyer"&&S.area&&S.dept); if(!ready) return;
+  S.asg={role:S.role,area:S.area,dept:S.dept};
+  S.entered=true; renderApp();
+}
+
+/* 入室後 */
+function renderApp(){
+  $("page").style.background=MODE_BG[S.mode]||"";
+  const a=S.asg;
+  const rb=a.role==="buyer"?"rb-buyer":a.role==="admin"?"rb-admin":"rb-viewer";
+  const roleLabel=ROLES.find(r=>r.k===a.role).label;
+  const asg=`<div class="asgbar"><span class="lb">担当：</span><span class="role-badge ${rb}">${roleLabel}</span>`+
+    (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(a.role==="buyer"?`<span class="chip d">${esc(a.dept)}</span>`:"")+
+    `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
+  const tabs=MODES.concat(a.role!=="viewer"?["データ管理"]:[]);
+  const modes=`<div class="modes">`+tabs.map(m=>`<button class="${S.mode===m?'on':''}" onclick="setMode('${m}')">${modeIcon(m)} ${m}</button>`).join("")+`</div>`;
+  $("app").innerHTML=
+    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
+    asg+modes+`<div id="view" style="margin-top:14px"><div class="note">読み込み中\u2026</div></div>`;
+  refreshView();
+}
+function modeIcon(m){ return m.startsWith("商品部")?"\uD83D\uDED2":m.startsWith("運営部")?"\uD83C\uDFE2":m==="仕入分析"?"\uD83D\uDCE6":m==="店舗事業部会議"?"\uD83C\uDFEA":m==="データ管理"?"\u2699\uFE0F":"\u2022"; }
+function backToGate(){ S.entered=false; S.asg=null; if(S.mode==="データ管理")S.mode="商品部詳細"; renderGate(); }
+function setMode(m){ S.mode=m; renderApp(); }
+
+/* 選択バー（エリア/年月/データ期間/部門）＋スコープチップ＋本文 */
+async function refreshView(){
+  const v=$("view");
+  if(S.mode==="データ管理"){ renderDataManage(); return; }
+  const areaSel=`<select onchange="onArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
+  const ymSel=`<select onchange="onYm(this.value)">`+S.meta.year_months.map(y=>`<option value="${esc(y)}" ${y===S.ym?'selected':''}>${esc(y.slice(0,4))}年${Number(y.slice(4))}月</option>`).join("")+`</select>`;
+  const needDept=(S.mode==="商品部詳細"||S.mode==="商品部全体"||S.mode==="仕入分析"||S.mode==="運営部詳細");
+  const deptSel=needDept?`<span class="lb">部門</span><select onchange="onDept(this.value)">`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`:"";
+  v.innerHTML=`<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="snapSel" onchange="onSnap(this.value)"></select>${deptSel}</div>`+
+    `<div id="storetabs"></div><div id="scope"></div><div id="body"><div class="note">読み込み中\u2026</div></div>`;
+  await loadSnaps();
+  await loadStores();
+  drawStoreTabs();
+  drawScope();
+  await drawBody();
+}
+async function loadSnaps(){
+  try{ const s=await API.snapshots(S.area,S.ym); S.snaps=s.snapshots||[]; S.snap=s.default||(S.snaps[0]&&S.snaps[0].snapshot)||"";
+    $("snapSel").innerHTML=S.snaps.map(o=>`<option value="${esc(o.snapshot)}">${esc(o.label)}</option>`).join(""); if(S.snap)$("snapSel").value=S.snap;
+  }catch(e){ S.snaps=[]; S.snap=""; $("snapSel").innerHTML="<option>\u2014</option>"; }
+}
+function drawScope(){
+  const sel=S.snaps.find(s=>s.snapshot===S.snap);
+  let h=`<div class="chips"><span>${modeIcon(S.mode)}</span><span class="chip a">${esc(S.area)}</span>`;
+  if(S.mode==="商品部詳細"||S.mode==="商品部全体"||S.mode==="仕入分析") h+=`<span class="chip d">${esc(S.dept)}</span>`;
+  if(STORE_MODES.includes(S.mode)){ const so=S.storeTab!=="__total__"?S.stores.find(x=>x.slug===S.storeTab):null; h+=`<span class="chip s">${so?esc(so.short):"エリア合計"}</span>`; }
+  h+=`<span class="chip" style="background:#f1f5f9;color:#475569;font-weight:400">${sel?esc(sel.label):"\u2014"}</span></div>`;
+  if(sel&&sel.file_type==="05-4") h+=`<div class="sokuho"><span>\u26A0</span><span><b>月途中の速報値（${esc((sel.label||"").replace("\uD83D\uDCCA","").trim())}）を表示中です。</b> 月末確定（\uD83D\uDCCC）取込前は棚卸未実施部門で粗利が高めに出ます。</span></div>`;
+  if(S.mode!=="仕入分析"&&S.mode!=="店舗事業部会議"&&S.mode!=="運営部全体") h+=legend();
+  if(S.mode==="商品部詳細"&&S.asg&&S.asg.role!=="viewer")
+    h+=`<div style="margin:8px 0"><button class="btn" onclick="bulkOpenSheet(this)">\uD83D\uDCD7 会議用まとめ（${esc(S.dept)}\u00D7${esc(S.area)} 全店を1ファイル）</button> <span id="bulkMsg" class="lb"></span></div>`;
+  $("scope").innerHTML=h;
+}
+async function drawBody(){
+  const b=$("body"); b.innerHTML=`<div class="note">読み込み中\u2026</div>`;
+  try{
+    const st=STORE_MODES.includes(S.mode)?S.storeTab:"__total__";
+    const so=st!=="__total__"?S.stores.find(x=>x.slug===st):null;
+    if(S.mode==="商品部詳細"){
+      if(st==="__total__") b.innerHTML=renderSection(await API.detail(S.area,S.ym,S.snap,S.dept));
+      else b.innerHTML=await storeDetailHtml(st,so,S.dept);
+    }
+    else if(S.mode==="商品部全体") b.innerHTML=renderRollup(await API.byStore(S.area,S.ym,S.snap,S.dept),"店舗",r=>r.label||r.store);
+    else if(S.mode==="運営部詳細"){
+      if(st==="__total__") b.innerHTML=renderRollup(await API.byDept(S.area,S.ym,S.snap),"部門",r=>r.label||r.dept);
+      else b.innerHTML=await storeDetailHtml(st,so,null);
+    }
+    else if(S.mode==="運営部全体"){ b.innerHTML=renderUneibu(await API.uneibu(S.area,S.ym,S.snap)); drawUneibu(_uneibu.columns[0].key); }
+    else if(S.mode==="店舗事業部会議"){
+      if(st==="__total__") b.innerHTML=renderJigyo(await API.jigyo(S.area,S.ym,S.snap));
+      else b.innerHTML=renderJigyo(await API.jigyoStore(S.area,S.ym,S.snap,st));
+    }
+    else if(S.mode==="仕入分析") b.innerHTML=renderShiire(await API.shiire(S.area,S.ym,S.snap,S.dept));
+    // コメント（G2）: 商品部詳細/運営部詳細（エリア合計・店舗タブとも表示。編集可否は canEditSec が判定）
+    if(S.mode==="商品部詳細"||S.mode==="運営部詳細"){
+      b.innerHTML+=`<div id="cpanel" style="margin-top:14px"><div class="note">コメント読み込み中\u2026</div></div>`;
+      renderComments();
+    }
+  }catch(e){
+    const m=String(e&&e.message||e);
+    b.innerHTML=m.includes("ファイルなし")||m.includes("未収載")
+      ? `<div class="note">この条件の実績データがありません。<br>実績があるのは主に <b>北関東・首都圏</b>（2026年4〜6月）。<b>東北（北東北・宮城・山形）は実績が未更新の期間があります</b>（予算は全エリア登録済み）。</div>`
+      : `<div class="err">データを取得できません：${esc(m)}</div>`;
+  }
+}
+function onArea(v){ S.area=v; refreshView(); }
+function onYm(v){ S.ym=v; refreshView(); }
+function onSnap(v){ S.snap=v; drawScope(); drawBody(); }
+function onDept(v){ S.dept=v; drawScope(); drawBody(); }
+
+// 店舗タブ（前回開発機の店舗タブ再現：エリア合計＋各店舗）。商品部詳細/運営部詳細/店舗事業部会議で表示。
+const STORE_MODES=["商品部詳細","運営部詳細","店舗事業部会議"];
+async function loadStores(){
+  if(!STORE_MODES.includes(S.mode)){ S.stores=[]; return; }
+  try{ const r=await API.stores(S.area,S.ym); S.stores=r.stores||[]; }catch(e){ S.stores=[]; }
+  if(S.storeTab!=="__total__" && !S.stores.some(s=>s.slug===S.storeTab)) S.storeTab="__total__";
+}
+function drawStoreTabs(){
+  const el=$("storetabs"); if(!el) return;
+  if(!STORE_MODES.includes(S.mode)||!S.stores.length){ el.innerHTML=""; return; }
+  el.innerHTML=`<div class="tabs2"><span class="lb" style="align-self:center;margin-right:4px">店舗</span>`+
+    `<button class="${S.storeTab==='__total__'?'on':''}" onclick="onStore('__total__')">エリア合計</button>`+
+    S.stores.map(s=>`<button class="${S.storeTab===s.slug?'on':''}" onclick="onStore('${esc(s.slug)}')">${esc(s.short)}</button>`).join("")+`</div>`;
+}
+function onStore(slug){ S.storeTab=slug; drawStoreTabs(); drawScope(); drawBody(); }
+function storeNote(s){
+  return `<div class="note"><b>${esc(s?s.short:"この店舗")}</b> の個別カテゴリ明細は、現在の配信データ（outbox）に未生成です（HQに店舗軸の明細生成を依頼中）。<br>店舗横断の比較は <b>商品部全体（行=店舗）</b>、店舗別の受払は <b>店舗事業部会議</b> でご確認いただけます。</div>`;
+}
+/* 店舗別カテゴリ明細: HQ配信は部門\u00D7店舗の粒度（c/shohin_detail__{area}__{dept}__{ym}__{snap8}__{storeSlug}.json）。
+   商品部詳細=選択部門の1ファイル／運営部詳細=全部門を並列取得して結合。未生成は案内へフォールバック。 */
+const isNoFile=e=>{const m=String(e&&e.message||e);return m.includes("ファイルなし")||m.includes("未収載");};
+async function storeDetailHtml(slug,so,dept){
+  try{
+    if(dept) return renderSection(await API.detailStore(S.area,S.ym,S.snap,dept,slug));
+    const parts=await Promise.all(S.meta.departments.map(d=>
+      API.detailStore(S.area,S.ym,S.snap,d,slug).catch(e=>{ if(isNoFile(e)) return null; throw e; })));
+    const got=parts.filter(Boolean);
+    if(!got.length) return storeNote(so);
+    return renderSection({...got[0], rows:got.flatMap(p=>p.rows||[]), dept_totals:got.flatMap(p=>p.dept_totals||[]), grand_total:null});
+  }catch(e){
+    if(isNoFile(e)) return storeNote(so);
+    return `<div class="err">データを取得できません：${esc(String(e&&e.message||e))}</div>`;
+  }
+}
+
+/* \u2500\u2500 G2: PDCA コメント（正本=Google Sheets・下書き/確定の2段階なし=即時保存・済はA行のみ） \u2500\u2500 */
+const SECTIONS=[{k:"A",icon:"\u2705",label:"A：改善アクション"},{k:"P",icon:"\uD83D\uDCCB",label:"P：計画"},{k:"D",icon:"\uD83C\uDFAF",label:"D：実行（結果）"}];
+const MARKS=["\u2460","\u2461","\u2462","\u2463","\u2464","\u2465","\u2466","\u2467","\u2468","\u2469","\u246A","\u246B","\u246C","\u246D","\u246E"];
+let CM={A:[],P:[],D:[]}, cmSeq=0, saveQ=Promise.resolve();
+
+/* GAS 関数呼び出し（ローカル開発は localStorage モック） */
+async function capi(fn,...args){ if(IS_GAS) return gsCall(fn,...args); return mockApi(fn,args); }
+function mockRows(){ try{return JSON.parse(localStorage.getItem("mock_comments")||"[]");}catch(e){return [];} }
+function mockSave(r){ localStorage.setItem("mock_comments",JSON.stringify(r)); }
+function mockApi(fn,args){
+  if(fn==="getComments"){ const [ym,sn,area,store,dept]=args; const out={A:[],P:[],D:[]};
+    mockRows().forEach(r=>{ if(String(r.year_month)===String(ym)&&String(r.snapshot8)===String(sn)&&r.area===area&&r.store===store&&r.dept===dept&&out[r.section]) out[r.section].push(r); });
+    return Promise.resolve(out); }
+  if(fn==="upsertComment"){ const [key,sec,id,text,resolved]=args; const rows=mockRows();
+    const now=new Date().toISOString().slice(0,19).replace("T"," ");
+    const ex=rows.find(r=>r.item_id===id);
+    if(ex){ ex.text=text; ex.resolved=!!resolved; ex.resolved_at=resolved?(ex.resolved_at||now):""; ex.updated_at=now; }
+    else rows.push({year_month:key.ym,snapshot8:key.snap8,area:key.area,store:key.store,dept:key.dept,section:sec,
+      item_id:id,text:text,resolved:!!resolved,resolved_at:resolved?now:"",author:"ローカル開発",updated_at:now,source:"mock"});
+    mockSave(rows); return Promise.resolve({item_id:id}); }
+  if(fn==="deleteComment"){ mockSave(mockRows().filter(r=>r.item_id!==args[0])); return Promise.resolve({deleted:true}); }
+  if(fn==="uploadInbox") return Promise.resolve({ok:true,name:args[1],by:"ローカル開発",at:"(モック)"});
+  if(fn==="getCommentsSheetUrl") return Promise.resolve("https://docs.google.com/spreadsheets/d/17zZlRvUDtgT2kTMnFjXOqiV6db8l_KKh_a_ngiQyzxc/edit");
+  if(fn==="buildPdcaSheet"){ window.__lastSpec=args[0]; return Promise.resolve({url:"https://docs.google.com/spreadsheets/d/MOCK_"+encodeURIComponent(args[0].fileName)+"/edit",id:"mock"}); }
+  return Promise.reject(new Error("mock未対応: "+fn));
+}
+
+/* 権限（入室担当 asg \u00D7 現在の表示スコープ） */
+function canEditSec(sec){
+  const a=S.asg; if(!a||a.role==="viewer"||!S.snap) return false;
+  if(a.area!==S.area) return false;
+  if(a.role!=="admin"&&a.dept!==S.dept) return false;
+  if(S.mode==="運営部詳細") return sec==="D"&&S.storeTab==="__total__"; // 運営部=Dのみ・店舗タブは全閲覧（C7）
+  if(S.mode==="商品部詳細") return true; // A/P/D すべて（エリア合計・店舗とも）
+  return false;
+}
+function canResolveRow(){
+  const a=S.asg; if(!a||a.role==="viewer") return false;
+  return a.area===S.area&&(a.role==="admin"||a.dept===S.dept);
+}
+function cKey(){
+  const store=S.storeTab!=="__total__"?((S.stores.find(x=>x.slug===S.storeTab)||{}).full||""):"";
+  return {ym:S.ym,snap8:s8(S.snap),area:S.area,store:store,dept:S.dept};
+}
+
+async function renderComments(){
+  const el=$("cpanel"); if(!el) return;
+  if(!S.snap){ el.innerHTML=""; return; }
+  try{ const k=cKey(); CM=await capi("getComments",k.ym,k.snap8,k.area,k.store,k.dept); }
+  catch(e){ const m=String(e&&e.message||e);
+    el.innerHTML=m.includes("COMMENTS_SHEET_ID")
+      ? `<div class="note">コメント機能は初期化前です（管理者が GAS エディタで <b>setupCommentSheet</b> を実行すると有効になります）。</div>`
+      : `<div class="err">コメントを取得できません：${esc(m)}</div>`;
+    return; }
+  drawComments();
+}
+/* 行=課題（\u2460\u2461\u2026）\u00D7 列=A/P/D（オリジナル踏襲）。セル直接入力\u2192自動保存（スプシ同然）。済は行＝課題単位（Aのresolvedが正）。
+   タイピング中はDOMを再構築しない（フォーカス保持）。保存は saveQ で直列化（サーバー側ロック渋滞の防止）。 */
+function drawComments(){
+  const el=$("cpanel"); if(!el) return;
+  const so=S.storeTab!=="__total__"?S.stores.find(x=>x.slug===S.storeTab):null;
+  const scope=`${S.area} / ${S.dept}${so?" / "+so.short:" / エリア合計"}`;
+  const sel=S.snaps.find(x=>x.snapshot===S.snap);
+  const anyEdit=SECTIONS.some(s=>canEditSec(s.k));
+  let h=`<div class="cmcard"><div class="cmhead"><b>PDCA アクション</b><span class="lb">${esc(scope)}・${esc(sel?sel.label:"")}${IS_GAS?"":"（ローカル＝保存はこの端末のみ）"}</span><span class="lb" id="cmsave"></span>`+
+    (S.sheetUrl?`<a href="${esc(S.sheetUrl)}" target="_blank" rel="noopener" class="btn" style="margin-left:auto;text-decoration:none;padding:3px 10px;font-size:12px">\uD83D\uDCC4 スプレッドシートで開く</a>`:"")+`</div>`;
+  h+=`<table class="cmt"><thead><tr><th style="width:26px">#</th>`;
+  SECTIONS.forEach(s=>{
+    h+=`<th style="width:31%">${s.icon} ${esc(s.label)}${canEditSec(s.k)?"":` <span class="badge" style="background:#e2e8f0;color:#475569">閲覧のみ</span>`}</th>`;
+  });
+  h+=`<th style="width:76px">済</th></tr></thead><tbody id="cmtb">`;
+  const n=cmRowCount();
+  for(let i=0;i<n;i++) h+=cmRow(i);
+  if(!n) h+=`<tr><td></td><td colspan="3" class="cmempty">（記入なし）</td><td></td></tr>`;
+  h+=`</tbody></table>`;
+  if(anyEdit) h+=`<div class="lb" style="margin-top:6px">セルに直接入力すると自動保存されます。「\u2713済」は行（課題）単位の完了記録です。</div>`;
+  el.innerHTML=h+`</div>`;
+}
+function cmRowCount(){
+  const n=Math.max(CM.A.length,CM.P.length,CM.D.length);
+  return n+(SECTIONS.some(s=>canEditSec(s.k))?1:0); // 編集可なら常に空きの次行を1つ出す
+}
+function cmRow(i){
+  const a=CM.A[i], resolved=!!(a&&a.resolved);
+  let h=`<tr id="cmr_${i}" class="${resolved?"cmresolved":""}"><td class="cmmark" id="cmmk_${i}">${cmMark(i)}</td>`;
+  SECTIONS.forEach(s=>{ h+=`<td id="cmtd_${s.k}_${i}">${cmCellHtml(s.k,i)}</td>`; });
+  return h+`<td style="text-align:center" id="cmrs_${i}">${cmResolveHtml(i)}</td></tr>`;
+}
+function cmMark(i){ return SECTIONS.some(s=>CM[s.k][i])?(MARKS[i]||String(i+1)):"＋"; }
+function cmCellHtml(sec,i){
+  const it=CM[sec][i], edit=canEditSec(sec);
+  if(it){
+    if(!edit) return `<div class="cmtext">${esc(it.text)}</div><div class="cmmeta">${esc(it.author||"")}${it.updated_at?"・"+esc(String(it.updated_at).slice(5,16)):""}</div>`;
+    return `<textarea class="cmcell" data-sec="${sec}" data-id="${esc(it.item_id)}" oninput="cInput(this)" onblur="cBlur(this)">${esc(it.text)}</textarea>`+
+      `<div class="cmmeta">${esc(it.author||"")}${it.updated_at?"・"+esc(String(it.updated_at).slice(5,16)):""}<button class="btn" style="float:right;padding:0 6px;font-size:11px" title="行を削除" onclick="cDel('${esc(it.item_id)}')">\uD83D\uDDD1</button></div>`;
+  }
+  // 各列とも「次の1マス」だけ新規入力セルを出す（\u2460が埋まれば\u2461\u2026の位置に揃う）
+  if(edit&&CM[sec].length===i) return `<textarea class="cmcell" data-sec="${sec}" oninput="cInput(this)" onblur="cBlur(this)" placeholder="＋ 入力すると自動保存\u2026"></textarea>`;
+  return "";
+}
+function cmResolveHtml(i){
+  const a=CM.A[i]; if(!a) return "";
+  const resolved=!!a.resolved; let x="";
+  if(resolved) x+=`<div class="badge bd-ok">済 ${esc(String(a.resolved_at||"").slice(5,10))}</div><div style="height:3px"></div>`;
+  if(canResolveRow()) x+=`<button class="btn" onclick="cResolve('${esc(a.item_id)}',${resolved?"false":"true"})">${resolved?"戻す":"\u2713 済"}</button>`;
+  return x;
+}
+function cmIndicator(st,msg){ const e=$("cmsave"); if(!e) return; e.textContent=msg||""; e.style.color=st==="err"?"#b91c1c":st==="saving"?"#b45309":"#166534"; }
+function newId(){ return "it_"+Date.now().toString(36)+"_"+(++cmSeq)+Math.random().toString(36).slice(2,6); }
+
+function cInput(el){
+  el.style.height="auto"; el.style.height=el.scrollHeight+"px";
+  clearTimeout(el._t); el._t=setTimeout(()=>cFlush(el),700); // 手が止まって0.7秒で自動保存
+}
+function cBlur(el){ clearTimeout(el._t); cFlush(el); }
+function cFlush(el){
+  const sec=el.dataset.sec;
+  if(!el.dataset.id){
+    if(!el.value.trim()) return;
+    const id=newId(); el.dataset.id=id;
+    CM[sec].push({item_id:id,text:el.value,resolved:false,author:$("user").textContent||"",updated_at:""});
+    cmAfterCreate(sec);
+    enqueueSave(sec,id);
+    return;
+  }
+  const it=CM[sec].find(x=>x.item_id===el.dataset.id); if(!it||it.text===el.value) return;
+  it.text=el.value; enqueueSave(sec,el.dataset.id);
+}
+/* 新規行の確定: マーカー・済セルを更新し、次の空き行（無ければ追加）と当該列の次の入力マスを必ず用意する。
+   行が既に在る場合もその行の当該列セルへ入力マスを差し込む（A以外の列で新規マスが増えないバグの修正）。
+   タイピング中の既存セルは触らない */
+function cmAfterCreate(sec){
+  const i=CM[sec].length-1;
+  const mk=$("cmmk_"+i); if(mk) mk.textContent=cmMark(i);
+  const rs=$("cmrs_"+i); if(rs) rs.innerHTML=cmResolveHtml(i);
+  const next=i+1;
+  if(!$("cmr_"+next)&&$("cmtb")) $("cmtb").insertAdjacentHTML("beforeend",cmRow(next));
+  const td=$("cmtd_"+sec+"_"+next);
+  if(td&&!td.querySelector("textarea")) td.innerHTML=cmCellHtml(sec,next);
+}
+function enqueueSave(sec,id){
+  cmIndicator("saving","保存中\u2026");
+  const key=cKey(); // 保存時点のスコープを固定（後で画面を切り替えても正しい週キーへ書く）
+  saveQ=saveQ.then(async()=>{
+    const it=CM[sec].find(x=>x.item_id===id); if(!it) return;
+    try{
+      await capi("upsertComment",key,sec,id,it.text,!!it.resolved);
+      cmIndicator("ok","\u2713 自動保存 "+new Date().toTimeString().slice(0,5));
+    }catch(e){ cmIndicator("err","\u26A0 保存失敗（入力を続けると自動で再保存します）"); }
+  });
+}
+async function cDel(id){
+  if(!confirm("この行を削除しますか？")) return;
+  let sec=null; SECTIONS.forEach(s=>{ if((CM[s.k]||[]).some(x=>x.item_id===id)) sec=s.k; });
+  if(!sec) return;
+  CM[sec]=CM[sec].filter(x=>x.item_id!==id);
+  drawComments();
+  saveQ=saveQ.then(async()=>{ try{ await capi("deleteComment",id); toast("削除しました"); }catch(e){ toast("削除に失敗: "+String(e&&e.message||e),true); renderComments(); } });
+}
+function cResolve(id,flag){
+  const it=(CM.A||[]).find(x=>x.item_id===id); if(!it) return;
+  it.resolved=flag; it.resolved_at=flag?new Date().toISOString().slice(0,19).replace("T"," "):"";
+  const i=CM.A.indexOf(it);
+  const tr=$("cmr_"+i); if(tr) tr.className=flag?"cmresolved":"";
+  const rs=$("cmrs_"+i); if(rs) rs.innerHTML=cmResolveHtml(i);
+  enqueueSave("A",id);
+}
+function toast(msg,bad){
+  let t=$("toast"); if(!t){ t=document.createElement("div"); t.id="toast"; document.body.appendChild(t); }
+  t.textContent=msg; t.className=bad?"bad":""; t.style.opacity=1;
+  clearTimeout(t._h); t._h=setTimeout(()=>{ t.style.opacity=0; },2500);
+}
+
+/* \u2500\u2500 G3: データ管理（受払CSV/予算 \u2192 Drive inbox。HQ が5分毎に取込\u2192outbox再生成\u2192status.json） \u2500\u2500 */
+async function renderDataManage(){
+  const v=$("view");
+  v.innerHTML=`<div class="chips"><span>\u2699\uFE0F</span><b>データ管理</b><span class="lb">受払CSV・年度予算の取込（アップロード後、HQ側が自動処理）</span></div>`+
+    `<div class="cmcard"><div class="cmsechead">\uD83D\uDCCA 取込状況（最終バッチ結果）</div><div id="dmStatus" class="lb">読み込み中\u2026</div></div>`+
+    `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 受払CSV 取込</div>`+
+      `<div class="cmadd"><input type="file" id="dmUke" multiple accept=".csv"><button class="btn primary" onclick="dmUpUke()">アップロード</button></div>`+
+      `<div class="lb" style="margin-top:6px">アップロード後、5分毎の自動処理で取込\u2192表示データ再生成。重複ファイルは自動判定で除外されます。</div><div id="dmUkeMsg"></div></div>`+
+    `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 年度予算（xlsx・スプレッドシート）</div>`+
+      `<div class="cmadd"><input type="file" id="dmBud" multiple accept=".xlsx" onchange="budAdd()"><button class="btn primary" id="dmBudBtn" onclick="dmUpBud()">まとめてアップロード</button></div>`+
+      `<div class="cmadd" style="margin-top:6px"><button class="btn" onclick="budPickOpen('root')">\uD83D\uDCC2 マイドライブから選ぶ</button><button class="btn" onclick="budPickOpen('shared')">\uD83D\uDC65 共有アイテムから選ぶ</button></div>`+
+      `<div id="dmPick"></div>`+
+      `<div class="lb" style="margin-top:6px">PCのファイルでも、ドライブから選んでもOK（スプレッドシートはxlsxへ自動変換）。ファイル名は自由\u2014\u2014名前から<b>年度・エリアを自動判定</b>し「{年度}_{エリア}.xlsx」へ正規化して取込みます。何度でも<b>積み上げ</b>OK、同じファイル・同じ 年度\u00D7エリア の<b>重複は自動排除</b>。<b>東北は3エリア（北東北・宮城・山形）が1冊のままでOK</b>（取込時に自動分割）。判定できなかった行（赤）だけ年度・エリアを選んでください。</div>`+
+      `<div id="dmBudQ" style="margin-top:6px"></div><div id="dmBudMsg"></div></div>`;
+  try{ const st=await loadJson("status.json","status.json"); $("dmStatus").innerHTML=dmStatusHtml(st); }
+  catch(e){ $("dmStatus").innerHTML=`status.json が未生成です（初回取込後に表示されます）`; }
+}
+function dmStatusHtml(st){
+  const uke=st.uke||{}, bud=st.budget||{};
+  let h=`<div style="font-size:13px;line-height:1.8">確認時刻: <b>${esc(st.checked_at||"\u2014")}</b><br>`+
+    `受払CSV: 検出 ${uke.files_found||0} 件 ／ 取込 ${uke.imported||0} 件 ／ 重複・スキップ ${uke.duplicates_or_skipped||0} 件<br>`+
+    `予算: 検出 ${bud.files_found||0} 件${(bud.saved&&bud.saved.length)?`（保存: ${bud.saved.map(x=>esc(String(x))).join(", ")}）`:""}<br>`+
+    `表示データ再生成: ${st.outbox_regenerated&&st.outbox_regenerated.ran?"実施":"なし（データ変化なし）"}</div>`;
+  const errs=[].concat(uke.errors||[],bud.errors||[]);
+  if(errs.length) h+=`<div class="err">エラー: ${errs.map(x=>esc(String(x))).join(" / ")}</div>`;
+  return h;
+}
+function fileB64(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=rej; r.readAsDataURL(f); }); }
+async function dmUpUke(){
+  const fs=$("dmUke").files; if(!fs.length){ toast("CSVファイルを選択してください",true); return; }
+  const msg=$("dmUkeMsg"); msg.innerHTML=""; let ok=0;
+  for(const f of fs){
+    try{ const r=await capi("uploadInbox","uke",f.name,await fileB64(f),"text/csv"); ok++;
+      msg.innerHTML+=`<div class="lb">\u2705 ${esc(r.name)}（${esc(r.by||"")}）</div>`; }
+    catch(e){ msg.innerHTML+=`<div class="err">\u274C ${esc(f.name)}: ${esc(String(e&&e.message||e))}</div>`; }
+  }
+  if(ok) toast(ok+" 件をアップロードしました（5分毎に自動取込）");
+  $("dmUke").value="";
+}
+/* \u2500\u2500 予算取込キュー: ファイル選択のたびに積み上げ、名前から年度・エリアを自動判定して
+     「{年度}_{エリア}.xlsx」へ正規化。同一ファイル・同一 年度\u00D7エリア は自動排除。
+     （ファイル取込UIの標準形＝積み上げ式・自動正規化・重複排除） \u2500\u2500 */
+const _XLSX_MIME="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const _BUD_AREAS=["北東北","北関東","首都圏","宮城","山形","東北"]; // 部分一致の優先順（「北東北」を「東北」より先に判定）
+const _budLabel=a=>a==="東北"?"東北（北東北・宮城・山形 一括）":a;
+let BQ=[]; // 積み上げキュー {f, key, year, area}
+function budParse(name){
+  const n=String(name).normalize("NFC");
+  let area=""; for(const a of _BUD_AREAS){ if(n.includes(a)){ area=a; break; } }
+  const y=n.match(/20\d{2}/);
+  return { year: y?y[0]:"", area };
+}
+function budAdd(){
+  const inp=$("dmBud");
+  for(const f of inp.files){
+    const key=f.name.normalize("NFC")+"|"+f.size;
+    if(BQ.some(x=>x.key===key)) continue;
+    BQ.push(Object.assign({f,key,name:f.name},budParse(f.name)));
+  }
+  inp.value=""; budRenderQ();
+}
+/* ドライブ選択ピッカー（xlsx・スプシのみ表示。選んだら同じ自動判定キューへ積む） */
+let DP={stack:[],cur:null};
+async function budPickOpen(rootId){
+  DP.stack=[{id:rootId,name:rootId==="shared"?"\uD83D\uDC65 共有アイテム":"\uD83D\uDCC2 マイドライブ"}];
+  await budPickLoad();
+}
+async function budPickLoad(){
+  const box=$("dmPick"); box.innerHTML=`<div class="lb" style="margin-top:6px">ドライブを読み込み中\u2026</div>`;
+  const cur=DP.stack[DP.stack.length-1];
+  try{ DP.cur=await capi("driveList",cur.id); budPickRender(); }
+  catch(e){ box.innerHTML=`<div class="err">ドライブを開けません: ${esc(String(e&&e.message||e))}</div>`; }
+}
+function budPickRender(){
+  const d=DP.cur;
+  const bc=DP.stack.map((s,i)=>i===DP.stack.length-1?`<b>${esc(s.name)}</b>`
+    :`<a href="#" onclick="DP.stack=DP.stack.slice(0,${i+1});budPickLoad();return false">${esc(s.name)}</a>`).join(" \u203A ");
+  const rows=[
+    ...d.folders.map((f,i)=>`<div class="lb" style="margin-top:2px">\uD83D\uDCC1 <a href="#" onclick="budPickInto(${i});return false">${esc(f.name)}</a></div>`),
+    ...d.files.map((f,i)=>`<div class="lb" style="margin-top:2px">${f.mime==="application/vnd.google-apps.spreadsheet"?"\uD83D\uDCD7":"\uD83D\uDCC4"} ${esc(f.name)} <button class="btn" onclick="budPickAdd(${i})">リストに追加</button></div>`)
+  ].join("")||`<div class="lb">このフォルダに xlsx・スプレッドシートはありません</div>`;
+  $("dmPick").innerHTML=`<div class="cmcard" style="margin-top:6px"><div class="lb">${bc} <button class="btn" style="float:right" onclick="$('dmPick').innerHTML=''">閉じる</button></div>${rows}${d.truncated?`<div class="lb">（多数のため先頭300件のみ表示）</div>`:""}</div>`;
+}
+function budPickInto(i){ const f=DP.cur.folders[i]; DP.stack.push({id:f.id,name:f.name}); budPickLoad(); }
+function budPickAdd(i){
+  const f=DP.cur.files[i]; const key="drive|"+f.id;
+  if(BQ.some(x=>x.key===key)){ toast("すでにリストにあります",true); return; }
+  BQ.push(Object.assign({driveId:f.id,key,name:f.name},budParse(f.name)));
+  budRenderQ(); toast("リストに追加しました");
+}
+function budRenderQ(){
+  const q=$("dmBudQ"); if(!BQ.length){ q.innerHTML=""; return; }
+  const seen={};
+  q.innerHTML=BQ.map((x,i)=>{
+    const dest=(x.year&&x.area)?`${x.year}_${x.area}.xlsx`:"";
+    const dup=!!(dest&&seen[dest]); if(dest&&!dup) seen[dest]=1;
+    const yearIn=`<input type="number" value="${esc(x.year)}" style="width:74px" onchange="BQ[${i}].year=this.value;budRenderQ()">`;
+    const areaSel=`<select onchange="BQ[${i}].area=this.value;budRenderQ()"><option value=""${x.area?"":" selected"}>エリア?</option>${_BUD_AREAS.map(a=>`<option value="${esc(a)}"${a===x.area?" selected":""}>${esc(_budLabel(a))}</option>`).join("")}</select>`;
+    const state=dup?`<b style="color:#b8860b">重複（自動排除）</b>`
+      :dest?`\u2192 <b>${esc(dest)}</b>${x.area==="東北"?"（3エリアへ自動分割）":""}`
+      :`<b style="color:#c00">年度・エリアを判定できません\u2014\u2014選んでください</b>`;
+    return `<div class="cmadd" style="margin-top:4px"><span class="lb">${x.driveId?"\u2601\uFE0F":"\uD83D\uDCC4"} ${esc(x.name)}</span> ${yearIn} ${areaSel} <span class="lb">${state}</span> <button class="btn" onclick="BQ.splice(${i},1);budRenderQ()">\u2715</button></div>`;
+  }).join("");
+}
+let BUP=false; // 二重実行ガード（連打・処理中の再クリックを無効化）
+async function dmUpBud(){
+  if(BUP){ toast("アップロード処理中です。完了までお待ちください",true); return; }
+  if(!BQ.length){ toast("ファイルを選択（またはURLを追加）してください",true); return; }
+  if(BQ.some(x=>!(x.year&&x.area))){ toast("年度・エリア未確定（赤）の行を修正してください",true); return; }
+  const items=BQ.filter(x=>!x.done);
+  const btn=$("dmBudBtn"); BUP=true; if(btn) btn.disabled=true;
+  const msg=$("dmBudMsg"); msg.innerHTML="";
+  const seen={}; let ok=0, n=0;
+  try{
+    for(const x of items){
+      n++; if(btn) btn.textContent=`アップロード中\u2026 ${n}/${items.length}`;
+      const dest=`${x.year}_${x.area}.xlsx`;
+      if(seen[dest]){ x.done=true; continue; }  // 同一 年度\u00D7エリア は先勝ちで自動排除
+      seen[dest]=1;
+      try{
+        if(x.driveId) await capi("uploadInboxFromDrive",x.driveId,dest);
+        else await capi("uploadInbox","budget",dest,await fileB64(x.f),_XLSX_MIME);
+        ok++; x.done=true;
+        msg.innerHTML+=`<div class="lb">\u2705 ${esc(x.name)} \u2192 ${esc(dest)}${x.area==="東北"?"（北東北・宮城・山形へ自動分割）":""}</div>`; }
+      catch(e){ msg.innerHTML+=`<div class="err">\u274C ${esc(x.name)}: ${esc(String(e&&e.message||e))}</div>`; }
+    }
+  } finally {
+    BUP=false; if(btn){ btn.disabled=false; btn.textContent="まとめてアップロード"; }
+    BQ=BQ.filter(x=>!x.done); budRenderQ();
+  }
+  if(ok) toast(ok+" 件をアップロードしました（Drive受け渡し箱へ配置完了。取込は5分毎の自動処理\u2192上の「取込状況」で確認）");
+}
+
+/* \u2500\u2500 モード検出: getLocation で ?mode=viewer を判定。応答が無くても1.5秒で必ず確定（起動を止めない） \u2500\u2500 */
+function detectMode(){
+  // 静的配信（GitHub Pages/ローカル）なので URL クエリを直接読める
+  try{ return (new URLSearchParams(location.search).get("mode")==="viewer") ? "viewer" : "hq"; }
+  catch(e){ return "hq"; }
+}
+
+/* \u2500\u2500 閲覧者モード：店舗\u2192部門を選ぶだけ。自店舗自部門＋エリア共通を表示し、スプレッドシート出力 \u2500\u2500 */
+function snapLabelNow(){ const s=S.snaps.find(x=>x.snapshot===S.snap); return s?s.label:""; }
+
+function renderViewerGate(){
+  $("page").style.background="";
+  const areaSel=`<select id="vArea" onchange="vGateArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?"selected":""}>${esc(a)}</option>`).join("")+`</select>`;
+  const deptSel=`<select id="vDept" onchange="vGateCheck()"><option value="">部門を選択</option>`+S.meta.departments.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("")+`</select>`;
+  $("app").innerHTML=
+    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2><p class="subtitle">自分の店舗・部門の数値と、やるべきこと（A/P/D）をひと目で確認</p></div>`+
+    `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">\uD83C\uDFEA</div><h3>店舗と部門を選んでください</h3>`+
+    `<p class="cdesc">あなたのお店と担当部門を選ぶと、自店舗のPDCAとエリア共通の方針が見られます。</p></div>`+
+    `<div class="cbody"><div class="gate-selects"><span class="lb">エリア：</span>${areaSel}<span class="lb">店舗：</span><select id="vStore" onchange="vGateCheck()"><option value="">読み込み中\u2026</option></select><span class="lb">部門：</span>${deptSel}</div>`+
+    `<div style="margin-top:10px"><button class="btn primary" style="width:100%;padding:10px" id="vEnterBtn" onclick="vEnter()" disabled>\uD83D\uDD0E 自店舗のPDCAを開く</button>`+
+    `<p class="hint">入った後もエリア・店舗・部門は選び直せます。</p></div></div></div></div>`;
+  vGateArea(S.area);
+}
+async function vGateArea(area){
+  S.area=area;
+  const sel=$("vStore"); if(sel) sel.innerHTML=`<option value="">読み込み中\u2026</option>`;
+  try{ const r=await API.stores(area,S.ym); S.stores=r.stores||[]; }catch(e){ S.stores=[]; }
+  if(sel) sel.innerHTML=`<option value="">店舗を選択</option>`+S.stores.map(s=>`<option value="${esc(s.slug)}">${esc(s.short)}</option>`).join("");
+  vGateCheck();
+}
+function vGateCheck(){ const b=$("vEnterBtn"); if(b) b.disabled=!($("vStore")&&$("vStore").value&&$("vDept")&&$("vDept").value); }
+function vEnter(){
+  const slug=$("vStore").value, dept=$("vDept").value; if(!slug||!dept) return;
+  S.storeTab=slug; S.dept=dept; S.entered=true; renderViewerApp();
+}
+function vBackToGate(){ S.entered=false; renderViewerGate(); }
+
+async function renderViewerApp(){
+  $("page").style.background="#E1F5FE";
+  const store=S.stores.find(x=>x.slug===S.storeTab);
+  const areaSel=`<select onchange="vChangeArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?"selected":""}>${esc(a)}</option>`).join("")+`</select>`;
+  const storeSel=`<select id="vaStore" onchange="vChangeStore(this.value)">`+S.stores.map(s=>`<option value="${esc(s.slug)}" ${s.slug===S.storeTab?"selected":""}>${esc(s.short)}</option>`).join("")+`</select>`;
+  const deptSel=`<select onchange="vChangeDept(this.value)">`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?"selected":""}>${esc(d)}</option>`).join("")+`</select>`;
+  const ymSel=`<select onchange="vChangeYm(this.value)">`+S.meta.year_months.map(y=>`<option value="${esc(y)}" ${y===S.ym?"selected":""}>${esc(y.slice(0,4))}年${Number(y.slice(4))}月</option>`).join("")+`</select>`;
+  $("app").innerHTML=
+    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2></div>`+
+    `<div class="asgbar"><span class="chip a">${esc(S.area)}</span><span class="chip s">${esc(store?store.short:"")}</span><span class="chip d">${esc(S.dept)}</span>`+
+    `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="vBackToGate()">選び直す</button></div>`+
+    `<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">店舗</span>${storeSel}<span class="lb">部門</span>${deptSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="vSnap" onchange="vChangeSnap(this.value)"></select>`+
+    `<span id="vSheetBox" style="margin-left:auto"></span></div>`+
+    `<div id="vbody"><div class="note">読み込み中\u2026</div></div>`;
+  await vLoadSnaps();
+  vRenderSheetBtn();
+  vRenderBody();
+}
+async function vLoadSnaps(){
+  try{ const s=await API.snapshots(S.area,S.ym); S.snaps=s.snapshots||[]; S.snap=s.default||(S.snaps[0]&&S.snaps[0].snapshot)||""; }
+  catch(e){ S.snaps=[]; S.snap=""; }
+  const sel=$("vSnap"); if(sel){ sel.innerHTML=S.snaps.length?S.snaps.map(o=>`<option value="${esc(o.snapshot)}">${esc(o.label)}</option>`).join(""):`<option>\u2014</option>`; if(S.snap) sel.value=S.snap; }
+}
+function vRenderSheetBtn(){ const b=$("vSheetBox"); if(b) b.innerHTML=`<button class="btn primary" onclick="vOpenSheet(this)">\uD83D\uDCD7 スプレッドシートで開く（Excel保存可）</button> <span id="vSheetMsg" class="lb"></span>`; }
+async function vChangeArea(a){ S.area=a; try{const r=await API.stores(a,S.ym);S.stores=r.stores||[];}catch(e){S.stores=[];} if(!S.stores.some(s=>s.slug===S.storeTab))S.storeTab=(S.stores[0]&&S.stores[0].slug)||""; renderViewerApp(); }
+async function vChangeStore(slug){ S.storeTab=slug; await vLoadSnaps(); vRenderBody(); }
+function vChangeDept(d){ S.dept=d; vRenderBody(); }
+async function vChangeYm(y){ S.ym=y; try{const r=await API.stores(S.area,y);S.stores=r.stores||[];}catch(e){} await vLoadSnaps(); vRenderBody(); }
+function vChangeSnap(v){ S.snap=v; vRenderBody(); }
+
+/* 読み取り専用APD（横並び・入力なし） */
+function apdReadonly(cm){
+  const n=Math.max(cm.A.length,cm.P.length,cm.D.length);
+  let h=`<table class="cmt"><thead><tr><th style="width:26px">#</th><th>\u2705 A：改善アクション</th><th>\uD83D\uDCCB P：計画</th><th>\uD83C\uDFAF D：実行（結果）</th><th style="width:64px">済</th></tr></thead><tbody>`;
+  for(let i=0;i<n;i++){ const a=cm.A[i], rs=!!(a&&a.resolved);
+    h+=`<tr class="${rs?"cmresolved":""}"><td class="cmmark">${MARKS[i]||(i+1)}</td>`+
+      [cm.A[i],cm.P[i],cm.D[i]].map(it=>`<td>${it?`<div class="cmtext">${esc(it.text)}</div>`:""}</td>`).join("")+
+      `<td style="text-align:center">${rs?`<span class="badge bd-ok">済 ${esc(String(a.resolved_at||"").slice(5,10))}</span>`:""}</td></tr>`;
+  }
+  if(!n) h+=`<tr><td></td><td colspan="3" class="cmempty">（記入なし）</td><td></td></tr>`;
+  return h+`</tbody></table>`;
+}
+async function vRenderBody(){
+  const b=$("vbody"); if(!b) return; b.innerHTML=`<div class="note">読み込み中\u2026</div>`;
+  const store=S.stores.find(x=>x.slug===S.storeTab); if(!store||!S.snap){ b.innerHTML=`<div class="note">データ期間がありません。年月・エリアを変えてお試しください。</div>`; return; }
+  const sp=s8(S.snap);
+  const section=(head,chipCls,chipTxt,inner)=>`<div class="cmcard"><div class="chips"><span class="chip ${chipCls}">${esc(chipTxt)}</span><b>${esc(head)}</b><span class="lb">${esc(snapLabelNow())}</span></div>${inner}</div>`;
+  try{
+    const selfD=await API.detailStore(S.area,S.ym,S.snap,S.dept,S.storeTab).catch(e=>isNoFile(e)?null:Promise.reject(e));
+    const areaD=await API.detail(S.area,S.ym,S.snap,S.dept).catch(e=>isNoFile(e)?null:Promise.reject(e));
+    const selfCm=await capi("getComments",S.ym,sp,S.area,store.full,S.dept);
+    const areaCm=await capi("getComments",S.ym,sp,S.area,"",S.dept);
+    const nodata=`<div class="note">この条件の実績データがありません。</div>`;
+    b.innerHTML=
+      section(`自店舗・自部門（${store.short}／${S.dept}）`,"s",store.short,(selfD?renderSection(selfD):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(selfCm))+
+      section(`エリア共通（${S.area}／${S.dept}）`,"a",S.area,(areaD?renderSection(areaD):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(areaCm));
+  }catch(e){ b.innerHTML=`<div class="err">データを取得できません：${esc(String(e&&e.message||e))}</div>`; }
+}
+
+/* \u2500\u2500 スプレッドシート即時生成（GAS即時生成方式） \u2500\u2500 */
+function viewerSheetSpec(){
+  const a=aslug(S.area), d=dslug(S.dept), sp=s8(S.snap), store=S.stores.find(x=>x.slug===S.storeTab);
+  return { fileName:`PDCA_${S.area}_${S.dept}_${store?store.short:""}_${S.ym}_${sp}`, tabs:[
+    { name:`自店舗（${store?store.short:""}）`, title:`${S.area}／${store?store.short:""}／${S.dept}`, subtitle:snapLabelNow(),
+      path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}__${store?store.slug:""}.json`, key:{ym:S.ym,snap8:sp,area:S.area,store:store?store.full:"",dept:S.dept} },
+    { name:`エリア共通（${S.area}）`, title:`${S.area} エリア共通／${S.dept}`, subtitle:snapLabelNow(),
+      path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}.json`, key:{ym:S.ym,snap8:sp,area:S.area,store:"",dept:S.dept} }
+  ]};
+}
+function bulkSheetSpec(area,dept){
+  const a=aslug(area), d=dslug(dept), sp=s8(S.snap);
+  const tabs=[{ name:"エリア共通", title:`${area} エリア共通／${dept}`, subtitle:snapLabelNow(),
+    path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}.json`, key:{ym:S.ym,snap8:sp,area:area,store:"",dept:dept} }];
+  S.stores.forEach(st=>tabs.push({ name:st.short, title:`${area}／${st.short}／${dept}`, subtitle:snapLabelNow(),
+    path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}__${st.slug}.json`, key:{ym:S.ym,snap8:sp,area:area,store:st.full,dept:dept} }));
+  return { fileName:`PDCA会議_${area}_${dept}_${S.ym}_${sp}`, tabs };
+}
+async function openSheet(spec,btn,msgEl){
+  if(btn) btn.disabled=true; const restore=btn?btn.textContent:""; if(btn) btn.textContent="生成中\u2026";
+  if(msgEl) msgEl.innerHTML=`<span class="lb">スプレッドシートを生成中\u2026（数秒かかります）</span>`;
+  try{ const r=await capi("buildPdcaSheet",spec);
+    if(msgEl) msgEl.innerHTML=`<a class="btn primary" href="${esc(r.url)}" target="_blank" rel="noopener" style="text-decoration:none">\uD83D\uDCD7 スプレッドシートを開く</a>`;
+    try{ window.open(r.url,"_blank"); }catch(e){}
+  }catch(e){ if(msgEl) msgEl.innerHTML=`<span class="err">生成に失敗: ${esc(String(e&&e.message||e))}</span>`; }
+  finally{ if(btn){ btn.disabled=false; btn.textContent=restore; } }
+}
+function vOpenSheet(btn){ openSheet(viewerSheetSpec(),btn,$("vSheetMsg")); }
+async function bulkOpenSheet(btn){
+  if(!S.stores.length){ try{const r=await API.stores(S.area,S.ym);S.stores=r.stores||[];}catch(e){} }
+  openSheet(bulkSheetSpec(S.area,S.dept),btn,$("bulkMsg"));
+}
+
+boot();
+</script>
+</body>
+</html>
