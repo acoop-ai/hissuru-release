@@ -632,7 +632,7 @@ function mockApi(fn,args){
     mockSave(rows); return Promise.resolve({item_id:id}); }
   if(fn==="deleteComment"){ mockSave(mockRows().filter(r=>r.item_id!==args[0])); return Promise.resolve({deleted:true}); }
   if(fn==="uploadInbox") return Promise.resolve({ok:true,name:args[1],by:"ローカル開発",at:"(モック)"});
-  if(fn==="getCommentsSheetUrl") return Promise.resolve("https://docs.google.com/spreadsheets/d/17zZlRvUDtgT2kTMnFjXOqiV6db8l_KKh_a_ngiQyzxc/edit");
+  if(fn==="getCommentsSheetUrl") return Promise.resolve("");  // ローカルは正本Sheetへのリンクなし（実IDは公開しない）
   if(fn==="buildPdcaSheet"){ window.__lastSpec=args[0]; return Promise.resolve({url:"https://docs.google.com/spreadsheets/d/MOCK_"+encodeURIComponent(args[0].fileName)+"/edit",id:"mock"}); }
   return Promise.reject(new Error("mock未対応: "+fn));
 }
