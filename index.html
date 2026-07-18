@@ -278,22 +278,28 @@ const ratio=(c,b)=>!b?"\u2014":(c/b*100).toFixed(1)+"%";
 function judge(hib,diff){ if(Math.abs(diff)<1e-9) return "n"; const good=(hib!==false)?diff>0:diff<0; return good?"g":"b"; }
 
 /* 縦積みセル（金額=計/実績/前/計比/前比、率=実績/前/前差/計差） */
+/* セルは全列とも「計 → 実績 → 前年 → 計画差 → 前年差」の5段固定。
+   計画が無い列は空欄を置いて段数を揃える（列をまたいで実績が必ず同じ行に来るように）。 */
 function cellHtml(cell,col,dark){
-  if(!cell||cell.current==null) return `<div class="cell n">\u2014</div>`;
-  const hib=col.higher_is_better; const cur=cell.current, yoy=cell.yoy, bud=cell.budget;
-  const yDiff=cur-(yoy||0); const hasB=bud!=null && bud!==0; const pDiff=hasB?cur-bud:0;
-  if(col.type==="rate"){
-    let h=`<div class="cell">`;
-    h+=`<div class="act">${pct(cur)}</div><div class="prev">前 ${pct(yoy)}</div>`;
-    h+=`<div class="${judge(hib,yDiff)}">前差 ${ppt(yDiff)}</div>`;
-    if(hasB) h+=`<div class="${judge(hib,pDiff)}">計差 ${ppt(pDiff)}</div>`;
-    return h+`</div>`;
-  }
+  if(!cell||cell.current==null) return `<div class="cell n">—</div>`;
+  const hib=col.higher_is_better, cur=cell.current, yoy=cell.yoy, bud=cell.budget;
+  const isRate=(col.type==="rate");
+  const hasB=(bud!=null && bud!==0);
+  const yDiff=cur-(yoy||0), pDiff=hasB?cur-bud:0;
+  const fmt=v=>isRate?pct(v):kyen(v);
   let h=`<div class="cell">`;
-  if(hasB) h+=`<div class="bud">計 ${kyen(bud)}</div>`;
-  h+=`<div class="act">${kyen(cur)}</div><div class="prev">前 ${kyen(yoy)}</div>`;
-  if(hasB) h+=`<div class="${judge(hib,pDiff)}">計比 ${ratio(cur,bud)} <span style="opacity:.8">${dkyen(pDiff)}</span></div>`;
-  h+=`<div class="${judge(hib,yDiff)}">前比 ${ratio(cur,yoy)} <span style="opacity:.8">${dkyen(yDiff)}</span></div>`;
+  // ①計画
+  h+= hasB ? `<div class="bud">計 ${fmt(bud)}</div>` : `<div class="bud">&nbsp;</div>`;
+  // ②実績（この行が全列で揃う）
+  h+=`<div class="act">${fmt(cur)}</div>`;
+  // ③前年
+  h+=`<div class="prev">前 ${fmt(yoy)}</div>`;
+  // ④計画との差（上）
+  h+= hasB
+    ? `<div class="${judge(hib,pDiff)}">${isRate?`計差 ${ppt(pDiff)}`:`計比 ${ratio(cur,bud)} <span style="opacity:.8">${dkyen(pDiff)}</span>`}</div>`
+    : `<div class="n">&nbsp;</div>`;
+  // ⑤前年との差（下）
+  h+=`<div class="${judge(hib,yDiff)}">${isRate?`前差 ${ppt(yDiff)}`:`前比 ${ratio(cur,yoy)} <span style="opacity:.8">${dkyen(yDiff)}</span>`}</div>`;
   return h+`</div>`;
 }
 
