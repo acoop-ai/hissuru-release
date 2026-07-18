@@ -116,6 +116,30 @@
   .cmcell{width:100%;min-height:26px;border:none;background:transparent;font-family:inherit;font-size:13px;line-height:1.5;resize:none;padding:2px 3px;outline:none;box-sizing:border-box;display:block;}
   .cmcell:focus{background:#fff;box-shadow:0 0 0 2px #7dd3fc inset;border-radius:4px;}
   .badge.bd-ok{background:#dcfce7;color:#166534;}
+
+  /* アップロード進捗（フリーズ誤認の防止）: 押下感・スピナー・進捗バー・処理中オーバーレイ */
+  .btn:active:not(:disabled){transform:scale(.97);}
+  .btn.busy{position:relative;color:transparent !important;}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px;}
+  .spin.dark{border-color:rgba(2,132,199,.3);border-top-color:#0284c7;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .upbox{margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#f8fafc;}
+  .upbox .uphead{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#0f172a;}
+  .upbar{height:8px;border-radius:999px;background:#e2e8f0;overflow:hidden;margin-top:8px;}
+  .upbar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,#0284c7,#38bdf8);transition:width .25s;}
+  .uplist{margin-top:8px;font-size:12px;line-height:1.7;}
+  .uprow{display:flex;align-items:center;gap:6px;}
+  .uprow .st{width:18px;text-align:center;}
+  .uprow.done{color:#166534;} .uprow.fail{color:#b91c1c;} .uprow.wait{color:#94a3b8;} .uprow.now{color:#0369a1;font-weight:600;}
+  .upnote{font-size:11px;color:var(--muted);margin-top:6px;}
+  /* データ鮮度の警告バー（HQ側の同期・取込が止まった時に気づけるように） */
+  #freshBar{display:flex;align-items:flex-start;gap:10px;background:#fef2f2;border-bottom:2px solid #fecaca;color:#7f1d1d;padding:10px 16px;font-size:13px;line-height:1.6;}
+  #freshBar.warn{background:#fffbeb;border-bottom-color:#fde68a;color:#78350f;}
+  #freshBar b{font-weight:700;}
+  #busyOverlay{position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;z-index:200;}
+  #busyOverlay .bcard{background:#fff;border-radius:14px;padding:20px 26px;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:center;min-width:260px;}
+  #busyOverlay .bttl{font-weight:700;font-size:14px;margin-top:10px;color:#0f172a;}
+  #busyOverlay .bsub{font-size:12px;color:var(--muted);margin-top:4px;}
   #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:13px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .3s;z-index:99;pointer-events:none;}
   #toast.bad{background:#b91c1c;}
 </style>
@@ -410,6 +434,33 @@ async function boot(){
   renderLogin_();
 }
 
+/* ── 表示データの鮮度チェック ──
+   outbox(meta.json) の最終更新が古い＝HQ側の同期/取込が止まっている可能性。
+   2026-07-18 に同期が4日間停止し、ユーザーが「アップロードしたのに反映されない」と気づけなかった事故を受けて追加。 */
+/* 判定と描画（純粋関数・単体で検証可能）: 24時間以上古ければバーを出す。3日以上は赤 */
+function renderFreshBar_(metaUpdated){
+  const old=$("freshBar"); if(old) old.remove();
+  if(!metaUpdated) return false;
+  const t=new Date(String(metaUpdated).replace(/-/g,"/"));   // "yyyy-MM-dd HH:mm:ss"
+  if(isNaN(t)) return false;
+  const hours=(Date.now()-t.getTime())/36e5;
+  if(hours<24) return false;                // 1日以内は正常（通常は5分毎に更新される）
+  const days=Math.floor(hours/24);
+  const bar=document.createElement("div");
+  bar.id="freshBar"; bar.className = hours>=72 ? "" : "warn";   // 3日以上は赤・それ未満は黄
+  bar.innerHTML=`<span>${hours>=72?"🔴":"⚠️"}</span><span><b>表示中のデータは ${esc(metaUpdated)} 時点のものです（約${days}日前）。</b>`+
+    `本部側のデータ更新が停止している可能性があります。新しくアップロードした受払CSV・予算はまだ反映されていません。`+
+    `<br>お手数ですが、この表示が続く場合は本部（システム担当）へご連絡ください。</span>`;
+  const page=$("page");
+  if(page && page.parentNode) page.parentNode.insertBefore(bar, page);
+  return true;
+}
+async function checkFreshness_(){
+  if(!IS_GAS) return;                       // ローカルはミラーなので判定しない
+  try{ const f=await capi("getDataFreshness"); renderFreshBar_(f && f.metaUpdated); }
+  catch(e){ /* 鮮度が取れなくても本体の利用は妨げない */ }
+}
+
 /* ログイン画面（会社Google・4ドメイン限定） */
 function renderLogin_(msg){
   $("page").style.background="";
@@ -458,6 +509,7 @@ async function startApp_(){
     S.viewMode=detectMode();
     booted=true;
     if(S.viewMode==="viewer") renderViewerGate(); else renderGate();
+    checkFreshness_();   // 表示データの鮮度を確認（HQ側の同期停止に気づけるように・非同期で邪魔しない）
   }catch(e){ booted=true; $("app").innerHTML=`<div class="err">初期化エラー：${esc(e.message||e)}</div>`; }
 }
 
@@ -816,10 +868,10 @@ async function renderDataManage(){
   v.innerHTML=`<div class="chips"><span>\u2699\uFE0F</span><b>データ管理</b><span class="lb">受払CSV・年度予算の取込（アップロード後、HQ側が自動処理）</span></div>`+
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCCA 取込状況（最終バッチ結果）</div><div id="dmStatus" class="lb">読み込み中\u2026</div></div>`+
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 受払CSV 取込</div>`+
-      `<div class="cmadd"><input type="file" id="dmUke" multiple accept=".csv"><button class="btn primary" onclick="dmUpUke()">アップロード</button></div>`+
+      `<div class="cmadd"><input type="file" id="dmUke" multiple accept=".csv"><button class="btn primary" id="dmUkeBtn" onclick="dmUpUke(this)">アップロード</button></div>`+
       `<div class="lb" style="margin-top:6px">アップロード後、5分毎の自動処理で取込\u2192表示データ再生成。重複ファイルは自動判定で除外されます。</div><div id="dmUkeMsg"></div></div>`+
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 年度予算（xlsx・スプレッドシート）</div>`+
-      `<div class="cmadd"><input type="file" id="dmBud" multiple accept=".xlsx" onchange="budAdd()"><button class="btn primary" id="dmBudBtn" onclick="dmUpBud()">まとめてアップロード</button></div>`+
+      `<div class="cmadd"><input type="file" id="dmBud" multiple accept=".xlsx" onchange="budAdd()"><button class="btn primary" id="dmBudBtn" onclick="dmUpBud(this)">まとめてアップロード</button></div>`+
       `<div class="cmadd" style="margin-top:6px"><button class="btn" onclick="budPickOpen('root')">\uD83D\uDCC2 マイドライブから選ぶ</button><button class="btn" onclick="budPickOpen('shared')">\uD83D\uDC65 共有アイテムから選ぶ</button></div>`+
       `<div id="dmPick"></div>`+
       `<div class="lb" style="margin-top:6px">PCのファイルでも、ドライブから選んでもOK（スプレッドシートはxlsxへ自動変換）。ファイル名は自由\u2014\u2014名前から<b>年度・エリアを自動判定</b>し「{年度}_{エリア}.xlsx」へ正規化して取込みます。何度でも<b>積み上げ</b>OK、同じファイル・同じ 年度\u00D7エリア の<b>重複は自動排除</b>。<b>東北は3エリア（北東北・宮城・山形）が1冊のままでOK</b>（取込時に自動分割）。判定できなかった行（赤）だけ年度・エリアを選んでください。</div>`+
@@ -838,16 +890,77 @@ function dmStatusHtml(st){
   return h;
 }
 function fileB64(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=rej; r.readAsDataURL(f); }); }
-async function dmUpUke(){
-  const fs=$("dmUke").files; if(!fs.length){ toast("CSVファイルを選択してください",true); return; }
-  const msg=$("dmUkeMsg"); msg.innerHTML=""; let ok=0;
-  for(const f of fs){
-    try{ const r=await capi("uploadInbox","uke",f.name,await fileB64(f),"text/csv"); ok++;
-      msg.innerHTML+=`<div class="lb">\u2705 ${esc(r.name)}（${esc(r.by||"")}）</div>`; }
-    catch(e){ msg.innerHTML+=`<div class="err">\u274C ${esc(f.name)}: ${esc(String(e&&e.message||e))}</div>`; }
+
+/* ── アップロード進捗UI（フリーズ誤認の防止）──
+   ①画面全体を覆う処理中オーバーレイ（誤操作・二重送信も物理的に防ぐ）
+   ②ファイル毎の状態リスト（待機/送信中/完了/失敗）と進捗バー
+   ③ボタンはスピナー付き「送信中…」に変え、押下を無効化 */
+function busyOverlay_(show, title, sub){
+  let o=$("busyOverlay");
+  if(!show){ if(o) o.remove(); return; }
+  if(!o){ o=document.createElement("div"); o.id="busyOverlay"; document.body.appendChild(o); }
+  o.innerHTML=`<div class="bcard"><span class="spin dark" style="width:26px;height:26px;border-width:3px;margin:0"></span>`+
+    `<div class="bttl">${esc(title||"処理中です")}</div><div class="bsub">${esc(sub||"画面を閉じずにお待ちください")}</div></div>`;
+}
+function upProgress_(host, names, title){
+  const rows=names.map((n,i)=>`<div class="uprow wait" id="up_${i}"><span class="st">…</span><span>${esc(n)}</span></div>`).join("");
+  host.innerHTML=`<div class="upbox"><div class="uphead"><span class="spin dark"></span><span id="upTtl">${esc(title)}</span></div>`+
+    `<div class="upbar"><i id="upBar"></i></div><div class="uplist">${rows}</div>`+
+    `<div class="upnote">送信中です。完了までこのタブを閉じないでください。</div></div>`;
+  const total=names.length;
+  return {
+    step(i, state, extra){
+      const el=$("up_"+i); if(el){
+        el.className="uprow "+state;
+        el.querySelector(".st").textContent = state==="now"?"▶" : state==="done"?"✅" : state==="fail"?"❌" : "…";
+        if(extra) el.innerHTML += ` <span style="opacity:.8">${esc(extra)}</span>`;
+      }
+      const doneCount=names.filter((_,k)=>{const e=$("up_"+k);return e&&(/done|fail/.test(e.className));}).length;
+      const bar=$("upBar"); if(bar) bar.style.width=Math.round(doneCount/total*100)+"%";
+      const t=$("upTtl"); if(t) t.textContent=`${title}（${doneCount}/${total}）`;
+    },
+    finish(okCount, failCount){
+      const box=host.querySelector(".upbox"); if(!box) return;
+      const sp=box.querySelector(".spin"); if(sp) sp.remove();
+      const t=$("upTtl"); if(t) t.textContent = failCount? `完了（成功 ${okCount} / 失敗 ${failCount}）` : `完了（${okCount} 件すべて成功）`;
+      const note=box.querySelector(".upnote");
+      if(note) note.textContent = failCount ? "失敗した行は内容をご確認のうえ再度お試しください。" : "取込は5分毎の自動処理で行われます。上の「取込状況」でご確認ください。";
+    }
+  };
+}
+/* ボタンを送信中状態に（押下感＋二重送信防止） */
+function btnBusy_(btn, on, label){
+  if(!btn) return;
+  if(on){ btn._label=btn.innerHTML; btn.disabled=true; btn.innerHTML=`<span class="spin"></span>${esc(label||"送信中…")}`; }
+  else { btn.disabled=false; if(btn._label) btn.innerHTML=btn._label; }
+}
+let UKEUP=false;  // 二重実行ガード
+async function dmUpUke(btn){
+  if(UKEUP){ toast("アップロード処理中です。完了までお待ちください",true); return; }
+  const fs=[...($("dmUke").files||[])];
+  if(!fs.length){ toast("CSVファイルを選択してください",true); return; }
+  UKEUP=true;
+  btn=btn||$("dmUkeBtn");
+  btnBusy_(btn,true,"送信中…");
+  busyOverlay_(true,"受払CSVを送信中です",`0 / ${fs.length} 件`);
+  const pg=upProgress_($("dmUkeMsg"), fs.map(f=>f.name), "アップロード中");
+  let ok=0, ng=0;
+  try{
+    for(let i=0;i<fs.length;i++){
+      const f=fs[i];
+      pg.step(i,"now");
+      busyOverlay_(true,"受払CSVを送信中です",`${i+1} / ${fs.length} 件目：${f.name}`);
+      try{
+        const r=await capi("uploadInbox","uke",f.name,await fileB64(f),"text/csv");
+        ok++; pg.step(i,"done",`（${r.by||""}）`);
+      }catch(e){ ng++; pg.step(i,"fail",String(e&&e.message||e)); }
+    }
+  } finally {
+    UKEUP=false; btnBusy_(btn,false); busyOverlay_(false);
+    pg.finish(ok,ng);
+    $("dmUke").value="";
   }
   if(ok) toast(ok+" 件をアップロードしました（5分毎に自動取込）");
-  $("dmUke").value="";
 }
 /* \u2500\u2500 予算取込キュー: ファイル選択のたびに積み上げ、名前から年度・エリアを自動判定して
      「{年度}_{エリア}.xlsx」へ正規化。同一ファイル・同一 年度\u00D7エリア は自動排除。
@@ -915,32 +1028,37 @@ function budRenderQ(){
   }).join("");
 }
 let BUP=false; // 二重実行ガード（連打・処理中の再クリックを無効化）
-async function dmUpBud(){
+async function dmUpBud(btn){
   if(BUP){ toast("アップロード処理中です。完了までお待ちください",true); return; }
-  if(!BQ.length){ toast("ファイルを選択（またはURLを追加）してください",true); return; }
+  if(!BQ.length){ toast("ファイルを選択（またはドライブから追加）してください",true); return; }
   if(BQ.some(x=>!(x.year&&x.area))){ toast("年度・エリア未確定（赤）の行を修正してください",true); return; }
   const items=BQ.filter(x=>!x.done);
-  const btn=$("dmBudBtn"); BUP=true; if(btn) btn.disabled=true;
-  const msg=$("dmBudMsg"); msg.innerHTML="";
-  const seen={}; let ok=0, n=0;
+  btn=btn||$("dmBudBtn");
+  BUP=true; btnBusy_(btn,true,"送信中…");
+  busyOverlay_(true,"年度予算を送信中です",`0 / ${items.length} 件`);
+  const pg=upProgress_($("dmBudMsg"), items.map(x=>x.name), "アップロード中");
+  const seen={}; let ok=0, ng=0;
   try{
-    for(const x of items){
-      n++; if(btn) btn.textContent=`アップロード中\u2026 ${n}/${items.length}`;
+    for(let i=0;i<items.length;i++){
+      const x=items[i];
       const dest=`${x.year}_${x.area}.xlsx`;
-      if(seen[dest]){ x.done=true; continue; }  // 同一 年度\u00D7エリア は先勝ちで自動排除
+      if(seen[dest]){ x.done=true; pg.step(i,"done","（重複のため送信省略）"); continue; }
       seen[dest]=1;
+      pg.step(i,"now");
+      busyOverlay_(true,"年度予算を送信中です",`${i+1} / ${items.length} 件目：${dest}`);
       try{
         if(x.driveId) await capi("uploadInboxFromDrive",x.driveId,dest);
         else await capi("uploadInbox","budget",dest,await fileB64(x.f),_XLSX_MIME);
         ok++; x.done=true;
-        msg.innerHTML+=`<div class="lb">\u2705 ${esc(x.name)} \u2192 ${esc(dest)}${x.area==="東北"?"（北東北・宮城・山形へ自動分割）":""}</div>`; }
-      catch(e){ msg.innerHTML+=`<div class="err">\u274C ${esc(x.name)}: ${esc(String(e&&e.message||e))}</div>`; }
+        pg.step(i,"done",`→ ${dest}${x.area==="東北"?"（3エリアへ自動分割）":""}`);
+      }catch(e){ ng++; pg.step(i,"fail",String(e&&e.message||e)); }
     }
   } finally {
-    BUP=false; if(btn){ btn.disabled=false; btn.textContent="まとめてアップロード"; }
+    BUP=false; btnBusy_(btn,false); busyOverlay_(false);
+    pg.finish(ok,ng);
     BQ=BQ.filter(x=>!x.done); budRenderQ();
   }
-  if(ok) toast(ok+" 件をアップロードしました（Drive受け渡し箱へ配置完了。取込は5分毎の自動処理\u2192上の「取込状況」で確認）");
+  if(ok) toast(ok+" 件をアップロードしました（取込は5分毎の自動処理→上の「取込状況」で確認）");
 }
 
 /* \u2500\u2500 モード検出: getLocation で ?mode=viewer を判定。応答が無くても1.5秒で必ず確定（起動を止めない） \u2500\u2500 */
