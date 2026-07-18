@@ -49,9 +49,15 @@
   .rb-buyer{background:var(--sky100);color:var(--sky800);} .rb-admin{background:#fef3c7;color:#92400e;} .rb-viewer{background:#f1f5f9;color:#475569;}
 
   /* モードタブ */
-  .modes{display:flex;flex-wrap:wrap;gap:4px;margin:18px 0 0;}
+  .modes{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:18px 0 0;}
   .modes button{border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;padding:6px 11px;color:#334155;}
   .modes button.on{background:#0284c7;border-color:#0284c7;color:#fff;font-weight:600;}
+  /* 管理者用（データ管理）は閲覧系タブと明確に別物と分かるよう、右端へ隔離＋琥珀色の枠 */
+  .modes .admin-sep{margin-left:auto;display:flex;align-items:center;gap:6px;padding-left:14px;border-left:2px dashed #e2e8f0;}
+  .modes .admin-sep .lbl{font-size:10px;color:#b45309;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+  .modes button.admin{border:1px solid #f59e0b;background:#fffbeb;color:#92400e;font-weight:700;}
+  .modes button.admin:hover{background:#fef3c7;}
+  .modes button.admin.on{background:#b45309;border-color:#b45309;color:#fff;}
 
   /* 選択バー・タブ */
   .selbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0;}
@@ -456,8 +462,23 @@ async function startApp_(){
 }
 
 /* 入室ゲート */
+/* ── 前回の担当を利用者ごとに記憶（毎回の選び直しを軽減）。キーはログイン中のメール単位 ── */
+function prefKey_(){ return "hissuru_pref_" + (authedEmail || "local"); }
+function savePref_(o){ try{ localStorage.setItem(prefKey_(), JSON.stringify(Object.assign(loadPref_(), o))); }catch(e){} }
+function loadPref_(){ try{ return JSON.parse(localStorage.getItem(prefKey_())||"{}")||{}; }catch(e){ return {}; } }
+/* 保存済みの担当を既定値として S へ反映（存在するものだけ・入室ボタンは毎回押す＝無記名防止は維持） */
+function applyPref_(){
+  const p=loadPref_();
+  if(p.role && ROLES.some(r=>r.k===p.role)) S.role=p.role;
+  if(p.area && S.meta.areas.includes(p.area)) S.area=p.area;
+  if(p.dept && S.meta.departments.includes(p.dept)) S.dept=p.dept;
+  return p;
+}
+
 function renderGate(){
   $("page").style.background="";
+  const p=applyPref_();
+  const restored=!!(p.role||p.area||p.dept);
   const roleCards=ROLES.map(r=>`<button class="role ${S.role===r.k?'on':''}" onclick="setRole('${r.k}')"><div class="rt">${r.icon} ${r.label}</div><div class="rd">${r.desc}</div></button>`).join("");
   const areaSel=`<select id="gArea" onchange="S.area=this.value"><option value="">担当エリアを選択</option>`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
   const deptSel=`<select id="gDept" onchange="S.dept=this.value"><option value="">担当部門を選択</option>`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`;
@@ -469,6 +490,7 @@ function renderGate(){
     `<div class="cbody"><div class="roles">${roleCards}</div>${selects}`+
     `<div style="margin-top:10px"><button class="btn primary" style="width:100%;padding:10px" id="gEnter" onclick="enter()">\uD83D\uDEAA ${S.role==="viewer"?"閲覧者として入室する":"この担当で入室する"}</button>`+
     `<p class="warn" id="gWarn" style="display:none"></p>`+
+    (restored?`<p class="hint" style="color:#166534">前回の担当を復元しました。このままでよければ入室してください。</p>`:"")+
     `<p class="hint">入室後も上部のバーから担当を変更できます。コメントの記入は担当範囲のみ。</p></div></div></div></div>`;
   updateGate();
 }
@@ -482,6 +504,7 @@ document.addEventListener("change",updateGate);
 function enter(){
   const ready=S.role==="viewer"||(S.role==="admin"&&S.area)||(S.role==="buyer"&&S.area&&S.dept); if(!ready) return;
   S.asg={role:S.role,area:S.area,dept:S.dept};
+  savePref_({role:S.role,area:S.area,dept:S.dept});   // 次回の入室で復元
   S.entered=true; renderApp();
 }
 
@@ -494,8 +517,12 @@ function renderApp(){
   const asg=`<div class="asgbar"><span class="lb">担当：</span><span class="role-badge ${rb}">${roleLabel}</span>`+
     (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(a.role==="buyer"?`<span class="chip d">${esc(a.dept)}</span>`:"")+
     `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
-  const tabs=MODES.concat(a.role!=="viewer"?["データ管理"]:[]);
-  const modes=`<div class="modes">`+tabs.map(m=>`<button class="${S.mode===m?'on':''}" onclick="setMode('${m}')">${modeIcon(m)} ${m}</button>`).join("")+`</div>`;
+  // 閲覧系タブ（左）と 管理者用データ管理（右端に隔離）を視覚的に分ける
+  const modeBtns=MODES.map(m=>`<button class="${S.mode===m?'on':''}" onclick="setMode('${m}')">${modeIcon(m)} ${m}</button>`).join("");
+  const adminBtn=(a.role!=="viewer")
+    ? `<span class="admin-sep"><span class="lbl">管理者用</span><button class="admin ${S.mode==="データ管理"?'on':''}" onclick="setMode('データ管理')" title="受払CSV・年度予算の取込（管理者向け）">${modeIcon("データ管理")} データ管理</button></span>`
+    : "";
+  const modes=`<div class="modes">`+modeBtns+adminBtn+`</div>`;
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
     asg+modes+`<div id="view" style="margin-top:14px"><div class="note">読み込み中\u2026</div></div>`;
@@ -928,14 +955,19 @@ function snapLabelNow(){ const s=S.snaps.find(x=>x.snapshot===S.snap); return s?
 
 function renderViewerGate(){
   $("page").style.background="";
+  const p=loadPref_();
+  if(p.area && S.meta.areas.includes(p.area)) S.area=p.area;
+  if(p.dept && S.meta.departments.includes(p.dept)) S.dept=p.dept;
+  const restored=!!(p.area||p.dept||p.storeSlug);
   const areaSel=`<select id="vArea" onchange="vGateArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?"selected":""}>${esc(a)}</option>`).join("")+`</select>`;
-  const deptSel=`<select id="vDept" onchange="vGateCheck()"><option value="">部門を選択</option>`+S.meta.departments.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("")+`</select>`;
+  const deptSel=`<select id="vDept" onchange="vGateCheck()"><option value="">部門を選択</option>`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?"selected":""}>${esc(d)}</option>`).join("")+`</select>`;
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2><p class="subtitle">自分の店舗・部門の数値と、やるべきこと（A/P/D）をひと目で確認</p></div>`+
     `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">\uD83C\uDFEA</div><h3>店舗と部門を選んでください</h3>`+
     `<p class="cdesc">あなたのお店と担当部門を選ぶと、自店舗のPDCAとエリア共通の方針が見られます。</p></div>`+
     `<div class="cbody"><div class="gate-selects"><span class="lb">エリア：</span>${areaSel}<span class="lb">店舗：</span><select id="vStore" onchange="vGateCheck()"><option value="">読み込み中\u2026</option></select><span class="lb">部門：</span>${deptSel}</div>`+
     `<div style="margin-top:10px"><button class="btn primary" style="width:100%;padding:10px" id="vEnterBtn" onclick="vEnter()" disabled>\uD83D\uDD0E 自店舗のPDCAを開く</button>`+
+    (restored?`<p class="hint" style="color:#166534">前回のお店・部門を復元しました。このままでよければ開いてください。</p>`:"")+
     `<p class="hint">入った後もエリア・店舗・部門は選び直せます。</p></div></div></div></div>`;
   vGateArea(S.area);
 }
@@ -943,12 +975,16 @@ async function vGateArea(area){
   S.area=area;
   const sel=$("vStore"); if(sel) sel.innerHTML=`<option value="">読み込み中\u2026</option>`;
   try{ const r=await API.stores(area,S.ym); S.stores=r.stores||[]; }catch(e){ S.stores=[]; }
-  if(sel) sel.innerHTML=`<option value="">店舗を選択</option>`+S.stores.map(s=>`<option value="${esc(s.slug)}">${esc(s.short)}</option>`).join("");
+  if(sel){
+    const want=(loadPref_().storeSlug)||"";   // 前回の店舗を復元（同じエリアに在る場合のみ）
+    sel.innerHTML=`<option value="">店舗を選択</option>`+S.stores.map(s=>`<option value="${esc(s.slug)}" ${s.slug===want?"selected":""}>${esc(s.short)}</option>`).join("");
+  }
   vGateCheck();
 }
 function vGateCheck(){ const b=$("vEnterBtn"); if(b) b.disabled=!($("vStore")&&$("vStore").value&&$("vDept")&&$("vDept").value); }
 function vEnter(){
   const slug=$("vStore").value, dept=$("vDept").value; if(!slug||!dept) return;
+  savePref_({area:S.area,storeSlug:slug,dept:dept});   // 次回の入室で復元
   S.storeTab=slug; S.dept=dept; S.entered=true; renderViewerApp();
 }
 function vBackToGate(){ S.entered=false; renderViewerGate(); }
