@@ -140,6 +140,28 @@
   #busyOverlay .bcard{background:#fff;border-radius:14px;padding:20px 26px;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:center;min-width:260px;}
   #busyOverlay .bttl{font-weight:700;font-size:14px;margin-top:10px;color:#0f172a;}
   #busyOverlay .bsub{font-size:12px;color:var(--muted);margin-top:4px;}
+  /* ご利用ガイド（ヘッダー右上から開く） */
+  header .ghelp{margin-left:10px;padding:4px 10px;font-size:12px;white-space:nowrap;border-color:var(--sky700);color:var(--sky800);background:var(--sky50);font-weight:600;}
+  header .ghelp:hover{background:var(--sky100);}
+  #guide{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;}
+  #guide .gcard{background:#fff;border-radius:14px;width:100%;max-width:880px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.28);}
+  #guide .ghead{display:flex;align-items:center;gap:10px;padding:13px 18px;border-bottom:1px solid var(--border);}
+  #guide .ghead h2{font-size:16px;margin:0;} #guide .ghead .gsub{font-size:11px;color:var(--muted);}
+  #guide .gclose{margin-left:auto;}
+  #guide .gbody{overflow:auto;padding:14px 20px 26px;}
+  #guide h3{font-size:14px;margin:20px 0 6px;color:var(--sky800);border-left:4px solid var(--sky700);padding-left:8px;}
+  #guide h3:first-child{margin-top:4px;}
+  #guide p,#guide li{font-size:13px;line-height:1.75;color:#334155;margin:4px 0;}
+  #guide ul{margin:4px 0 6px 20px;padding:0;}
+  #guide .gnote{background:var(--sky50);border:1px solid var(--sky100);border-radius:8px;padding:9px 12px;font-size:12.5px;line-height:1.7;color:var(--sky800);margin:8px 0;}
+  #guide .gwarn{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:9px 12px;font-size:12.5px;line-height:1.7;color:#92400e;margin:8px 0;}
+  #guide .gadmin{display:inline-block;background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-size:10px;font-weight:700;border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle;}
+  #guide table{border-collapse:collapse;width:100%;margin:8px 0;font-size:12.5px;}
+  #guide th,#guide td{border:1px solid var(--border);padding:5px 9px;text-align:left;vertical-align:top;}
+  #guide th{background:var(--bg-muted);white-space:nowrap;}
+  #guide .gcell{display:inline-block;border:1px dashed var(--border);border-radius:6px;padding:6px 10px;background:#fff;line-height:1.5;}
+  #guide .gcell .bud{color:var(--amber);font-size:11px;} #guide .gcell .act{font-weight:700;font-size:12px;}
+  #guide .gcell .prev{color:var(--muted);font-size:11px;}
   #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:13px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .3s;z-index:99;pointer-events:none;}
   #toast.bad{background:#b91c1c;}
 </style>
@@ -147,8 +169,9 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-18a</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-18b</span></h1></div>
   <span class="user" id="user"></span>
+  <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
 <div class="page" id="page">
 <main id="app"><div class="note">読み込み中…</div></main>
@@ -917,6 +940,113 @@ function fileB64(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r
    ①画面全体を覆う処理中オーバーレイ（誤操作・二重送信も物理的に防ぐ）
    ②ファイル毎の状態リスト（待機/送信中/完了/失敗）と進捗バー
    ③ボタンはスピナー付き「送信中…」に変え、押下を無効化 */
+/* ビルド表記はヘッダーの1か所だけを出所にする（二重管理で食い違わせない） */
+const BUILD=((document.querySelector("header .sub")||{}).textContent||"").replace(/^.*?・/,"").trim();
+/* ===== ご利用ガイド =====
+   ヘッダー右上から開く。閲覧者には管理者向けの節を出さない（迷わせないため）。 */
+function guideHtml_(){
+  const role=(S.asg&&S.asg.role)||S.role||"";
+  const isViewer=(role==="viewer");
+  const cell=`<span class="gcell"><span class="bud">計 5,000</span><br><span class="act">4,475</span><br>`+
+    `<span class="prev">前 4,210</span><br><span class="b">計比 89.5% △525</span><br><span class="g">前比 106.3% +265</span></span>`;
+  let h="";
+
+  h+=`<h3>1. このシステムは何をするものですか</h3>`+
+    `<p>店舗・部門の売上や粗利といった<b>数値（Check）</b>を確認し、そこから見えた課題への<b>改善アクション（A/P/D）を書き残す</b>ための PDCA プラットフォームです。数値は本部で集計されたものが自動で届くので、皆さんが数字を入力する必要はありません。</p>`;
+
+  h+=`<h3>2. ログイン</h3>`+
+    `<p>会社の Google アカウントでログインします。次の4つのドメインのいずれかであれば、どの会社アカウントでも利用できます。</p>`+
+    `<ul><li>jaz-acoop.co.jp ／ jaz-acoop1.jp ／ jaz-acoop2.jp ／ jaz-acoop3.jp</li></ul>`+
+    `<div class="gwarn">個人の Gmail ではログインできません。ログイン画面が出たら、会社アカウントを選んでください。<br>別のアカウントで開いてしまった場合は、右上のログアウトから入り直してください。</div>`;
+
+  h+=`<h3>3. 入室（あなたの担当を選ぶ）</h3>`+
+    `<p>最初の画面で「何者として使うか」を選びます。ここで選んだ範囲だけコメントを書けます。</p>`+
+    `<table><tr><th>担当</th><th>できること</th></tr>`+
+    `<tr><td>✎ 部門担当</td><td>選んだエリアの<b>担当部門だけ</b>コメントを記入できます（バイヤー・店長・主任）</td></tr>`+
+    `<tr><td>🛡 全体管理者</td><td>課長以上。選んだエリアの<b>全部門</b>にコメントを記入できます</td></tr>`+
+    `<tr><td>👁 閲覧者</td><td>数値の閲覧のみ。コメントは読めますが記入はできません</td></tr></table>`+
+    `<div class="gnote">前回選んだ担当は自動で記憶されます。次回からは開いてそのまま入室できます。担当は入室後も上部のバーからいつでも変更できます。</div>`;
+
+  h+=`<h3>4. 画面の見方（会議タブ）</h3>`+
+    `<p>上部のタブで見る単位を切り替えます。会議の場面に合わせて選んでください。</p>`+
+    `<ul><li><b>商品部詳細／商品部全体</b>：部門ごとの商品分類まで掘り下げて見る／部門横断で全体を見る</li>`+
+    `<li><b>運営部詳細／運営部全体</b>：運営部の視点でまとめた表</li>`+
+    `<li><b>仕入分析</b>：仕入の状況を確認する</li>`+
+    `<li><b>店舗事業部会議</b>：店舗ごとの数値を見る（下に店舗タブが出ます）</li></ul>`;
+
+  h+=`<h3>5. 数値の読み方（1マスの中身）</h3>`+
+    `<p>表の1マスは、上から順に<b>いつも同じ5段</b>で並んでいます。列が違っても「実績」は必ず同じ高さに来るので、横に見比べられます。</p>`+
+    `<table><tr><th style="width:150px">表示例</th><th>意味</th></tr>`+
+    `<tr><td rowspan="5">${cell}</td><td>① <b>計</b> ＝ 計画（予算）。予算が無い項目は空欄になります</td></tr>`+
+    `<tr><td>② <b>実績</b>（水色の帯）＝ 今回の数値。<b>ここが一番見たい数字です</b></td></tr>`+
+    `<tr><td>③ <b>前</b> ＝ 前年の同じ時期の数値</td></tr>`+
+    `<tr><td>④ <b>計比／計差</b> ＝ 計画に対しての比率と差額（上段）</td></tr>`+
+    `<tr><td>⑤ <b>前比／前差</b> ＝ 前年に対しての比率と差額（下段）</td></tr></table>`+
+    `<p>④⑤の色は <span class="g"><b>青＝良い</b></span>／<span class="b"><b>赤＝悪い</b></span>です。値引率のように「低いほど良い」項目は、下回っていれば青になります。金額の単位は<b>千円</b>です。</p>`;
+
+  h+=`<h3>6. データ期間（速報と月末確定のちがい）— 重要</h3>`+
+    `<p>画面上部の「データ期間」で、いつ時点の数値かを切り替えます。2種類あります。</p>`+
+    `<table><tr><th>表示</th><th>中身</th><th>使いどころ</th></tr>`+
+    `<tr><td>📊 速報</td><td>月の途中に週次で取得した数値</td><td>月中の進捗確認</td></tr>`+
+    `<tr><td>📌 月末確定</td><td>棚卸を含めて締めた確定値</td><td><b>会議・評価はこちら</b></td></tr></table>`+
+    `<div class="gwarn">速報を表示している間は画面に注意バナーが出ます。棚卸がまだの部門は<b>粗利が実際より高めに出ます</b>ので、速報の粗利で判断しないでください。<br>「📌 月末確定」が選択肢に出てこない月は、本部でまだ確定データが取り込まれていません（数日お待ちください）。</div>`;
+
+  h+=`<h3>7. 店舗ごとに見る</h3>`+
+    `<p>「店舗事業部会議」タブでは、表の上に店舗タブが並びます。エリア合計と店舗別を行き来できます。</p>`+
+    `<div class="gnote">店舗タブの顔ぶれは<b>データ期間ごとに変わります</b>。その期間に受払データが上がってきた店舗だけが並ぶためです。「先週はあった店舗が無い」場合は、まずデータ期間を切り替えて確認してください。</div>`;
+
+  if(!isViewer){
+    h+=`<h3>8. コメント（A / P / D）の書き方</h3>`+
+      `<p>数値表の下に、課題ごとのコメント欄があります。<b>横1行が1つの課題</b>で、左から A（現状分析）→ P（改善計画）→ D（実行したこと）と並びます。同じ課題を横に追いかける形です。</p>`+
+      `<ul><li><b>そのまま入力できます</b>。入力欄をクリックして書くだけです</li>`+
+      `<li><b>保存ボタンはありません</b>。書いた内容はスプレッドシートと同じように自動で保存されます</li>`+
+      `<li>一番下には常に空の行が用意されています。そこに書けば課題が増えます</li>`+
+      `<li>対応が終わった課題は行の「済」を押します。押し間違えたら「戻す」で解除できます</li>`+
+      `<li>担当範囲外の欄には「閲覧のみ」と表示され、記入できません</li></ul>`+
+      `<div class="gnote">コメントの元データはスプレッドシートです。一覧で見たい・印刷したいときは、コメント欄の右上「📄 スプレッドシートで開く」から直接開けます（フォルダを探しに行く必要はありません）。</div>`;
+
+    h+=`<h3>9. データ管理<span class="gadmin">管理者用</span></h3>`+
+      `<p>タブの右端にある「データ管理」は、本部でデータを取り込む担当者のための入口です。受払CSVと年度予算を投入します。</p>`+
+      `<ul><li>ファイルは<b>複数まとめて</b>選べます。年度・エリア・店舗などはファイル名と中身から自動で判定されます</li>`+
+      `<li>赤く表示された行は自動判定できなかったものです。手で直してから送信してください</li>`+
+      `<li>送信中は進捗が表示されます。<b>完了するまでタブを閉じないでください</b></li>`+
+      `<li>送信＝即反映ではありません。本部側の自動取込（約5分間隔）を経て画面に出ます</li></ul>`;
+  }
+
+  h+=`<h3>${isViewer?"8":"10"}. データはいつ新しくなりますか</h3>`+
+    `<p>本部で取り込まれたデータが、およそ<b>5分間隔</b>で自動的にこの画面へ届きます。皆さんの操作は必要ありません。</p>`+
+    `<div class="gnote">もし更新が長く止まっている場合は、画面上部に「表示中のデータは◯◯時点のものです」という警告バーが自動で出ます。このバーが出たら、古い数値を見ている可能性がありますので本部へご連絡ください。</div>`;
+
+  h+=`<h3>${isViewer?"9":"11"}. うまくいかないとき</h3>`+
+    `<table><tr><th>症状</th><th>まず試すこと</th></tr>`+
+    `<tr><td>ログインできない</td><td>個人 Gmail になっていないか確認し、会社アカウントで入り直してください</td></tr>`+
+    `<tr><td>数値が出ない・空欄が多い</td><td>データ期間を切り替えてみてください。その期間のデータが未取込の可能性があります</td></tr>`+
+    `<tr><td>店舗が少ない</td><td>データ期間ごとに店舗の顔ぶれが変わります（上記7）</td></tr>`+
+    `<tr><td>画面が崩れる・古いまま</td><td>ブラウザで再読み込み（F5）してください</td></tr>`+
+    `<tr><td>それでも直らない</td><td>本部（システム担当）へ、画面下部のビルド番号を添えてご連絡ください</td></tr></table>`;
+
+  return h;
+}
+function openGuide(){
+  closeGuide();
+  const o=document.createElement("div");
+  o.id="guide";
+  o.innerHTML=`<div class="gcard" role="dialog" aria-modal="true" aria-label="ご利用ガイド">`+
+    `<div class="ghead"><span style="font-size:18px">📖</span>`+
+    `<div><h2>ご利用ガイド</h2><div class="gsub">ヒッスル（PDCA プラットフォーム）・${esc(BUILD)}</div></div>`+
+    `<button class="btn gclose" onclick="closeGuide()">閉じる</button></div>`+
+    `<div class="gbody">${guideHtml_()}</div></div>`;
+  o.addEventListener("click",e=>{ if(e.target===o) closeGuide(); });   // 背景クリックで閉じる
+  document.body.appendChild(o);
+  document.addEventListener("keydown",guideEsc_);
+  o.querySelector(".gbody").focus&&o.querySelector(".gbody").focus();
+}
+function closeGuide(){
+  const o=$("guide"); if(o) o.remove();
+  document.removeEventListener("keydown",guideEsc_);
+}
+function guideEsc_(e){ if(e.key==="Escape") closeGuide(); }
+
 function busyOverlay_(show, title, sub){
   let o=$("busyOverlay");
   if(!show){ if(o) o.remove(); return; }
