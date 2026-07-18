@@ -147,7 +147,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-17a</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-18a</span></h1></div>
   <span class="user" id="user"></span>
 </header>
 <div class="page" id="page">
@@ -255,10 +255,26 @@ async function loadJson(prod,sample){
   const m=await fetch("../outbox_mirror/"+prod); if(m.ok) return m.json();
   const r=await fetch("../samples/"+sample); if(!r.ok) throw new Error("サンプル未収載（ローカルは北関東・農産等の一部のみ）"); return r.json();
 }
+/* サンプルへ落とさない厳格版。「無ければ別のファイルへ」という分岐に使う
+   （サンプルに救済されると欠損に気づけず、誤ったデータを表示してしまうため）。 */
+async function loadJsonStrict(prod){
+  if(IS_GAS) return JSON.parse(await gsCall("getJson",prod));
+  const m=await fetch("../outbox_mirror/"+prod);
+  if(!m.ok) throw new Error("未収載: "+prod);
+  return m.json();
+}
 const API={
   meta:()=>loadJson("meta.json","meta.json"),
   snapshots:(a,ym)=>loadJson(`snapshots/${aslug(a)}__${ym}.json`,`snapshots__${aslug(a)}_${ym}.json`),
-  stores:(a,ym)=>loadJson(`stores/${aslug(a)}__${ym}.json`,`stores__${aslug(a)}.json`),
+  /* 店舗一覧は「データ期間ごと」に異なる（その週に受払が上がった店だけ載る）。
+     スナップショット別ファイルを優先し、無ければ従来ファイルにフォールバック（HQ 2026-07-18 対応）。 */
+  stores:async (a,ym,sp)=>{
+    const k=s8(sp||"");
+    if(k){
+      try{ return await loadJsonStrict(`stores/${aslug(a)}__${ym}__${k}.json`); }catch(e){ /* 未生成の期間は従来ファイルへ */ }
+    }
+    return loadJson(`stores/${aslug(a)}__${ym}.json`,`stores__${aslug(a)}.json`);
+  },
   detail:(a,ym,sp,d)=>loadJson(`c/shohin_detail__${aslug(a)}__${dslug(d)}__${ym}__${s8(sp)}.json`,`c__shohin_detail__${aslug(a)}_${dslug(d)}.json`),
   detailStore:(a,ym,sp,d,slug)=>loadJson(`c/shohin_detail__${aslug(a)}__${dslug(d)}__${ym}__${s8(sp)}__${slug}.json`,`c__shohin_detail_store__${aslug(a)}_${dslug(d)}_${slug}.json`),
   byStore:(a,ym,sp,d)=>loadJson(`c/by_store__${aslug(a)}__${dslug(d)}__${ym}__${s8(sp)}.json`,`c__by_store__${aslug(a)}_${dslug(d)}.json`),
@@ -657,14 +673,14 @@ async function drawBody(){
 }
 function onArea(v){ S.area=v; refreshView(); }
 function onYm(v){ S.ym=v; refreshView(); }
-function onSnap(v){ S.snap=v; drawScope(); drawBody(); }
+async function onSnap(v){ S.snap=v; await loadStores(); drawStoreTabs(); drawScope(); drawBody(); }
 function onDept(v){ S.dept=v; drawScope(); drawBody(); }
 
 // 店舗タブ（前回開発機の店舗タブ再現：エリア合計＋各店舗）。商品部詳細/運営部詳細/店舗事業部会議で表示。
 const STORE_MODES=["商品部詳細","運営部詳細","店舗事業部会議"];
 async function loadStores(){
   if(!STORE_MODES.includes(S.mode)){ S.stores=[]; return; }
-  try{ const r=await API.stores(S.area,S.ym); S.stores=r.stores||[]; }catch(e){ S.stores=[]; }
+  try{ const r=await API.stores(S.area,S.ym,S.snap); S.stores=r.stores||[]; }catch(e){ S.stores=[]; }
   if(S.storeTab!=="__total__" && !S.stores.some(s=>s.slug===S.storeTab)) S.storeTab="__total__";
 }
 function drawStoreTabs(){
@@ -1098,7 +1114,7 @@ function renderViewerGate(){
 async function vGateArea(area){
   S.area=area;
   const sel=$("vStore"); if(sel) sel.innerHTML=`<option value="">読み込み中\u2026</option>`;
-  try{ const r=await API.stores(area,S.ym); S.stores=r.stores||[]; }catch(e){ S.stores=[]; }
+  try{ const r=await API.stores(area,S.ym,S.snap); S.stores=r.stores||[]; }catch(e){ S.stores=[]; }
   if(sel){
     const want=(loadPref_().storeSlug)||"";   // 前回の店舗を復元（同じエリアに在る場合のみ）
     sel.innerHTML=`<option value="">店舗を選択</option>`+S.stores.map(s=>`<option value="${esc(s.slug)}" ${s.slug===want?"selected":""}>${esc(s.short)}</option>`).join("");
@@ -1137,10 +1153,10 @@ async function vLoadSnaps(){
   const sel=$("vSnap"); if(sel){ sel.innerHTML=S.snaps.length?S.snaps.map(o=>`<option value="${esc(o.snapshot)}">${esc(o.label)}</option>`).join(""):`<option>\u2014</option>`; if(S.snap) sel.value=S.snap; }
 }
 function vRenderSheetBtn(){ const b=$("vSheetBox"); if(b) b.innerHTML=`<button class="btn primary" onclick="vOpenSheet(this)">\uD83D\uDCD7 スプレッドシートで開く（Excel保存可）</button> <span id="vSheetMsg" class="lb"></span>`; }
-async function vChangeArea(a){ S.area=a; try{const r=await API.stores(a,S.ym);S.stores=r.stores||[];}catch(e){S.stores=[];} if(!S.stores.some(s=>s.slug===S.storeTab))S.storeTab=(S.stores[0]&&S.stores[0].slug)||""; renderViewerApp(); }
+async function vChangeArea(a){ S.area=a; try{const r=await API.stores(a,S.ym,S.snap);S.stores=r.stores||[];}catch(e){S.stores=[];} if(!S.stores.some(s=>s.slug===S.storeTab))S.storeTab=(S.stores[0]&&S.stores[0].slug)||""; renderViewerApp(); }
 async function vChangeStore(slug){ S.storeTab=slug; await vLoadSnaps(); vRenderBody(); }
 function vChangeDept(d){ S.dept=d; vRenderBody(); }
-async function vChangeYm(y){ S.ym=y; try{const r=await API.stores(S.area,y);S.stores=r.stores||[];}catch(e){} await vLoadSnaps(); vRenderBody(); }
+async function vChangeYm(y){ S.ym=y; try{const r=await API.stores(S.area,y,S.snap);S.stores=r.stores||[];}catch(e){} await vLoadSnaps(); vRenderBody(); }
 function vChangeSnap(v){ S.snap=v; vRenderBody(); }
 
 /* 読み取り専用APD（横並び・入力なし） */
@@ -1201,7 +1217,7 @@ async function openSheet(spec,btn,msgEl){
 }
 function vOpenSheet(btn){ openSheet(viewerSheetSpec(),btn,$("vSheetMsg")); }
 async function bulkOpenSheet(btn){
-  if(!S.stores.length){ try{const r=await API.stores(S.area,S.ym);S.stores=r.stores||[];}catch(e){} }
+  if(!S.stores.length){ try{const r=await API.stores(S.area,S.ym,S.snap);S.stores=r.stores||[];}catch(e){} }
   openSheet(bulkSheetSpec(S.area,S.dept),btn,$("bulkMsg"));
 }
 
