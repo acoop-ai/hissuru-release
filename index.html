@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
+<!-- 多層防御(第零条実践規範§7-4): 出口封鎖CSP。connect/imgを自ドメイン＋Google認証系だけに限定し、
+     万一XSSが通っても盗んだデータを外部へ送れない状態を作る。script/frameはGoogleログインを壊さぬよう寛容に。 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://accounts.google.com https://apis.google.com; script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com https://www.googleapis.com https://accounts.google.com; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com">
 <title>ヒッスル（PDCA）</title>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
@@ -169,7 +172,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-18b</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-20a</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -266,6 +269,9 @@ async function gsCall(fn, ...args){
 }
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+/* URLスキーム検証(第零条実践規範§7-2): href/src は引用符エスケープだけでなくスキームも許可リスト。
+   https:/mailto: 以外（javascript: 等）は無効化して "#" に落とす。 */
+function safeUrl_(u){ u=String(u==null?"":u).trim(); return (/^https:\/\//i.test(u)||/^mailto:/i.test(u))?u:"#"; }
 
 /* \u2500\u2500 データアダプタ（本番outbox命名＝HQ確定 / ローカルはサンプル） \u2500\u2500 */
 const SLUG={area:{},dept:{}};
@@ -799,7 +805,7 @@ function drawComments(){
   const sel=S.snaps.find(x=>x.snapshot===S.snap);
   const anyEdit=SECTIONS.some(s=>canEditSec(s.k));
   let h=`<div class="cmcard"><div class="cmhead"><b>PDCA アクション</b><span class="lb">${esc(scope)}・${esc(sel?sel.label:"")}${IS_GAS?"":"（ローカル＝保存はこの端末のみ）"}</span><span class="lb" id="cmsave"></span>`+
-    (S.sheetUrl?`<a href="${esc(S.sheetUrl)}" target="_blank" rel="noopener" class="btn" style="margin-left:auto;text-decoration:none;padding:3px 10px;font-size:12px">\uD83D\uDCC4 スプレッドシートで開く</a>`:"")+`</div>`;
+    (S.sheetUrl?`<a href="${esc(safeUrl_(S.sheetUrl))}" target="_blank" rel="noopener" class="btn" style="margin-left:auto;text-decoration:none;padding:3px 10px;font-size:12px">\uD83D\uDCC4 スプレッドシートで開く</a>`:"")+`</div>`;
   h+=`<table class="cmt"><thead><tr><th style="width:26px">#</th>`;
   SECTIONS.forEach(s=>{
     h+=`<th style="width:31%">${s.icon} ${esc(s.label)}${canEditSec(s.k)?"":` <span class="badge" style="background:#e2e8f0;color:#475569">閲覧のみ</span>`}</th>`;
@@ -1340,7 +1346,7 @@ async function openSheet(spec,btn,msgEl){
   if(btn) btn.disabled=true; const restore=btn?btn.textContent:""; if(btn) btn.textContent="生成中\u2026";
   if(msgEl) msgEl.innerHTML=`<span class="lb">スプレッドシートを生成中\u2026（数秒かかります）</span>`;
   try{ const r=await capi("buildPdcaSheet",spec);
-    if(msgEl) msgEl.innerHTML=`<a class="btn primary" href="${esc(r.url)}" target="_blank" rel="noopener" style="text-decoration:none">\uD83D\uDCD7 スプレッドシートを開く</a>`;
+    if(msgEl) msgEl.innerHTML=`<a class="btn primary" href="${esc(safeUrl_(r.url))}" target="_blank" rel="noopener" style="text-decoration:none">\uD83D\uDCD7 スプレッドシートを開く</a>`;
     try{ window.open(r.url,"_blank"); }catch(e){}
   }catch(e){ if(msgEl) msgEl.innerHTML=`<span class="err">生成に失敗: ${esc(String(e&&e.message||e))}</span>`; }
   finally{ if(btn){ btn.disabled=false; btn.textContent=restore; } }
