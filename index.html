@@ -173,7 +173,8 @@
   #printTitle .ptitle{font-size:16px;font-weight:700;color:#0f172a;}
   #printTitle .psub{font-size:11px;color:#334155;margin-top:2px;}
   @media print{
-    header, h2.title, .subtitle, .selbar, .asgbar, .modes, #vSheetBox, #busyOverlay, #guide, #toast, .btn{display:none !important;}
+    header, h2.title, .subtitle, .selbar, .asgbar, .modes, #storetabs, #scope .chips, #vSheetBox, #busyOverlay, #guide, #toast, .btn{display:none !important;}
+    .page-break{page-break-before:always;}
     #printTitle{display:block !important;margin:0 0 10px;padding-bottom:6px;border-bottom:2px solid #0f172a;}
     .page{background:#fff !important;min-height:auto !important;}
     main{padding:0 !important;max-width:none !important;}
@@ -188,7 +189,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-21a</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-21b</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -644,13 +645,15 @@ function renderApp(){
   const modes=`<div class="modes">`+modeBtns+adminBtn+`</div>`;
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
-    asg+modes+`<div id="view" style="margin-top:14px"><div class="note">読み込み中\u2026</div></div>`;
+    asg+modes+`<div id="printTitle"></div>`+`<div id="view" style="margin-top:14px"><div class="note">読み込み中\u2026</div></div>`;
   refreshView();
 }
 function modeIcon(m){ return m.startsWith("商品部")?"\uD83D\uDED2":m.startsWith("運営部")?"\uD83C\uDFE2":m==="仕入分析"?"\uD83D\uDCE6":m==="店舗事業部会議"?"\uD83C\uDFEA":m==="データ管理"?"\u2699\uFE0F":"\u2022"; }
 function backToGate(){ S.entered=false; S.asg=null; if(S.mode==="データ管理")S.mode="商品部詳細"; renderGate(); }
 function setMode(m){ S.mode=m; renderApp(); }
 function openStoreView_(){ try{ window.open(location.href.split("?")[0]+"?mode=viewer","_blank","noopener"); }catch(e){} }
+function needDept_(m){ return m==="商品部詳細"||m==="商品部全体"||m==="仕入分析"||m==="運営部詳細"; }
+function printHq_(){ const t=$("printTitle"); if(!t){ window.print(); return; } const store=(STORE_MODES.includes(S.mode)&&S.storeTab&&S.storeTab!=="__total__")?S.stores.find(x=>x.slug===S.storeTab):null; const parts=[esc(S.area)]; if(needDept_(S.mode))parts.push(esc(S.dept)); if(STORE_MODES.includes(S.mode))parts.push(store?esc(store.short):"エリア合計"); t.innerHTML=`<div class="ptitle">ヒッスル｜${esc(S.mode)} ${parts.join("／")}</div><div class="psub">${esc(snapLabelNow())} ／ 印刷日時 ${esc(nowStamp_())}</div>`; window.print(); }
 
 /* 選択バー（エリア/年月/データ期間/部門）＋スコープチップ＋本文 */
 async function refreshView(){
@@ -660,7 +663,7 @@ async function refreshView(){
   const ymSel=`<select onchange="onYm(this.value)">`+S.meta.year_months.map(y=>`<option value="${esc(y)}" ${y===S.ym?'selected':''}>${esc(y.slice(0,4))}年${Number(y.slice(4))}月</option>`).join("")+`</select>`;
   const needDept=(S.mode==="商品部詳細"||S.mode==="商品部全体"||S.mode==="仕入分析"||S.mode==="運営部詳細");
   const deptSel=needDept?`<span class="lb">部門</span><select onchange="onDept(this.value)">`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`:"";
-  v.innerHTML=`<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="snapSel" onchange="onSnap(this.value)"></select>${deptSel}</div>`+
+  v.innerHTML=`<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="snapSel" onchange="onSnap(this.value)"></select>${deptSel}<button class="btn" style="margin-left:auto" onclick="printHq_()" title="表示中のモード（この画面）を印刷します">🖨 印刷</button></div>`+
     `<div id="storetabs"></div><div id="scope"></div><div id="body"><div class="note">読み込み中\u2026</div></div>`;
   await loadSnaps();
   await loadStores();
@@ -1270,7 +1273,7 @@ async function vGateArea(area){
   try{ const r=await API.stores(area,S.ym,S.snap); S.stores=r.stores||[]; }catch(e){ S.stores=[]; }
   if(sel){
     const want=(loadPref_().storeSlug)||"";   // 前回の店舗を復元（同じエリアに在る場合のみ）
-    sel.innerHTML=`<option value="">店舗を選択</option>`+S.stores.map(s=>`<option value="${esc(s.slug)}" ${s.slug===want?"selected":""}>${esc(s.short)}</option>`).join("");
+    sel.innerHTML=`<option value="">店舗を選択</option><option value="__area__" ${want==="__area__"?"selected":""}>エリア合計（店舗指定なし）</option><option value="__all__" ${want==="__all__"?"selected":""}>全店（各店まとめて）</option>`+S.stores.map(s=>`<option value="${esc(s.slug)}" ${s.slug===want?"selected":""}>${esc(s.short)}</option>`).join("");
   }
   vGateCheck();
 }
@@ -1286,12 +1289,12 @@ async function renderViewerApp(){
   $("page").style.background="#E1F5FE";
   const store=S.stores.find(x=>x.slug===S.storeTab);
   const areaSel=`<select onchange="vChangeArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?"selected":""}>${esc(a)}</option>`).join("")+`</select>`;
-  const storeSel=`<select id="vaStore" onchange="vChangeStore(this.value)">`+S.stores.map(s=>`<option value="${esc(s.slug)}" ${s.slug===S.storeTab?"selected":""}>${esc(s.short)}</option>`).join("")+`</select>`;
+  const storeSel=`<select id="vaStore" onchange="vChangeStore(this.value)"><option value="__area__" ${S.storeTab==="__area__"?"selected":""}>エリア合計</option><option value="__all__" ${S.storeTab==="__all__"?"selected":""}>全店（まとめて）</option>`+S.stores.map(s=>`<option value="${esc(s.slug)}" ${s.slug===S.storeTab?"selected":""}>${esc(s.short)}</option>`).join("")+`</select>`;
   const deptSel=`<select onchange="vChangeDept(this.value)">`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?"selected":""}>${esc(d)}</option>`).join("")+`</select>`;
   const ymSel=`<select onchange="vChangeYm(this.value)">`+S.meta.year_months.map(y=>`<option value="${esc(y)}" ${y===S.ym?"selected":""}>${esc(y.slice(0,4))}年${Number(y.slice(4))}月</option>`).join("")+`</select>`;
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2></div>`+
-    `<div class="asgbar"><span class="chip a">${esc(S.area)}</span><span class="chip s">${esc(store?store.short:"")}</span><span class="chip d">${esc(S.dept)}</span>`+
+    `<div class="asgbar"><span class="chip a">${esc(S.area)}</span><span class="chip s">${esc(vScopeLabel_())}</span><span class="chip d">${esc(S.dept)}</span>`+
     `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="vBackToGate()">選び直す</button></div>`+
     `<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">店舗</span>${storeSel}<span class="lb">部門</span>${deptSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="vSnap" onchange="vChangeSnap(this.value)"></select>`+
     `<span id="vSheetBox" style="margin-left:auto"></span></div>`+
@@ -1308,12 +1311,13 @@ async function vLoadSnaps(){
 }
 function vRenderSheetBtn(){ const b=$("vSheetBox"); if(b) b.innerHTML=`<button class="btn primary" onclick="printViewer_()" title="表示中の自店舗PDCAを印刷します（閲覧・印刷専用・書き込み不可）">🖨 印刷する</button>`; }
 function nowStamp_(){ const d=new Date(),p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"/"+p(d.getMonth()+1)+"/"+p(d.getDate())+" "+p(d.getHours())+":"+p(d.getMinutes()); }
-function printViewer_(){ const store=S.stores.find(x=>x.slug===S.storeTab), t=$("printTitle"); if(t) t.innerHTML=`<div class="ptitle">PDCA（ヒッスル） ${esc(S.area)}／${esc(store?store.short:"")}／${esc(S.dept)}</div><div class="psub">${esc(snapLabelNow())} ／ 印刷日時 ${esc(nowStamp_())} ／ 閲覧・印刷用（書き込み不可）</div>`; window.print(); }
+function vScopeLabel_(){ if(S.storeTab==="__area__")return "エリア合計"; if(S.storeTab==="__all__")return "全店"; const s=S.stores.find(x=>x.slug===S.storeTab); return s?s.short:""; }
+function printViewer_(){ const t=$("printTitle"); if(t) t.innerHTML=`<div class="ptitle">PDCA（ヒッスル） ${esc(S.area)}／${esc(vScopeLabel_())}／${esc(S.dept)}</div><div class="psub">${esc(snapLabelNow())} ／ 印刷日時 ${esc(nowStamp_())} ／ 閲覧・印刷用（書き込み不可）</div>`; window.print(); }
 async function vChangeArea(a){ S.area=a; try{const r=await API.stores(a,S.ym,S.snap);S.stores=r.stores||[];}catch(e){S.stores=[];} if(!S.stores.some(s=>s.slug===S.storeTab))S.storeTab=(S.stores[0]&&S.stores[0].slug)||""; renderViewerApp(); }
-async function vChangeStore(slug){ S.storeTab=slug; await vLoadSnaps(); vRenderBody(); }
+async function vChangeStore(slug){ S.storeTab=slug; const chip=document.querySelector('.asgbar .chip.s'); if(chip) chip.textContent=vScopeLabel_(); await vLoadSnaps(); vRenderBody(); }
 function vChangeDept(d){ S.dept=d; vRenderBody(); }
 async function vChangeYm(y){ S.ym=y; try{const r=await API.stores(S.area,y,S.snap);S.stores=r.stores||[];}catch(e){} await vLoadSnaps(); vRenderBody(); }
-function vChangeSnap(v){ S.snap=v; vRenderBody(); }
+async function vChangeSnap(v){ S.snap=v; try{const r=await API.stores(S.area,S.ym,v);S.stores=r.stores||[];}catch(e){} vRenderBody(); }
 
 /* 読み取り専用APD（横並び・入力なし） */
 function apdReadonly(cm){
@@ -1328,19 +1332,17 @@ function apdReadonly(cm){
   return h+`</tbody></table>`;
 }
 async function vRenderBody(){
-  const b=$("vbody"); if(!b) return; b.innerHTML=`<div class="note">読み込み中\u2026</div>`;
-  const store=S.stores.find(x=>x.slug===S.storeTab); if(!store||!S.snap){ b.innerHTML=`<div class="note">データ期間がありません。年月・エリアを変えてお試しください。</div>`; return; }
+  const b=$("vbody"); if(!b) return; b.innerHTML=`<div class="note">読み込み中…</div>`;
+  if(!S.snap){ b.innerHTML=`<div class="note">データ期間がありません。年月・エリアを変えてお試しください。</div>`; return; }
   const sp=s8(S.snap);
   const section=(head,chipCls,chipTxt,inner)=>`<div class="cmcard"><div class="chips"><span class="chip ${chipCls}">${esc(chipTxt)}</span><b>${esc(head)}</b><span class="lb">${esc(snapLabelNow())}</span></div>${inner}</div>`;
+  const nodata=`<div class="note">この条件の実績データがありません。</div>`;
+  const areaHtml=async()=>{ const d=await API.detail(S.area,S.ym,S.snap,S.dept).catch(e=>isNoFile(e)?null:Promise.reject(e)); const cm=await capi("getComments",S.ym,sp,S.area,"",S.dept); return section(`エリア共通（${S.area}／${S.dept}）`,"a",S.area,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(cm)); };
+  const storeHtml=async(st)=>{ const d=await API.detailStore(S.area,S.ym,S.snap,S.dept,st.slug).catch(e=>isNoFile(e)?null:Promise.reject(e)); const cm=await capi("getComments",S.ym,sp,S.area,st.full,S.dept); return section(`自店舗・自部門（${st.short}／${S.dept}）`,"s",st.short,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(cm)); };
   try{
-    const selfD=await API.detailStore(S.area,S.ym,S.snap,S.dept,S.storeTab).catch(e=>isNoFile(e)?null:Promise.reject(e));
-    const areaD=await API.detail(S.area,S.ym,S.snap,S.dept).catch(e=>isNoFile(e)?null:Promise.reject(e));
-    const selfCm=await capi("getComments",S.ym,sp,S.area,store.full,S.dept);
-    const areaCm=await capi("getComments",S.ym,sp,S.area,"",S.dept);
-    const nodata=`<div class="note">この条件の実績データがありません。</div>`;
-    b.innerHTML=
-      section(`自店舗・自部門（${store.short}／${S.dept}）`,"s",store.short,(selfD?renderSection(selfD):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(selfCm))+
-      section(`エリア共通（${S.area}／${S.dept}）`,"a",S.area,(areaD?renderSection(areaD):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(areaCm));
+    if(S.storeTab==="__area__"){ b.innerHTML=await areaHtml(); }
+    else if(S.storeTab==="__all__"){ let h=await areaHtml(); for(const st of S.stores){ h+=`<div class="page-break"></div>`+await storeHtml(st); } b.innerHTML=h||nodata; }
+    else { const store=S.stores.find(x=>x.slug===S.storeTab); if(!store){ b.innerHTML=nodata; return; } b.innerHTML=(await storeHtml(store))+(await areaHtml()); }
   }catch(e){ b.innerHTML=`<div class="err">データを取得できません：${esc(String(e&&e.message||e))}</div>`; }
 }
 
