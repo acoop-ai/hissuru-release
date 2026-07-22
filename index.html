@@ -179,8 +179,13 @@
     .page{background:#fff !important;min-height:auto !important;}
     main{padding:0 !important;max-width:none !important;}
     .cmcard{box-shadow:none !important;border:1px solid #94a3b8;break-inside:avoid;page-break-inside:avoid;margin-bottom:8px;}
-    .tbl-wrap{overflow:visible !important;}
+    /* 印刷の重なり防止: 画面用の高さ制限(70vh)と sticky を解除（印刷では位置ずれ＝重なりの原因） */
+    .tbl-wrap{overflow:visible !important;max-height:none !important;border:none !important;}
+    table.c thead th, table.c td.h{position:static !important;}
+    table.c thead th{background:#eef2f7 !important;}
     table.c, table.cmt{width:100% !important;}
+    table.c td, table.c th{padding:1px 6px !important;}
+    .cmcard{padding:8px !important;}
     body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     @page{size:A4 landscape;margin:10mm;}
   }
@@ -189,7 +194,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-21b</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-07-21c</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -1341,7 +1346,14 @@ async function vRenderBody(){
   const storeHtml=async(st)=>{ const d=await API.detailStore(S.area,S.ym,S.snap,S.dept,st.slug).catch(e=>isNoFile(e)?null:Promise.reject(e)); const cm=await capi("getComments",S.ym,sp,S.area,st.full,S.dept); return section(`自店舗・自部門（${st.short}／${S.dept}）`,"s",st.short,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(cm)); };
   try{
     if(S.storeTab==="__area__"){ b.innerHTML=await areaHtml(); }
-    else if(S.storeTab==="__all__"){ let h=await areaHtml(); for(const st of S.stores){ h+=`<div class="page-break"></div>`+await storeHtml(st); } b.innerHTML=h||nodata; }
+    else if(S.storeTab==="__all__"){
+      busyOverlay_(true,"全店をまとめています",`エリア共通＋${S.stores.length}店を読み込み中…（少しお待ちください）`);
+      try{
+        const area=await areaHtml();
+        const parts=await Promise.all(S.stores.map(st=>storeHtml(st).catch(e=>`<div class="cmcard"><div class="chips"><span class="chip s">${esc(st.short)}</span></div><div class="note">この店舗の読み込みに失敗しました。</div></div>`)));
+        b.innerHTML=area+parts.map(p=>`<div class="page-break"></div>`+p).join("");
+      } finally { busyOverlay_(false); }
+    }
     else { const store=S.stores.find(x=>x.slug===S.storeTab); if(!store){ b.innerHTML=nodata; return; } b.innerHTML=(await storeHtml(store))+(await areaHtml()); }
   }catch(e){ b.innerHTML=`<div class="err">データを取得できません：${esc(String(e&&e.message||e))}</div>`; }
 }
