@@ -197,7 +197,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-08-24b</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-08-24c</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -859,6 +859,9 @@ async function prevWeeks8_(area,ym,snap8,limit){
   }
   return out;
 }
+/* 中身のある記入が1件でもあるか。空文字だけの行（＝セルを消しただけ）は「記入なし」とみなす。
+   行を詰めないために空の item は残す設計なので、有無の判定は必ずこれを通す。 */
+function hasText_(arr){ return (arr||[]).some(x=>x&&String(x.text||"").trim()); }
 function lbl8_(s){ return String(s).slice(4,6)+"/"+String(s).slice(6,8); }
 function lblJa_(s){ return (+String(s).slice(4,6))+"月/"+(+String(s).slice(6,8))+"日"; }
 /* 指定スコープの前週D。直前週のDが空なら「PDCA対応がなかった週」とみなして更に遡り、
@@ -872,7 +875,7 @@ async function fetchPrevD_(area,ym,snap8,store,dept){
     const w=chain[i]; let c;
     try{ c=await capi("getComments",w.ym,w.snap8,area,store,dept); }catch(e){ return empty; }
     const D=c.D||[];
-    if(D.length) return {items:D,snap8:w.snap8,ym:w.ym,label:lbl8_(w.snap8),stale:i>0};
+    if(hasText_(D)) return {items:D,snap8:w.snap8,ym:w.ym,label:lbl8_(w.snap8),stale:i>0};
   }
   return empty;
 }
@@ -917,9 +920,10 @@ function drawComments(){
   if(!n) h+=`<tr><td></td><td colspan="3" class="cmempty">（記入なし）</td><td></td></tr>`;
   h+=`</tbody></table>`;
   if(anyEdit) h+=`<div class="lb" style="margin-top:6px">セルに直接入力すると自動保存されます。「\u2713済」は行（課題）単位の完了記録です。</div>`;
-  // 未着手警告：Aに前週からの課題が出ているのに、当週のP・Dが両方とも空＝サイクルが止まっている
-  if(CM.PREVD.length&&!CM.P.length&&!CM.D.length)
-    h+=`<div class="cmwarn">⚠ ${PREVD.stale?"PDCA対応がなかったため、前週のAをそのまま表示します。":""}<b>${esc(lblJa_(PREVD.snap8))}から課題更新が未着手です。</b>${MEV.on?"":"P（計画）とD（実行結果）を記入して、PDCAサイクルを進めてください。"}</div>`;
+  // 未着手警告：Aに前週からの課題が出ているのに、当週のD（実行結果）が空＝サイクルが止まっている
+  //   D が空なら P も成立していないものとして扱う（ユーザー仕様 2026-08-24）
+  if(CM.PREVD.length&&!hasText_(CM.D))
+    h+=`<div class="cmwarn">⚠ ${PREVD.stale?"PDCA対応がなかったため、前週のAをそのまま表示します。":""}<b>${esc(lblJa_(PREVD.snap8))}から課題更新が未着手です。</b>${MEV.on?"":(hasText_(CM.P)?"D（実行結果）を記入して、PDCAサイクルを進めてください。":"P（計画）とD（実行結果）を記入して、PDCAサイクルを進めてください。")}</div>`;
   if(MEV.on) h+=`<div class="gnote">📌 月末確定は <b>${esc(MEV.label)} 週のA／P／D</b> をそのまま表示しています（<b>閲覧のみ</b>）。確定値が出る時点では既に翌月のPDCAサイクルが始まっているため、この期間には書き込みません。</div>`;
   if(CM.PREVD.length) h+=`<div class="gnote">A欄は<b>一つ前の週（${esc(PREVD.label)}）のD＝実行結果</b>を自動表示しています（書き込み不可・書き込むのは P／D）。データ期間が後から追加された場合も、開き直せば常に<b>実在する直前の週</b>を指します。</div>`;
   el.innerHTML=h+`</div>`;
@@ -1007,13 +1011,29 @@ function enqueueSave(sec,id){
     }catch(e){ cmIndicator("err","\u26A0 保存失敗（入力を続けると自動で再保存します）"); }
   });
 }
+/* 削除は必ず「行（課題）」単位。1セルだけ配列から抜くと、その列だけ上に詰まって
+   A・P・D の対応がずれるため（2026-08-24 修正）、同じ行の全列をまとめて取り除いて番号を振り直す。
+   ※セルの中身を消しただけのときは行を詰めない（空欄のまま位置を保つ）。 */
 async function cDel(id){
-  if(!confirm("この行を削除しますか？")) return;
-  let sec=null; SECTIONS.forEach(s=>{ if((CM[s.k]||[]).some(x=>x.item_id===id)) sec=s.k; });
-  if(!sec) return;
-  CM[sec]=CM[sec].filter(x=>x.item_id!==id);
+  const cols=CM.PREVD.length?["PREVD","P","D"]:["A","P","D"];
+  let row=-1;
+  cols.forEach(s=>{ const k=(CM[s]||[]).findIndex(x=>x&&x.item_id===id); if(k>=0) row=k; });
+  if(row<0) return;
+  const targets=cols.map(s=>CM[s][row]).filter(Boolean);
+  if(!targets.length) return;
+  const mk=MARKS[row]||String(row+1);
+  const msg=(CM.PREVD.length&&CM.PREVD[row])
+    ? `課題${mk} を行ごと削除します。\n前週D（${PREVD.label}）の記録も一緒に消えます。\n以降の番号は振り直されます。よろしいですか？`
+    : `課題${mk} を行ごと削除します。\nA・P・D すべて消え、以降の番号は振り直されます。よろしいですか？`;
+  if(!confirm(msg)) return;
+  cols.forEach(s=>{ if(CM[s].length>row) CM[s].splice(row,1); });   // 全列を同じ位置で抜く＝行として消える
   drawComments();
-  saveQ=saveQ.then(async()=>{ try{ await capi("deleteComment",id); toast("削除しました"); }catch(e){ toast("削除に失敗: "+String(e&&e.message||e),true); renderComments(); } });
+  saveQ=saveQ.then(async()=>{
+    let ng=0;
+    for(const it of targets){ try{ await capi("deleteComment",it.item_id); }catch(e){ ng++; } }
+    if(ng){ toast("削除に失敗した項目があります",true); renderComments(); }
+    else toast("行を削除しました（番号を振り直しました）");
+  });
 }
 function cResolve(id,flag){
   const sec=(CM.PREVD||[]).length?"PREVD":"A";
@@ -1431,7 +1451,7 @@ function apdReadonly(cm,pv,me){
   }
   if(!n) h+=`<tr><td></td><td colspan="3" class="cmempty">（記入なし）</td><td></td></tr>`;
   let tail="";
-  if(PD.length&&!cm.P.length&&!cm.D.length)
+  if(PD.length&&!hasText_(cm.D))
     tail+=`<div class="cmwarn">⚠ ${pv.stale?"PDCA対応がなかったため、前週のAをそのまま表示します。":""}<b>${esc(lblJa_(pv.snap8))}から課題更新が未着手です。</b>${me?"":"PDCAサイクルを進めてください。"}</div>`;
   if(me) tail+=`<div class="gnote">📌 月末確定は <b>${esc(me)} 週のA／P／D</b> をそのまま表示しています（閲覧のみ）。</div>`;
   if(PD.length) tail+=`<div class="gnote">A欄は一つ前の週（${esc(pv.label)}）のD＝実行結果を自動表示しています。</div>`;
