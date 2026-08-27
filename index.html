@@ -197,7 +197,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-08-24c</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-08-27c</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -808,7 +808,7 @@ function canEditSec(sec){
   if(a.role!=="admin"&&a.dept!==S.dept) return false;
   // 月末確定(05-2)＝確定値が出る時点で既に翌月のサイクルが始まっており書いても反映先がない → 全欄 閲覧のみ
   if(MEV.on) return false;
-  // A＝前週Dの自動表示欄。前週Dがある週は閲覧のみ／無い週（初回起票）だけ直接書ける（ユーザー仕様 2026-08-24）
+  // A＝前週Dの自動表示欄。前週Dがある週は閲覧のみ／無い週（初回起票）だけ直接書ける（ユーザー仕様 2026-08-27）
   if(sec==="A"&&(CM.PREVD||[]).length) return false;
   if(S.mode==="運営部詳細") return sec==="D"&&S.storeTab==="__total__"; // 運営部=Dのみ・店舗タブは全閲覧（C7）
   if(S.mode==="商品部詳細") return true; // A/P/D すべて（エリア合計・店舗とも）
@@ -824,7 +824,7 @@ function cKey(){
   return {ym:S.ym,snap8:s8(S.snap),area:S.area,store:store,dept:S.dept};
 }
 
-/* ── 週次リンク：前週D → 当週A 自動表示（ユーザー仕様 2026-08-24）──
+/* ── 週次リンク：前週D → 当週A 自動表示（ユーザー仕様 2026-08-27）──
    ・「一つ前の週」はカレンダーではなく **実在するデータ期間の並び** で決める
      → 週が抜けていれば飛ばして繋がり、後から遡って週が追加されても、開き直せば常に正しい直前週を指す
    ・05-2（月末確定）は連鎖に含めない
@@ -921,7 +921,7 @@ function drawComments(){
   h+=`</tbody></table>`;
   if(anyEdit) h+=`<div class="lb" style="margin-top:6px">セルに直接入力すると自動保存されます。「\u2713済」は行（課題）単位の完了記録です。</div>`;
   // 未着手警告：Aに前週からの課題が出ているのに、当週のD（実行結果）が空＝サイクルが止まっている
-  //   D が空なら P も成立していないものとして扱う（ユーザー仕様 2026-08-24）
+  //   D が空なら P も成立していないものとして扱う（ユーザー仕様 2026-08-27）
   if(CM.PREVD.length&&!hasText_(CM.D))
     h+=`<div class="cmwarn">⚠ ${PREVD.stale?"PDCA対応がなかったため、前週のAをそのまま表示します。":""}<b>${esc(lblJa_(PREVD.snap8))}から課題更新が未着手です。</b>${MEV.on?"":(hasText_(CM.P)?"D（実行結果）を記入して、PDCAサイクルを進めてください。":"P（計画）とD（実行結果）を記入して、PDCAサイクルを進めてください。")}</div>`;
   if(MEV.on) h+=`<div class="gnote">📌 月末確定は <b>${esc(MEV.label)} 週のA／P／D</b> をそのまま表示しています（<b>閲覧のみ</b>）。確定値が出る時点では既に翌月のPDCAサイクルが始まっているため、この期間には書き込みません。</div>`;
@@ -1012,7 +1012,7 @@ function enqueueSave(sec,id){
   });
 }
 /* 削除は必ず「行（課題）」単位。1セルだけ配列から抜くと、その列だけ上に詰まって
-   A・P・D の対応がずれるため（2026-08-24 修正）、同じ行の全列をまとめて取り除いて番号を振り直す。
+   A・P・D の対応がずれるため（2026-08-27 修正）、同じ行の全列をまとめて取り除いて番号を振り直す。
    ※セルの中身を消しただけのときは行を詰めない（空欄のまま位置を保つ）。 */
 async function cDel(id){
   const cols=CM.PREVD.length?["PREVD","P","D"]:["A","P","D"];
