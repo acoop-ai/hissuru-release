@@ -1296,7 +1296,7 @@ function detectMode(){
   catch(e){ return "hq"; }
 }
 
-/* \u2500\u2500 閲覧者モード：店舗\u2192部門を選ぶだけ。自店舗自部門＋エリア共通を表示し、スプレッドシート出力 \u2500\u2500 */
+/* \u2500\u2500 閲覧者モード：店舗\u2192部門を選ぶだけ。自店舗自部門＋エリア合計を表示し、スプレッドシート出力 \u2500\u2500 */
 function snapLabelNow(){ const s=S.snaps.find(x=>x.snapshot===S.snap); return s?s.label:""; }
 
 function renderViewerGate(){
@@ -1310,7 +1310,7 @@ function renderViewerGate(){
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2><p class="subtitle">自分の店舗・部門の数値と、やるべきこと（A/P/D）をひと目で確認</p></div>`+
     `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">\uD83C\uDFEA</div><h3>店舗と部門を選んでください</h3>`+
-    `<p class="cdesc">あなたのお店と担当部門を選ぶと、自店舗のPDCAとエリア共通の方針が見られます。</p></div>`+
+    `<p class="cdesc">あなたのお店と担当部門を選ぶと、自店舗のPDCAとエリア合計が見られます。</p></div>`+
     `<div class="cbody"><div class="gate-selects"><span class="lb">エリア：</span>${areaSel}<span class="lb">店舗：</span><select id="vStore" onchange="vGateCheck()"><option value="">読み込み中\u2026</option></select><span class="lb">部門：</span>${deptSel}</div>`+
     `<div style="margin-top:10px"><button class="btn primary" style="width:100%;padding:10px" id="vEnterBtn" onclick="vEnter()" disabled>\uD83D\uDD0E 自店舗のPDCAを開く</button>`+
     (restored?`<p class="hint" style="color:#166534">前回のお店・部門を復元しました。このままでよければ開いてください。</p>`:"")+
@@ -1413,12 +1413,12 @@ async function vRenderBody(){
   const sp=s8(S.snap);
   const section=(head,chipCls,chipTxt,inner)=>`<div class="cmcard"><div class="chips"><span class="chip ${chipCls}">${esc(chipTxt)}</span><b>${esc(head)}</b><span class="lb">${esc(snapLabelNow())}</span></div>${inner}</div>`;
   const nodata=`<div class="note">この条件の実績データがありません。</div>`;
-  const areaHtml=async()=>{ const d=await API.detail(S.area,S.ym,S.snap,S.dept).catch(e=>isNoFile(e)?null:Promise.reject(e)); const r=await apdForScope_(S.area,S.ym,sp,"",S.dept); return section(`エリア共通（${S.area}／${S.dept}）`,"a",S.area,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(r.cm,r.pv,r.me)); };
+  const areaHtml=async()=>{ const d=await API.detail(S.area,S.ym,S.snap,S.dept).catch(e=>isNoFile(e)?null:Promise.reject(e)); const r=await apdForScope_(S.area,S.ym,sp,"",S.dept); return section(`エリア合計（${S.area}／${S.dept}）`,"a",S.area,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(r.cm,r.pv,r.me)); };
   const storeHtml=async(st)=>{ const d=await API.detailStore(S.area,S.ym,S.snap,S.dept,st.slug).catch(e=>isNoFile(e)?null:Promise.reject(e)); const r=await apdForScope_(S.area,S.ym,sp,st.full,S.dept); return section(`自店舗・自部門（${st.short}／${S.dept}）`,"s",st.short,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(r.cm,r.pv,r.me)); };
   try{
     if(S.storeTab==="__area__"){ b.innerHTML=await areaHtml(); }
     else if(S.storeTab==="__all__"){
-      busyOverlay_(true,"全店をまとめています",`エリア共通＋${S.stores.length}店を読み込み中…（少しお待ちください）`);
+      busyOverlay_(true,"全店をまとめています",`エリア合計＋${S.stores.length}店を読み込み中…（少しお待ちください）`);
       try{
         const area=await areaHtml();
         const parts=await Promise.all(S.stores.map(st=>storeHtml(st).catch(e=>`<div class="cmcard"><div class="chips"><span class="chip s">${esc(st.short)}</span></div><div class="note">この店舗の読み込みに失敗しました。</div></div>`)));
@@ -1435,13 +1435,13 @@ function viewerSheetSpec(){
   return { fileName:`PDCA_${S.area}_${S.dept}_${store?store.short:""}_${S.ym}_${sp}`, tabs:[
     { name:`自店舗（${store?store.short:""}）`, title:`${S.area}／${store?store.short:""}／${S.dept}`, subtitle:snapLabelNow(),
       path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}__${store?store.slug:""}.json`, key:{ym:S.ym,snap8:sp,area:S.area,store:store?store.full:"",dept:S.dept} },
-    { name:`エリア共通（${S.area}）`, title:`${S.area} エリア共通／${S.dept}`, subtitle:snapLabelNow(),
+    { name:`エリア合計（${S.area}）`, title:`${S.area} エリア合計／${S.dept}`, subtitle:snapLabelNow(),
       path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}.json`, key:{ym:S.ym,snap8:sp,area:S.area,store:"",dept:S.dept} }
   ]};
 }
 function bulkSheetSpec(area,dept){
   const a=aslug(area), d=dslug(dept), sp=s8(S.snap);
-  const tabs=[{ name:"エリア共通", title:`${area} エリア共通／${dept}`, subtitle:snapLabelNow(),
+  const tabs=[{ name:"エリア合計", title:`${area} エリア合計／${dept}`, subtitle:snapLabelNow(),
     path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}.json`, key:{ym:S.ym,snap8:sp,area:area,store:"",dept:dept} }];
   S.stores.forEach(st=>tabs.push({ name:st.short, title:`${area}／${st.short}／${dept}`, subtitle:snapLabelNow(),
     path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}__${st.slug}.json`, key:{ym:S.ym,snap8:sp,area:area,store:st.full,dept:dept} }));
