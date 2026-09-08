@@ -197,7 +197,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-08a</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-08b</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -1057,7 +1057,7 @@ async function renderDataManage(){
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCCA 取込状況（最終バッチ結果）</div><div id="dmStatus" class="lb">読み込み中\u2026</div></div>`+
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 受払CSV 取込</div>`+
       `<div class="cmadd"><input type="file" id="dmUke" multiple accept=".csv"><button class="btn primary" id="dmUkeBtn" onclick="dmUpUke(this)">アップロード</button></div>`+
-      `<div class="lb" style="margin-top:6px">アップロード後、5分毎の自動処理で取込\u2192表示データ再生成。重複ファイルは自動判定で除外されます。</div><div id="dmUkeMsg"></div></div>`+
+      `<div class="lb" style="margin-top:6px">アップロード後、5分毎の自動処理で取込\u2192表示データ再生成。重複ファイルは自動判定で除外されます。</div><div id="dmUkeMsg"></div><div id="dmUkeTrack"></div></div>`+
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 年度予算（xlsx・スプレッドシート）</div>`+
       `<div class="cmadd"><input type="file" id="dmBud" multiple accept=".xlsx" onchange="budAdd()"><button class="btn primary" id="dmBudBtn" onclick="dmUpBud(this)">まとめてアップロード</button></div>`+
       `<div class="cmadd" style="margin-top:6px"><button class="btn" onclick="budPickOpen('root')">\uD83D\uDCC2 マイドライブから選ぶ</button><button class="btn" onclick="budPickOpen('shared')">\uD83D\uDC65 共有アイテムから選ぶ</button></div>`+
@@ -1072,6 +1072,69 @@ async function refreshDmStatus_(){
   const el=$("dmStatus"); if(!el) return;
   try{ const st=await loadJson("status.json","status.json"); el.innerHTML=dmStatusHtml(st); }
   catch(e){ el.innerHTML=`status.json が未生成です（初回取込後に表示されます）`; }
+}
+
+/* ── 取込追跡（2026-09-08 新設）──
+   「取込状況」は直前に走ったバッチの結果しか出さないため、アップロード直後に見ると必ず
+   「検出0件」と表示され、利用者は自分の分が取り込まれたのか判断できなかった（実際に誤認が発生）。
+   そこで、送ったファイル名を画面側で覚えておき、取込結果の一覧に現れるまで自動で追いかける。
+   ・判定は status.json の uke.details[].filename との突き合わせ（確実に本人の分だけを見る）
+   ・追跡開始時の checked_at を基準にし、それより新しいバッチの結果だけを採用（前回分の誤検知を防ぐ）
+   ・28件が複数バッチに分かれて取り込まれる場合があるため、確認済みを累積して数える */
+const UKE_TRACK_POLL=30000, UKE_TRACK_MAX=20*60*1000;   // 30秒毎に確認・20分で打ち切り
+let UKE_TRACK=null;
+function ukeTrackStop_(){ if(UKE_TRACK){ clearInterval(UKE_TRACK.poll); clearInterval(UKE_TRACK.tick); UKE_TRACK=null; } }
+async function startUkeTrack_(names){
+  ukeTrackStop_();
+  if(!$("dmUkeTrack")||!names.length) return;
+  UKE_TRACK={ want:new Set(names), seen:new Set(), t0:Date.now(), since:"", at:"", errors:[], poll:null, tick:null };
+  try{
+    const st=await loadJson("status.json","status.json");
+    UKE_TRACK.since=String(st.checked_at||"");
+    const el=$("dmStatus"); if(el) el.innerHTML=dmStatusHtml(st);
+  }catch(e){ /* 取れなくても追跡は続ける */ }
+  if(!UKE_TRACK) return;
+  ukeTrackRender_();
+  UKE_TRACK.tick=setInterval(ukeTrackRender_,1000);       // 経過時間の表示だけ毎秒
+  UKE_TRACK.poll=setInterval(ukeTrackPoll_,UKE_TRACK_POLL);
+}
+async function ukeTrackPoll_(){
+  if(!UKE_TRACK) return;
+  let st; try{ st=await loadJson("status.json","status.json"); }catch(e){ return; }
+  if(!UKE_TRACK) return;
+  const el=$("dmStatus"); if(el) el.innerHTML=dmStatusHtml(st);   // 上のパネルも一緒に最新化
+  const at=String(st.checked_at||"");
+  if(!at||at<=UKE_TRACK.since) return;                            // まだ新しいバッチが走っていない
+  UKE_TRACK.since=at; UKE_TRACK.at=at;
+  (((st.uke||{}).details)||[]).forEach(d=>{ if(UKE_TRACK.want.has(d.filename)) UKE_TRACK.seen.add(d.filename); });
+  const errs=((st.uke||{}).errors)||[];
+  if(errs.length) UKE_TRACK.errors=errs;
+  ukeTrackRender_();
+}
+function ukeTrackRender_(){
+  const box=$("dmUkeTrack"), t=UKE_TRACK; if(!box||!t) return;
+  const sec=Math.floor((Date.now()-t.t0)/1000);
+  const time=Math.floor(sec/60)+"分"+String(sec%60).padStart(2,"0")+"秒";
+  const n=t.seen.size, N=t.want.size, pct=N?Math.round(n/N*100):0;
+  const done=n>=N, over=(Date.now()-t.t0)>UKE_TRACK_MAX;
+  let h=`<div class="upbox" style="margin-top:8px">`;
+  if(done){
+    h+=`<div class="uphead"><span>✅</span><span><b>${N} 件すべて取込完了</b>${t.at?`（${esc(t.at)}）`:""}</span></div>`+
+       `<div class="upbar"><i style="width:100%"></i></div>`+
+       `<div class="upnote">表示データも再生成されました。画面を再読み込みすると最新の数値が表示されます。</div>`;
+  }else if(over){
+    h+=`<div class="uphead"><span>⏱</span><span><b>${time}待っても ${N-n} 件が取込結果に現れませんでした</b></span></div>`+
+       `<div class="upbar"><i style="width:${pct}%"></i></div>`+
+       `<div class="upnote">お手数ですが本部（システム担当）へご連絡ください。アップロード自体は完了しています。</div>`;
+  }else{
+    h+=`<div class="uphead"><span class="spin dark"></span><span><b>自動処理を待っています</b>（経過 ${time}／取込は最大5分間隔）</span></div>`+
+       `<div class="upbar"><i style="width:${pct}%"></i></div>`+
+       `<div class="uplist"><div class="uprow ${n?"done":"wait"}"><span class="st">${n?"✅":"…"}</span><span>取込確認 <b>${n} / ${N}</b> 件</span></div></div>`+
+       `<div class="upnote">アップロードは完了しています。この画面のままお待ちください（自動で更新されます）。</div>`;
+  }
+  if(t.errors.length) h+=`<div class="err">取込エラー: ${t.errors.map(x=>esc(String(x))).join(" / ")}</div>`;
+  box.innerHTML=h+`</div>`;
+  if(done||over) setTimeout(ukeTrackStop_,0);            // 描画してから止める
 }
 function dmStatusHtml(st){
   const uke=st.uke||{}, bud=st.budget||{};
@@ -1158,7 +1221,7 @@ function upProgress_(host, names, title){
       const sp=box.querySelector(".spin"); if(sp) sp.remove();
       const t=$("upTtl"); if(t) t.textContent = failCount? `完了（成功 ${okCount} / 失敗 ${failCount}）` : `完了（${okCount} 件すべて成功）`;
       const note=box.querySelector(".upnote");
-      if(note) note.textContent = failCount ? "失敗した行は内容をご確認のうえ再度お試しください。" : "取込は5分毎の自動処理で行われます。上の「取込状況」でご確認ください。";
+      if(note) note.textContent = failCount ? "失敗した行は内容をご確認のうえ再度お試しください。" : "取込は5分毎の自動処理で行われます。";
     }
   };
 }
@@ -1178,7 +1241,7 @@ async function dmUpUke(btn){
   btnBusy_(btn,true,"送信中…");
   busyOverlay_(true,"受払CSVを送信中です",`0 / ${fs.length} 件`);
   const pg=upProgress_($("dmUkeMsg"), fs.map(f=>f.name), "アップロード中");
-  let ok=0, ng=0;
+  let ok=0, ng=0; const sent=[];              // sent = 送信できたファイル名（取込追跡の対象）
   try{
     for(let i=0;i<fs.length;i++){
       const f=fs[i];
@@ -1186,7 +1249,7 @@ async function dmUpUke(btn){
       busyOverlay_(true,"受払CSVを送信中です",`${i+1} / ${fs.length} 件目：${f.name}`);
       try{
         const r=await capi("uploadInbox","uke",f.name,await fileB64(f),"text/csv");
-        ok++; pg.step(i,"done",`（${r.by||""}）`);
+        ok++; sent.push(f.name); pg.step(i,"done",`（${r.by||""}）`);
       }catch(e){ ng++; pg.step(i,"fail",String(e&&e.message||e)); }
     }
   } finally {
@@ -1194,7 +1257,7 @@ async function dmUpUke(btn){
     pg.finish(ok,ng);
     $("dmUke").value="";
   }
-  if(ok){ toast(ok+" 件をアップロードしました（5分毎に自動取込）"); refreshDmStatus_(); }
+  if(ok){ toast(ok+" 件をアップロードしました（自動取込を待っています）"); startUkeTrack_(sent); }
 }
 /* \u2500\u2500 予算取込キュー: ファイル選択のたびに積み上げ、名前から年度・エリアを自動判定して
      「{年度}_{エリア}.xlsx」へ正規化。同一ファイル・同一 年度\u00D7エリア は自動排除。
