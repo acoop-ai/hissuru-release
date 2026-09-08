@@ -197,7 +197,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-08-27c</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-08a</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -1064,8 +1064,14 @@ async function renderDataManage(){
       `<div id="dmPick"></div>`+
       `<div class="lb" style="margin-top:6px">PCのファイルでも、ドライブから選んでもOK（スプレッドシートはxlsxへ自動変換）。ファイル名は自由\u2014\u2014名前から<b>年度・エリアを自動判定</b>し「{年度}_{エリア}.xlsx」へ正規化して取込みます。何度でも<b>積み上げ</b>OK、同じファイル・同じ 年度\u00D7エリア の<b>重複は自動排除</b>。<b>東北は3エリア（北東北・宮城・山形）が1冊のままでOK</b>（取込時に自動分割）。判定できなかった行（赤）だけ年度・エリアを選んでください。</div>`+
       `<div id="dmBudQ" style="margin-top:6px"></div><div id="dmBudMsg"></div></div>`;
-  try{ const st=await loadJson("status.json","status.json"); $("dmStatus").innerHTML=dmStatusHtml(st); }
-  catch(e){ $("dmStatus").innerHTML=`status.json が未生成です（初回取込後に表示されます）`; }
+  await refreshDmStatus_();
+}
+/* 取込状況パネルの再取得。アップロード直後は「取込状況」が固まって見え、反映済みかどうか
+   分からなくなる誤認（2026-09-08 発生）を防ぐため、アップロード完了時にも呼ぶ。 */
+async function refreshDmStatus_(){
+  const el=$("dmStatus"); if(!el) return;
+  try{ const st=await loadJson("status.json","status.json"); el.innerHTML=dmStatusHtml(st); }
+  catch(e){ el.innerHTML=`status.json が未生成です（初回取込後に表示されます）`; }
 }
 function dmStatusHtml(st){
   const uke=st.uke||{}, bud=st.budget||{};
@@ -1188,7 +1194,7 @@ async function dmUpUke(btn){
     pg.finish(ok,ng);
     $("dmUke").value="";
   }
-  if(ok) toast(ok+" 件をアップロードしました（5分毎に自動取込）");
+  if(ok){ toast(ok+" 件をアップロードしました（5分毎に自動取込）"); refreshDmStatus_(); }
 }
 /* \u2500\u2500 予算取込キュー: ファイル選択のたびに積み上げ、名前から年度・エリアを自動判定して
      「{年度}_{エリア}.xlsx」へ正規化。同一ファイル・同一 年度\u00D7エリア は自動排除。
@@ -1286,7 +1292,7 @@ async function dmUpBud(btn){
     pg.finish(ok,ng);
     BQ=BQ.filter(x=>!x.done); budRenderQ();
   }
-  if(ok) toast(ok+" 件をアップロードしました（取込は5分毎の自動処理→上の「取込状況」で確認）");
+  if(ok){ toast(ok+" 件をアップロードしました（取込は5分毎の自動処理→上の「取込状況」で確認）"); refreshDmStatus_(); }
 }
 
 /* \u2500\u2500 モード検出: getLocation で ?mode=viewer を判定。応答が無くても1.5秒で必ず確定（起動を止めない） \u2500\u2500 */
