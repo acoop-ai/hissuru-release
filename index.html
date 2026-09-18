@@ -168,6 +168,16 @@
   #guide .gcell{display:inline-block;border:1px dashed var(--border);border-radius:6px;padding:6px 10px;background:#fff;line-height:1.5;}
   #guide .gcell .bud{color:var(--amber);font-size:11px;} #guide .gcell .act{font-weight:700;font-size:12px;}
   #guide .gcell .prev{color:var(--muted);font-size:11px;}
+  /* 旧分類の受払表をアップロードするときの確認（PO 2026-09-18） */
+  #ukeAsk{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:150;display:flex;align-items:center;justify-content:center;padding:16px;}
+  #ukeAsk .acard{background:#fff;border-radius:14px;width:100%;max-width:620px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.28);}
+  #ukeAsk .ahead{display:flex;align-items:center;gap:8px;padding:13px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;color:#92400e;background:#fffbeb;border-radius:14px 14px 0 0;}
+  #ukeAsk .abody{overflow:auto;padding:12px 18px;font-size:13px;line-height:1.75;color:#334155;}
+  #ukeAsk .abody p{margin:6px 0;}
+  #ukeAsk .alist{margin:6px 0;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:#f8fafc;font-size:12.5px;max-height:180px;overflow:auto;}
+  #ukeAsk .alist .fn{color:var(--muted);font-size:11px;}
+  #ukeAsk .anote{background:var(--sky50);border:1px solid var(--sky100);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--sky800);}
+  #ukeAsk .afoot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--border);}
   #toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:13px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .3s;z-index:99;pointer-events:none;}
   #toast.bad{background:#b91c1c;}
   /* 店舗閲覧者の「閲覧/印刷」用・独自印刷機能（4ドメインのスプシ直開き不可への対応）。
@@ -176,7 +186,7 @@
   #printTitle .ptitle{font-size:16px;font-weight:700;color:#0f172a;}
   #printTitle .psub{font-size:11px;color:#334155;margin-top:2px;}
   @media print{
-    header, h2.title, .subtitle, .selbar, .asgbar, .modes, #storetabs, #scope .chips, #vSheetBox, #busyOverlay, #guide, #toast, .btn{display:none !important;}
+    header, h2.title, .subtitle, .selbar, .asgbar, .modes, #storetabs, #scope .chips, #vSheetBox, #busyOverlay, #guide, #ukeAsk, #toast, .btn{display:none !important;}
     .page-break{page-break-before:always;}
     #printTitle{display:block !important;margin:0 0 10px;padding-bottom:6px;border-bottom:2px solid #0f172a;}
     .page{background:#fff !important;min-height:auto !important;}
@@ -197,7 +207,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-08b</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-18a</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -1057,7 +1067,8 @@ async function renderDataManage(){
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCCA 取込状況（最終バッチ結果）</div><div id="dmStatus" class="lb">読み込み中\u2026</div></div>`+
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 受払CSV 取込</div>`+
       `<div class="cmadd"><input type="file" id="dmUke" multiple accept=".csv"><button class="btn primary" id="dmUkeBtn" onclick="dmUpUke(this)">アップロード</button></div>`+
-      `<div class="lb" style="margin-top:6px">アップロード後、5分毎の自動処理で取込\u2192表示データ再生成。重複ファイルは自動判定で除外されます。</div><div id="dmUkeMsg"></div><div id="dmUkeTrack"></div></div>`+
+      `<div class="lb" style="margin-top:6px">アップロード後、5分毎の自動処理で取込\u2192表示データ再生成。重複ファイルは自動判定で除外されます。</div>`+
+      `<div class="lb" style="margin-top:4px">旧分類の受払表（2026年8月以前の過去分など）は、新分類へ機械的に置き換えた<b>参考データ</b>として取り込みます。新分類のデータがあれば、そちらを入れてください（後から入れても自動で置き換わります）。</div><div id="dmUkeMsg"></div><div id="dmUkeTrack"></div></div>`+
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 年度予算（xlsx・スプレッドシート）</div>`+
       `<div class="cmadd"><input type="file" id="dmBud" multiple accept=".xlsx" onchange="budAdd()"><button class="btn primary" id="dmBudBtn" onclick="dmUpBud(this)">まとめてアップロード</button></div>`+
       `<div class="cmadd" style="margin-top:6px"><button class="btn" onclick="budPickOpen('root')">\uD83D\uDCC2 マイドライブから選ぶ</button><button class="btn" onclick="budPickOpen('shared')">\uD83D\uDC65 共有アイテムから選ぶ</button></div>`+
@@ -1087,7 +1098,7 @@ function ukeTrackStop_(){ if(UKE_TRACK){ clearInterval(UKE_TRACK.poll); clearInt
 async function startUkeTrack_(names){
   ukeTrackStop_();
   if(!$("dmUkeTrack")||!names.length) return;
-  UKE_TRACK={ want:new Set(names), seen:new Set(), t0:Date.now(), since:"", at:"", errors:[], poll:null, tick:null };
+  UKE_TRACK={ want:new Set(names), seen:new Set(), notes:{}, t0:Date.now(), since:"", at:"", errors:[], poll:null, tick:null };
   try{
     const st=await loadJson("status.json","status.json");
     UKE_TRACK.since=String(st.checked_at||"");
@@ -1106,7 +1117,11 @@ async function ukeTrackPoll_(){
   const at=String(st.checked_at||"");
   if(!at||at<=UKE_TRACK.since) return;                            // まだ新しいバッチが走っていない
   UKE_TRACK.since=at; UKE_TRACK.at=at;
-  (((st.uke||{}).details)||[]).forEach(d=>{ if(UKE_TRACK.want.has(d.filename)) UKE_TRACK.seen.add(d.filename); });
+  (((st.uke||{}).details)||[]).forEach(d=>{
+    if(!UKE_TRACK.want.has(d.filename)) return;
+    UKE_TRACK.seen.add(d.filename);
+    if(d.note) UKE_TRACK.notes[d.filename]=d.note;   // 旧分類の機械変換・新分類優先で使わなかった 等（backend が付ける）
+  });
   const errs=((st.uke||{}).errors)||[];
   if(errs.length) UKE_TRACK.errors=errs;
   ukeTrackRender_();
@@ -1132,6 +1147,8 @@ function ukeTrackRender_(){
        `<div class="uplist"><div class="uprow ${n?"done":"wait"}"><span class="st">${n?"✅":"…"}</span><span>取込確認 <b>${n} / ${N}</b> 件</span></div></div>`+
        `<div class="upnote">アップロードは完了しています。この画面のままお待ちください（自動で更新されます）。</div>`;
   }
+  const nk=Object.keys(t.notes);
+  if(nk.length) h+=`<div class="upnote" style="color:#92400e">${nk.map(k=>`・${esc(k)}：${esc(t.notes[k])}`).join("<br>")}</div>`;
   if(t.errors.length) h+=`<div class="err">取込エラー: ${t.errors.map(x=>esc(String(x))).join(" / ")}</div>`;
   box.innerHTML=h+`</div>`;
   if(done||over) setTimeout(ukeTrackStop_,0);            // 描画してから止める
@@ -1231,11 +1248,75 @@ function btnBusy_(btn, on, label){
   if(on){ btn._label=btn.innerHTML; btn.disabled=true; btn.innerHTML=`<span class="spin"></span>${esc(label||"送信中…")}`; }
   else { btn.disabled=false; if(btn._label) btn.innerHTML=btn._label; }
 }
+/* ── 旧分類の受払表の確認（PO 2026-09-18）──
+   旧分類の受払表（2026年8月以前の過去分など）は、取込時に新分類の名前へ機械的に置き換える（backend newclass_map）。
+   送る前に中身の部門名で旧分類かを見分け、「新分類で入れ直すのが望ましい／このままなら参考データ」と確かめる。
+   目印は backend の newclass_map.OLD_MARK_DEPTS / NEW_MARK_DEPTS と同じ（取込済み411本で確認: 旧382本・新29本とも例外なし）。 */
+const UKE_OLD_DEPTS=new Set(["農産","畜産","一食","その他１","その他２","その他1","その他2"]);
+const UKE_NEW_DEPTS=new Set(["青果","精肉","一般食品","その他"]);
+async function ukeClassInfo_(f){
+  let t="";
+  try{
+    const buf=await f.arrayBuffer();
+    t=new TextDecoder("utf-8").decode(buf);
+    if(t.includes("\uFFFD")) t=new TextDecoder("shift_jis").decode(buf);   // UTF-8 で読めない＝Shift_JIS
+  }catch(e){ return {basis:"unknown"}; }
+  const lines=t.replace(/^\uFEFF/,"").split(/\r?\n/);
+  const head=lines[0]||"";
+  const ym=((head.match(/\[年月\]\s*=\s*(\d{6})/)||head.match(/\[年月日\]\s*=\s*(\d{6})\d{2}/)||[])[1])||"";
+  const store=((head.match(/\[店舗名\]\s*=\s*([^)]+?)\s*\)/)||[])[1])||"";
+  let hi=-1;
+  for(let i=0;i<Math.min(6,lines.length);i++){
+    if(/^"?分類[２2]名"?\s*,/.test(lines[i].trim())){ hi=i; break; }
+  }
+  if(hi<0) return {basis:"unknown",ym,store};
+  const ds=new Set();
+  for(let i=hi+1;i<lines.length;i++){
+    const d=(lines[i].split(",")[0]||"").replace(/"/g,"").replace(/[\s\u3000]/g,"");
+    if(d) ds.add(d);
+  }
+  const basis=[...ds].some(d=>UKE_NEW_DEPTS.has(d))?"new":[...ds].some(d=>UKE_OLD_DEPTS.has(d))?"old":"new";
+  return {basis,ym,store};
+}
+/* 確認ダイアログ。取り込む→true／やめる・Esc→false。既定の選択は「やめる」（警告なので安全側） */
+function ukeAskOld_(olds, total){
+  return new Promise(resolve=>{
+    const o=document.createElement("div"); o.id="ukeAsk";
+    const ymTxt=ym=>ym?`${ym.slice(0,4)}年${Number(ym.slice(4,6))}月`:"年月不明";
+    const rows=olds.map(x=>`<div>・${esc(ymTxt(x.ym))}　${esc(x.store||"店舗不明")} <span class="fn">${esc(x.name)}</span></div>`).join("");
+    o.innerHTML=`<div class="acard" role="alertdialog" aria-modal="true" aria-labelledby="ukeAskT">`+
+      `<div class="ahead" id="ukeAskT"><span>⚠️</span>旧分類の受払表が含まれています（${olds.length} / ${total} 件）</div>`+
+      `<div class="abody">`+
+        `<p>2026年8月以前の過去分は旧分類のデータです。<b>新分類のデータで改めて入れてください。</b></p>`+
+        `<div class="alist">${rows}</div>`+
+        `<p>新分類のデータが無い場合も、このまま取り込めます。その場合は、<b>旧分類を新分類へ機械的に置き換えた参考データ</b>になります（温惣菜と冷惣菜など、新分類で分かれたカテゴリは分けられません）。よろしいですか？</p>`+
+        `<div class="anote">あとから同じ店・同じ月の新分類のデータを入れると、自動でそちらに置き換わります。</div>`+
+      `</div>`+
+      `<div class="afoot"><button class="btn" id="ukeAskNo">やめる</button><button class="btn primary" id="ukeAskYes">参考データとして取り込む</button></div></div>`;
+    document.body.appendChild(o);
+    const done=v=>{ document.removeEventListener("keydown",onKey); o.remove(); resolve(v); };
+    const onKey=e=>{ if(e.key==="Escape") done(false); };
+    document.addEventListener("keydown",onKey);
+    $("ukeAskNo").onclick=()=>done(false);
+    $("ukeAskYes").onclick=()=>done(true);
+    $("ukeAskNo").focus();
+  });
+}
 let UKEUP=false;  // 二重実行ガード
+let UKECHK=false; // 旧分類の確認中（ファイルを読む間・ダイアログを開いている間）の二度押しガード
 async function dmUpUke(btn){
   if(UKEUP){ toast("アップロード処理中です。完了までお待ちください",true); return; }
+  if(UKECHK) return;
   const fs=[...($("dmUke").files||[])];
   if(!fs.length){ toast("CSVファイルを選択してください",true); return; }
+  UKECHK=true;
+  let go=true;
+  try{
+    const infos=await Promise.all(fs.map(f=>ukeClassInfo_(f).then(x=>({...x,name:f.name}))));
+    const olds=infos.filter(x=>x.basis==="old");
+    if(olds.length) go=await ukeAskOld_(olds, fs.length);
+  } finally { UKECHK=false; }
+  if(!go){ toast("アップロードをやめました（ファイルは選んだままです）"); return; }
   UKEUP=true;
   btn=btn||$("dmUkeBtn");
   btnBusy_(btn,true,"送信中…");
