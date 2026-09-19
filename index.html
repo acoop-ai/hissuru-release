@@ -207,7 +207,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-18a</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-19a</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -243,8 +243,14 @@ const IS_GAS = !IS_LOCAL;  // 既存分岐の互換名（true=本番=GAS APIを�
 const CONFIG = {
   GAS_URL: "https://script.google.com/macros/s/AKfycbys6DvxxaIKI914q-DNHhbTeett0g8NWta6gQlgbcd16ihXFSrCEEDX4U5hnO54ocvk/exec",
   GOOGLE_CLIENT_ID: "1072945615483-74jadmaet56chvhkfh2cpt4ae9dvh140.apps.googleusercontent.com",
+  // 入口ごとに通すドメイン（PO 2026-09-19）: 本部用＝本部のドメインだけ／店舗用（?mode=viewer）＝4ドメイン
+  HQ_DOMAINS: ["jaz-acoop.co.jp"],
   ALLOWED_DOMAINS: ["jaz-acoop.co.jp","jaz-acoop1.jp","jaz-acoop2.jp","jaz-acoop3.jp"]
 };
+function entranceDomains_(){ return detectMode()==="viewer" ? CONFIG.ALLOWED_DOMAINS : CONFIG.HQ_DOMAINS; }
+function storeUrl_(){ return location.href.split("?")[0]+"?mode=viewer"; }
+/* 店舗のアカウントで本部用の入口を開いたとき（トークンは消さない＝店舗用の入口でそのまま入れる） */
+function hqOnlyMsg_(email){ return "このアカウント（"+email+"）は本部用の入口には入れません。店舗の方は下の「店舗用の入口を開く」からお入りください。"; }
 
 /* ── OAuth2 認証（スマレコ方式: アクセストークン＋silent更新＋端末保存） ── */
 let currentAccessToken=null, accessTokenExpiry=0, oauthTokenClient=null, tokenRefreshTimer=null, authedEmail="";
@@ -515,7 +521,8 @@ async function boot(){
     try{
       const u=await fetchUserInfo_();
       const d=String(u.email||"").split("@")[1]||"";
-      if(CONFIG.ALLOWED_DOMAINS.includes(d)){ authedEmail=u.email; $("user").textContent=u.email; startApp_(); return; }
+      if(entranceDomains_().includes(d)){ authedEmail=u.email; $("user").textContent=u.email; startApp_(); return; }
+      if(CONFIG.ALLOWED_DOMAINS.includes(d)){ renderLogin_(hqOnlyMsg_(u.email)); return; }
     }catch(e){ /* 復元不可→ログイン画面へ */ }
   }
   renderLogin_();
@@ -548,16 +555,25 @@ async function checkFreshness_(){
   catch(e){ /* 鮮度が取れなくても本体の利用は妨げない */ }
 }
 
-/* ログイン画面（会社Google・4ドメイン限定） */
+/* ログイン画面（会社Google）。本部用は本部のドメインだけ・店舗用は4ドメイン。本部用には店舗用の入口への案内を出す */
 function renderLogin_(msg){
   $("page").style.background="";
+  const store=detectMode()==="viewer";
+  const toStore=store?"":
+    `<div style="margin-top:14px;padding:10px 12px;border:1px solid #bae6fd;background:#f0f9ff;border-radius:8px;font-size:13px">`+
+    `<b>🏪 店舗の方はこちら</b><br>店舗用の入口から、自分の店舗・部門のPDCAを見て印刷できます。会社の Google アカウント（jaz-acoop 系4ドメイン）で入れます。`+
+    `<div style="margin-top:8px"><a class="btn" style="text-decoration:none" href="${esc(storeUrl_())}">店舗用の入口を開く</a></div></div>`;
   $("app").innerHTML=
-    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check — 数値確認（本番データ）</p></div>`+
-    `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">🔐</div><h3>会社アカウントでログイン</h3>`+
-    `<p class="cdesc">会社の Google アカウント（jaz-acoop 系4ドメイン）でログインしてください。個人の Gmail ではご利用いただけません。</p></div>`+
+    (store
+      ? `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2><p class="subtitle">自分の店舗・部門の数値と、やるべきこと（A/P/D）をひと目で確認</p></div>`
+      : `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜本部用</h2><p class="subtitle">C：Check — 数値確認（本番データ）</p></div>`)+
+    `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">🔐</div><h3>${store?"会社アカウントでログイン":"本部のアカウントでログイン"}</h3>`+
+    `<p class="cdesc">${store
+      ?"会社の Google アカウント（jaz-acoop 系4ドメイン）でログインしてください。個人の Gmail ではご利用いただけません。"
+      :"この入口は本部用です。本部のアカウント（@jaz-acoop.co.jp）だけがログインできます。"}</p></div>`+
     `<div class="cbody"><button class="btn primary" style="width:100%;padding:12px;font-size:15px" onclick="doLogin_()">Google でログイン</button>`+
     `<p class="warn" id="loginErr" style="${msg?"":"display:none;"}margin-top:10px">${esc(msg||"")}</p>`+
-    `<p class="hint">初回のみ許可の確認が表示されます。2回目以降は自動でログインします。</p></div></div></div>`;
+    `<p class="hint">初回のみ許可の確認が表示されます。2回目以降は自動でログインします。</p>${toStore}</div></div></div>`;
 }
 async function doLogin_(){
   const err=$("loginErr");
@@ -566,7 +582,8 @@ async function doLogin_(){
     await requestAccessTokenOnce_({});
     const u=await fetchUserInfo_();
     const d=String(u.email||"").split("@")[1]||"";
-    if(!CONFIG.ALLOWED_DOMAINS.includes(d)){
+    if(!entranceDomains_().includes(d)){
+      if(CONFIG.ALLOWED_DOMAINS.includes(d)){ showErr(hqOnlyMsg_(u.email)); return; }
       currentAccessToken=null; accessTokenExpiry=0; clearStoredToken_();
       showErr("社内ドメインのアカウントでログインしてください（個人Gmailは不可）。");
       return;
@@ -625,7 +642,7 @@ function renderGate(){
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
     `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">\uD83D\uDEAA</div><h3>担当を選んで入室してください</h3>`+
-    `<p class="cdesc">あなたの担当（何者として使うか）を選ぶと中に入れます。編集は本部管理者・部門担当、閲覧は店舗の方向けです。</p></div>`+
+    `<p class="cdesc">あなたの担当（何者として使うか）を選ぶと中に入れます。コメントを書くときは部門担当か全体管理者、見るだけのときは閲覧者を選びます。</p></div>`+
     `<div class="cbody"><div class="roles">${roleCards}</div>${selects}`+
     `<div style="margin-top:10px"><button class="btn primary" style="width:100%;padding:10px" id="gEnter" onclick="enter()">\uD83D\uDEAA ${S.role==="viewer"?"閲覧者として入室する":"この担当で入室する"}</button>`+
     `<p class="warn" id="gWarn" style="display:none"></p>`+
@@ -670,7 +687,7 @@ function renderApp(){
 function modeIcon(m){ return m.startsWith("商品部")?"\uD83D\uDED2":m.startsWith("運営部")?"\uD83C\uDFE2":m==="仕入分析"?"\uD83D\uDCE6":m==="店舗事業部会議"?"\uD83C\uDFEA":m==="データ管理"?"\u2699\uFE0F":"\u2022"; }
 function backToGate(){ S.entered=false; S.asg=null; if(S.mode==="データ管理")S.mode="商品部詳細"; renderGate(); }
 function setMode(m){ S.mode=m; renderApp(); }
-function openStoreView_(){ try{ window.open(location.href.split("?")[0]+"?mode=viewer","_blank","noopener"); }catch(e){} }
+function openStoreView_(){ try{ window.open(storeUrl_(),"_blank","noopener"); }catch(e){} }
 function needDept_(m){ return m==="商品部詳細"||m==="商品部全体"||m==="仕入分析"||m==="運営部詳細"; }
 function printHq_(){ const t=$("printTitle"); if(!t){ window.print(); return; } const store=(STORE_MODES.includes(S.mode)&&S.storeTab&&S.storeTab!=="__total__")?S.stores.find(x=>x.slug===S.storeTab):null; const parts=[esc(S.area)]; if(needDept_(S.mode))parts.push(esc(S.dept)); if(STORE_MODES.includes(S.mode))parts.push(store?esc(store.short):"エリア合計"); t.innerHTML=`<div class="ptitle">ヒッスル｜${esc(S.mode)} ${parts.join("／")}</div><div class="psub">${esc(snapLabelNow())} ／ 印刷日時 ${esc(nowStamp_())}</div>`; window.print(); }
 
