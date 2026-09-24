@@ -208,7 +208,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-22a</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-22b</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -391,6 +391,18 @@ function splitNoYoyRows(rows,sales){
   Object.entries(byDept).forEach(([d,cats])=>splitNoYoy(c=>cats[c]?sales(cats[c]):null).forEach(c=>out.add(d+"|"+c)));
   return out;
 }
+/* 前年が「推定」の月（POS の単品で新分類へ振り分け直した受払表。meta.json の estimated_months・2026-09-22）。
+   分かれた組の前年に「前(推定)」を付け、表の下に注記を出す。推定の月そのものを見るときも注記を出す。 */
+const estMonths=()=>{ const m=S.meta||{}; if(!m._estSet) m._estSet=new Set(m.estimated_months||[]); return m._estSet; };  // meta を読み直すと作り直される
+const priorYm=ym=>ym?String(Number(String(ym).slice(0,4))-1)+String(ym).slice(4):"";
+const SPLIT_MEMBERS=new Set(SPLIT_GROUPS.flatMap(g=>g.members));
+const estPrior=(ym,cat)=>estMonths().has(priorYm(ym))&&SPLIT_MEMBERS.has(cat);
+function estNote(ym){
+  const e=estMonths(), lab=y=>`${String(y).slice(0,4)}年${Number(String(y).slice(4))}月`;
+  if(e.has(ym)) return `<div class="splitnote">この月（${lab(ym)}）の数字は、POS の単品で新分類へ振り分け直した推定です（売上・値引はほぼ実績、粗利などは推定）。</div>`;
+  if(e.has(priorYm(ym))) return `<div class="splitnote">前年（${lab(priorYm(ym))}）は、POS の単品で新分類へ振り分け直した推定です（売上・値引はほぼ実績、粗利などは推定）。「前(推定)」は新分類で分かれた中分類です。</div>`;
+  return "";
+}
 function splitNote(cats){
   if(!cats.size) return "";
   return `<div class="splitnote">前年比が「—」の中分類（${esc([...cats].join("・"))}）は、新分類で分かれたものです。前年は分かれていないため比べられません。部門計の前年比で比べてください。</div>`;
@@ -399,7 +411,7 @@ function splitNote(cats){
 /* 縦積みセル（金額=計/実績/前/計比/前比、率=実績/前/前差/計差） */
 /* セルは全列とも「計 → 実績 → 前年 → 計画差 → 前年差」の5段固定。
    計画が無い列は空欄を置いて段数を揃える（列をまたいで実績が必ず同じ行に来るように）。 */
-function cellHtml(cell,col,dark,noYoy){
+function cellHtml(cell,col,dark,noYoy,estP){
   if(!cell||cell.current==null) return `<div class="cell n">—</div>`;
   const hib=col.higher_is_better, cur=cell.current, yoy=cell.yoy, bud=cell.budget;
   const isRate=(col.type==="rate");
@@ -412,7 +424,7 @@ function cellHtml(cell,col,dark,noYoy){
   // ②実績（この行が全列で揃う）
   h+=`<div class="act">${fmt(cur)}</div>`;
   // ③前年（新分類で分かれた中分類は前年と比べられないので「—」）
-  h+=`<div class="prev">前 ${noYoy?"—":fmt(yoy)}</div>`;
+  h+=`<div class="prev">前${estP?"(推定)":""} ${noYoy?"—":fmt(yoy)}</div>`;
   // ④計画との差（上）
   h+= hasB
     ? `<div class="${judge(hib,pDiff)}">${isRate?`計差 ${ppt(pDiff)}`:`計比 ${ratio(cur,bud)} <span style="opacity:.8">${dkyen(pDiff)}</span>`}</div>`
@@ -448,17 +460,18 @@ function renderSection(d){
     if(r.dept!==prevDept && dtMap[r.dept]){ h+=totalRow(dtMap[r.dept],cols,false,2); }
     prevDept=r.dept;
     const ny=noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
+    const ep=estPrior(d.ym,r.category);
     h+=`<tr class="datarow"><td class="h" style="left:0"></td><td class="h catcol" style="left:56px">${esc(r.category)}`;
     if(r.alerts&&r.alerts.loss_alert) h+=`<br><span class="badge bd-loss">\u26A0差損${(r.alerts.loss_rate||0).toFixed(1)}%</span>`;
     if(r.alerts&&r.alerts.inv_cost_zero) h+=`<br><span class="badge bd-inv">\u26A0棚卸原価ゼロ</span>`;
     h+=`</td>`;
     h+=cols.map(c=>{
       let cls=""; if(c.key==="gross_profit_month"&&r.alerts){ cls=r.alerts.gp_negative?" gp-neg":(r.alerts.loss_alert?" gp-loss":""); }
-      return `<td class="${cls}">${cellHtml(r.cells[c.key],c,false,ny)}</td>`;
+      return `<td class="${cls}">${cellHtml(r.cells[c.key],c,false,ny,ep)}</td>`;
     }).join("");
     h+=`</tr>`;
   });
-  return h+`</tbody></table></div>`+splitNote(noted);
+  return h+`</tbody></table></div>`+splitNote(noted)+estNote(d.ym);
 }
 function totalRow(t,cols,dark,hspan){
   return `<tr class="${dark?"total":"subtotal"}"><td class="h" colspan="${hspan}" style="left:0">${esc(t.label)}</td>`+
@@ -497,19 +510,19 @@ function drawUneibu(mkey){
     const k=(r.dept||"")+"|"+r.category, isCat=r.type!=="dept";
     const ny=set=>{ const v=isCat&&set.has(k); if(v) noted.add(r.category); return v; };
     h+=`<tr class="${r.type==="dept"?"subtotal":"datarow"}"><td class="h" style="left:0">${esc(r.label)}</td>`;
-    h+=`<td>${cellHtml((r.grand||{})[mkey],col,false,ny(nyGrand))}</td>`;
-    h+=st.map(s=>`<td>${cellHtml((r.stores&&r.stores[s.short]||{})[mkey],col,false,ny(nyStore[s.short]))}</td>`).join("")+`</tr>`;
+    h+=`<td>${cellHtml((r.grand||{})[mkey],col,false,ny(nyGrand),isCat&&estPrior(d.ym,r.category))}</td>`;
+    h+=st.map(s=>`<td>${cellHtml((r.stores&&r.stores[s.short]||{})[mkey],col,false,ny(nyStore[s.short]),isCat&&estPrior(d.ym,r.category))}</td>`).join("")+`</tr>`;
   });
   const gt=d.grand_total; if(gt){ h+=`<tr class="total"><td class="h" style="left:0">${esc(gt.label||"\u25C6 合計")}</td><td>${cellHtml((gt.grand||{})[mkey],col,true)}</td>`+st.map(s=>`<td>${cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true)}</td>`).join("")+`</tr>`; }
-  $("uTbl").innerHTML=h+`</tbody></table></div>`+splitNote(noted);
+  $("uTbl").innerHTML=h+`</tbody></table></div>`+splitNote(noted)+estNote(d.ym);
 }
 /* 事業部会議（18列2段＋前年比較3列） */
-function cmpCell(cur,prev,isRate,hib,noYoy){
+function cmpCell(cur,prev,isRate,hib,noYoy,estP){
   if(cur==null) return `<div class="cell n">\u2014</div>`;
   if(noYoy) prev=null;  // 新分類で分かれた中分類は前年と比べない
   const cls=prev!=null?judge(hib,cur-prev):"n";
   let h=`<div class="cell"><div class="act ${cls}">${isRate?pct(cur):kyen(cur)}</div>`;
-  if(prev!=null){ const c=isRate?ppt(cur-prev):ratio(cur,prev); h+=`<div class="prev">前 ${isRate?pct(prev):kyen(prev)}（${c}）</div>`; }
+  if(prev!=null){ const c=isRate?ppt(cur-prev):ratio(cur,prev); h+=`<div class="prev">前${estP?"(推定)":""} ${isRate?pct(prev):kyen(prev)}（${c}）</div>`; }
   else if(noYoy) h+=`<div class="prev">前 \u2014</div>`;
   return h+`</div>`;
 }
@@ -523,10 +536,11 @@ function renderJigyo(d){
   const noYoy=splitNoYoyRows(d.rows.filter(r=>r.type!=="dept"),r=>({current:(r.values||{}).sales_month,yoy:(r.yoy||{}).sales_month})), noted=new Set();
   const row=(r,cls)=>{ const v=r.values||{},y=r.yoy||{};
     const ny=r.type==="category"&&noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
-    return `<tr class="${cls}"><td class="h" style="left:0">${esc(r.label)}</td>`+cols.map(c=>`<td>${fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny)}</td>`).join("")+`</tr>`; };
+    const ep=r.type==="category"&&estPrior(d.ym,r.category);
+    return `<tr class="${cls}"><td class="h" style="left:0">${esc(r.label)}</td>`+cols.map(c=>`<td>${fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep)}</td>`).join("")+`</tr>`; };
   d.rows.forEach(r=>h+=row(r,r.type==="dept"?"subtotal":"datarow"));
   if(d.grand) h+=row({label:d.grand.label||"\u25C6 合計",values:d.grand.values,yoy:d.grand.yoy},"total");
-  return h+`</tbody></table></div>`+splitNote(noted);
+  return h+`</tbody></table></div>`+splitNote(noted)+estNote(d.ym);
 }
 /* 仕入分析（目標粗利率・在庫日数\u2192計算・\u00B110%色） */
 const BDAYS=25; let _shiire=null;
