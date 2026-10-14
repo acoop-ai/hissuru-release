@@ -49,7 +49,10 @@
   /* 入室後バー */
   .asgbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;}
   .asgbar .role-badge{border-radius:6px;padding:2px 8px;font-weight:600;}
-  .rb-buyer{background:var(--sky100);color:var(--sky800);} .rb-admin{background:#fef3c7;color:#92400e;} .rb-viewer{background:#f1f5f9;color:#475569;}
+  .rb-buyer{background:var(--sky100);color:var(--sky800);} .rb-admin{background:#fef3c7;color:#92400e;} .rb-viewer{background:#f1f5f9;color:#475569;} .rb-unei{background:#dcfce7;color:#166534;}
+  .gate-enter{display:flex;gap:8px;}
+  @keyframes landed{0%{box-shadow:0 0 0 4px #f59e0b;}100%{box-shadow:0 0 0 0 rgba(245,158,11,0);}}
+  .landed{animation:landed 1.8s ease-out;border-radius:10px;}
 
   /* モードタブ */
   .modes{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:18px 0 0;}
@@ -208,7 +211,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-09-22b</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-14a</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -569,11 +572,17 @@ const S={ meta:null, viewMode:"hq", entered:false, asg:null, role:"buyer", area:
   mode:"商品部詳細", ym:"", snap:"", snaps:[], stores:[], storeTab:"__total__" };
 const MODE_BG={ "商品部詳細":"#E1F5FE","商品部全体":"#E1F5FE","運営部詳細":"#E8F5E9","運営部全体":"#E8F5E9","店舗事業部会議":"#EDE7F6" };
 const MODES=["商品部詳細","商品部全体","運営部詳細","運営部全体","仕入分析","店舗事業部会議"];
+/* 入口の担当（PO 2026-10-14）。どこに書けるかは、ここで選んだ担当で決める（サーバーは本部ドメインかを確かめる）。
+   旧「全体管理者」（admin）は「商品部の責任者」（lead）。三田さんの言う「管理者」とぶつかるため名前を変えた。 */
 const ROLES=[
-  {k:"buyer",label:"部門担当",icon:"\u270E",desc:"担当部門のコメントを記入できます（バイヤー・店長・主任）"},
-  {k:"admin",label:"全体管理者",icon:"\uD83D\uDEE1",desc:"課長以上。担当エリアの全部門を記入できます"},
-  {k:"viewer",label:"閲覧者",icon:"\uD83D\uDC41",desc:"閲覧のみ（コメントの記入はできません）"},
+  {k:"buyer",label:"商品部の担当",icon:"\u270E",desc:"担当の部門の A・PD を書けます（商品部詳細）"},
+  {k:"lead",label:"商品部の責任者",icon:"\uD83D\uDEE1",desc:"課長以上。担当エリアの全部門の A・PD を書けます（商品部詳細）"},
+  {k:"unei",label:"運営部",icon:"\uD83D\uDEB6",desc:"担当エリアの運営部の A・PD を書けます（運営部詳細・店ごと）"},
+  {k:"viewer",label:"閲覧者",icon:"\uD83D\uDC41",desc:"見るだけ（書けません）"},
 ];
+const ROLE_ALIAS={admin:"lead"};   // 端末に残る前回の担当（旧名）を読み替える
+function roleNeedsDept_(r){ return r==="buyer"; }
+function roleReady_(){ return S.role==="viewer"||(!!S.area&&(!roleNeedsDept_(S.role)||!!S.dept)); }
 
 async function boot(){
   if(!IS_GAS){ $("user").textContent="ローカル開発（サンプル）"; startApp_(); return; }
@@ -687,7 +696,8 @@ function loadPref_(){ try{ return JSON.parse(localStorage.getItem(prefKey_())||"
 /* 保存済みの担当を既定値として S へ反映（存在するものだけ・入室ボタンは毎回押す＝無記名防止は維持） */
 function applyPref_(){
   const p=loadPref_();
-  if(p.role && ROLES.some(r=>r.k===p.role)) S.role=p.role;
+  const pr=ROLE_ALIAS[p.role]||p.role;
+  if(pr && ROLES.some(r=>r.k===pr)) S.role=pr;
   if(p.area && S.meta.areas.includes(p.area)) S.area=p.area;
   if(p.dept && S.meta.departments.includes(p.dept)) S.dept=p.dept;
   return p;
@@ -700,41 +710,57 @@ function renderGate(){
   const roleCards=ROLES.map(r=>`<button class="role ${S.role===r.k?'on':''}" onclick="setRole('${r.k}')"><div class="rt">${r.icon} ${r.label}</div><div class="rd">${r.desc}</div></button>`).join("");
   const areaSel=`<select id="gArea" onchange="S.area=this.value"><option value="">担当エリアを選択</option>`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
   const deptSel=`<select id="gDept" onchange="S.dept=this.value"><option value="">担当部門を選択</option>`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`;
-  const selects=S.role==="viewer"?"":`<div class="gate-selects"><span class="lb">エリア：</span>${areaSel}${S.role==="buyer"?`<span class="lb">部門：</span>${deptSel}`:""}</div>`;
+  const selects=S.role==="viewer"?"":`<div class="gate-selects"><span class="lb">エリア：</span>${areaSel}${roleNeedsDept_(S.role)?`<span class="lb">部門：</span>${deptSel}`:""}</div>`;
+  const enterBtns=S.role==="viewer"
+    ? `<button class="btn primary" style="width:100%;padding:10px" id="gEnter" onclick="enter(false)">\uD83D\uDEAA 閲覧者として入室する</button>`
+    : `<div class="gate-enter"><button class="btn" style="flex:1;padding:10px" id="gEnter" onclick="enter(false)">\uD83D\uDD22 数字を見る</button>`+
+      `<button class="btn primary" style="flex:1;padding:10px" id="gEnterCm" onclick="enter(true)">\u270E コメントを書く</button></div>`;
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
     `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">\uD83D\uDEAA</div><h3>担当を選んで入室してください</h3>`+
-    `<p class="cdesc">あなたの担当（何者として使うか）を選ぶと中に入れます。コメントを書くときは部門担当か全体管理者、見るだけのときは閲覧者を選びます。</p></div>`+
+    `<p class="cdesc">あなたの担当を選ぶと中に入れます。担当で、コメントを書ける所が決まります（商品部は商品部詳細、運営部は運営部詳細）。見るだけのときは閲覧者を選びます。</p></div>`+
     `<div class="cbody"><div class="roles">${roleCards}</div>${selects}`+
-    `<div style="margin-top:10px"><button class="btn primary" style="width:100%;padding:10px" id="gEnter" onclick="enter()">\uD83D\uDEAA ${S.role==="viewer"?"閲覧者として入室する":"この担当で入室する"}</button>`+
+    `<div style="margin-top:10px">${enterBtns}`+
     `<p class="warn" id="gWarn" style="display:none"></p>`+
     (restored?`<p class="hint" style="color:#166534">前回の担当を復元しました。このままでよければ入室してください。</p>`:"")+
-    `<p class="hint">入室後も上部のバーから担当を変更できます。コメントの記入は担当範囲のみ。</p></div></div></div></div>`;
+    `<p class="hint">「コメントを書く」は、担当のコメント欄（最新の週）へ一足飛びで移ります。入室後も、上の帯から移れます・担当を変えられます。</p></div></div></div></div>`;
   updateGate();
 }
 function setRole(k){ S.role=k; renderGate(); }
 function updateGate(){
-  const ready=S.role==="viewer"||(S.role==="admin"&&S.area)||(S.role==="buyer"&&S.area&&S.dept);
-  const b=$("gEnter"); if(b) b.disabled=!ready;
-  const w=$("gWarn"); if(w){ if(!ready){ w.style.display="block"; w.textContent=S.role==="buyer"?"担当エリアと担当部門を選択してください":"担当エリアを選択してください"; } else w.style.display="none"; }
+  const ready=roleReady_();
+  ["gEnter","gEnterCm"].forEach(id=>{ const b=$(id); if(b) b.disabled=!ready; });
+  const w=$("gWarn"); if(w){ if(!ready){ w.style.display="block"; w.textContent=roleNeedsDept_(S.role)?"担当エリアと担当部門を選択してください":"担当エリアを選択してください"; } else w.style.display="none"; }
 }
 document.addEventListener("change",updateGate);
-function enter(){
-  const ready=S.role==="viewer"||(S.role==="admin"&&S.area)||(S.role==="buyer"&&S.area&&S.dept); if(!ready) return;
-  S.asg={role:S.role,area:S.area,dept:S.dept};
+function enter(toComments){
+  if(!roleReady_()) return;
+  S.asg={role:S.role,area:S.area,dept:roleNeedsDept_(S.role)?S.dept:""};
   savePref_({role:S.role,area:S.area,dept:S.dept});   // 次回の入室で復元
-  S.entered=true; renderApp();
+  S.entered=true;
+  if(toComments&&S.role!=="viewer") jumpToComments(); else renderApp();
+}
+/* 「✎ コメントを書く」: 担当のモード（商品部詳細／運営部詳細）・担当の部門・最新の週へ切り替え、コメント欄へ移って光らせる */
+function jumpToComments(){
+  const a=S.asg; if(!a||a.role==="viewer") return;
+  S.area=a.area;
+  if(a.role==="buyer"&&a.dept) S.dept=a.dept;
+  S.mode=(a.role==="unei")?"運営部詳細":"商品部詳細";
+  S.ym=(S.meta.year_months||[])[0]||S.ym;
+  S._jumpCm=true;
+  renderApp();
 }
 
 /* 入室後 */
 function renderApp(){
   $("page").style.background=MODE_BG[S.mode]||"";
   const a=S.asg;
-  const rb=a.role==="buyer"?"rb-buyer":a.role==="admin"?"rb-admin":"rb-viewer";
+  const rb=a.role==="buyer"?"rb-buyer":a.role==="lead"?"rb-admin":a.role==="unei"?"rb-unei":"rb-viewer";
   const roleLabel=ROLES.find(r=>r.k===a.role).label;
   const asg=`<div class="asgbar"><span class="lb">担当：</span><span class="role-badge ${rb}">${roleLabel}</span>`+
     (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(a.role==="buyer"?`<span class="chip d">${esc(a.dept)}</span>`:"")+
-    `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
+    (a.role!=="viewer"?`<button class="btn primary" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="jumpToComments()" title="担当のコメント欄（最新の週）へ移ります">\u270E コメントを書く</button>`:"")+
+    `<button class="btn" style="${a.role!=="viewer"?"":"margin-left:auto;"}padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
   // 閲覧系タブ（左）と 管理者用データ管理（右端に隔離）を視覚的に分ける
   const modeBtns=MODES.map(m=>`<button class="${S.mode===m?'on':''}" onclick="setMode('${m}')">${modeIcon(m)} ${m}</button>`).join("");
   const adminBtn=(a.role!=="viewer")
@@ -858,13 +884,23 @@ async function storeDetailHtml(slug,so,dept){
   }
 }
 
-/* \u2500\u2500 G2: PDCA コメント（正本=Google Sheets・下書き/確定の2段階なし=即時保存・済はA行のみ） \u2500\u2500 */
-const SECTIONS=[{k:"A",icon:"\u2705",label:"A：改善アクション"},{k:"P",icon:"\uD83D\uDCCB",label:"P：計画"},{k:"D",icon:"\uD83C\uDFAF",label:"D：実行（結果）"}];
-const MARKS=["\u2460","\u2461","\u2462","\u2463","\u2464","\u2465","\u2466","\u2467","\u2468","\u2469","\u246A","\u246B","\u246C","\u246D","\u246E"];
-let CM={A:[],P:[],D:[],PREVD:[]}, cmSeq=0, saveQ=Promise.resolve();
-/* A欄へ自動表示する「一つ前の週のD」の出所。空＝前週なし＝その週はAに直接起票できる。
+/* ── G2: PDCA コメント（正本=Google Sheets・即時保存・済は行（課題）に1つ） ──
+   欄（PO 2026-10-14）: P と D を1つの「PD：計画と実行」にまとめた。
+     商品部詳細＝商品部の A・PD（シートの section＝A・PD）／運営部詳細＝運営部の A・PD（UA・UPD）。
+     運営部は別の欄・商品部と同じ粒度（エリア合計と店ごと×部門）。
+   A欄＝一つ前の週の PD を自動表示（商品部は商品部の PD、運営部は運営部の PD）。 */
+const SEC_SETS={
+  "商品部詳細":[{k:"A",icon:"✅",label:"A：改善アクション"},{k:"PD",icon:"📝",label:"PD：計画と実行"}],
+  "運営部詳細":[{k:"UA",icon:"✅",label:"A：改善アクション（運営部）"},{k:"UPD",icon:"🚶",label:"PD：計画と実行（運営部）"}]
+};
+function SECS(){ return SEC_SETS[S.mode]||SEC_SETS["商品部詳細"]; }
+function secA(){ return SECS()[0].k; }
+function secPD(){ return SECS()[1].k; }
+const MARKS=["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩","⑪","⑫","⑬","⑭","⑮"];
+let CM={A:[],PD:[],UA:[],UPD:[],PREV:[]}, cmSeq=0, saveQ=Promise.resolve();
+/* A欄へ自動表示する「一つ前の週の PD」の出所。空＝前週なし＝その週はAに直接起票できる。
    stale=true は「直前週にPDCA対応が無く、更に前の週から引き継いだ」状態。 */
-let PREVD={snap8:"",ym:"",label:"",stale:false};
+let PREVW={snap8:"",ym:"",label:"",stale:false};
 /* 月末確定(05-2)週で複製表示している元の週次。on の間は全欄が閲覧のみ。 */
 let MEV={on:false,label:""};
 
@@ -872,48 +908,59 @@ let MEV={on:false,label:""};
 async function capi(fn,...args){ if(IS_GAS) return gsCall(fn,...args); return mockApi(fn,args); }
 function mockRows(){ try{return JSON.parse(localStorage.getItem("mock_comments")||"[]");}catch(e){return [];} }
 function mockSave(r){ localStorage.setItem("mock_comments",JSON.stringify(r)); }
+function mockNow(){ return new Date().toISOString().slice(0,19).replace("T"," "); }
+function mockKey(o){ return [o.year_month,o.snapshot8,o.area,o.store,o.dept].map(v=>String(v==null?"":v)).join("|"); }
 function mockApi(fn,args){
-  if(fn==="getComments"){ const [ym,sn,area,store,dept]=args; const out={A:[],P:[],D:[]};
-    mockRows().forEach(r=>{ if(String(r.year_month)===String(ym)&&String(r.snapshot8)===String(sn)&&r.area===area&&r.store===store&&r.dept===dept&&out[r.section]) out[r.section].push(r); });
+  if(fn==="getComments"){ const [ym,sn,area,store,dept]=args; const out={A:[],PD:[],UA:[],UPD:[]};
+    const want=[ym,sn,area,store,dept].map(v=>String(v==null?"":v)).join("|");
+    mockRows().forEach(r=>{ if(!r.deleted_at&&mockKey(r)===want&&out[r.section]) out[r.section].push(r); });
     return Promise.resolve(out); }
-  if(fn==="upsertComment"){ const [key,sec,id,text,resolved]=args; const rows=mockRows();
-    const now=new Date().toISOString().slice(0,19).replace("T"," ");
+  if(fn==="upsertComment"){ const [key,sec,id,text,resolved]=args; const rows=mockRows(); const now=mockNow();
+    if(!["A","PD","UA","UPD"].includes(sec)) return Promise.reject(new Error("この欄には書けません: "+sec));
     const ex=rows.find(r=>r.item_id===id);
-    if(ex){ ex.text=text; ex.resolved=!!resolved; ex.resolved_at=resolved?(ex.resolved_at||now):""; ex.updated_at=now; }
-    else rows.push({year_month:key.ym,snapshot8:key.snap8,area:key.area,store:key.store,dept:key.dept,section:sec,
-      item_id:id,text:text,resolved:!!resolved,resolved_at:resolved?now:"",author:"ローカル開発",updated_at:now,source:"mock"});
+    if(ex){
+      if(mockKey(ex)!==[key.ym,key.snap8,key.area,key.store||"",key.dept].join("|")||ex.section!==sec) return Promise.reject(new Error("このコメントは、この画面の欄のものではありません"));
+      if(ex.deleted_at) return Promise.reject(new Error("このコメントは削除されています"));
+      ex.text=text; ex.resolved=!!resolved; ex.resolved_at=resolved?(ex.resolved_at||now):""; ex.updated_at=now;
+    }
+    else rows.push({year_month:key.ym,snapshot8:key.snap8,area:key.area,store:key.store||"",dept:key.dept,section:sec,
+      item_id:id,text:text,resolved:!!resolved,resolved_at:resolved?now:"",author:"ローカル開発",updated_at:now,source:"mock",deleted_at:"",deleted_by:""});
     mockSave(rows); return Promise.resolve({item_id:id}); }
-  if(fn==="deleteComment"){ mockSave(mockRows().filter(r=>r.item_id!==args[0])); return Promise.resolve({deleted:true}); }
+  if(fn==="deleteComment"){ const rows=mockRows(); const ex=rows.find(r=>r.item_id===args[0]);
+    if(ex&&!ex.deleted_at){ ex.deleted_at=mockNow(); ex.deleted_by="ローカル開発"; }
+    mockSave(rows); return Promise.resolve({deleted:!!ex}); }
   if(fn==="uploadInbox") return Promise.resolve({ok:true,name:args[1],by:"ローカル開発",at:"(モック)"});
   if(fn==="getCommentsSheetUrl") return Promise.resolve("");  // ローカルは正本Sheetへのリンクなし（実IDは公開しない）
+  if(fn==="getMyRights") return Promise.resolve({hq:true,admin:true});
   if(fn==="buildPdcaSheet"){ window.__lastSpec=args[0]; return Promise.resolve({url:"https://docs.google.com/spreadsheets/d/MOCK_"+encodeURIComponent(args[0].fileName)+"/edit",id:"mock"}); }
   return Promise.reject(new Error("mock未対応: "+fn));
 }
 
-/* 権限（入室担当 asg \u00D7 現在の表示スコープ） */
-function canEditSec(sec){
+/* 権限（入室担当 asg × いまの画面）。どこに書けるかは入口で選んだ担当で決める（PO 2026-10-14）。
+   サーバーは「本部ドメインか」を確かめる（店舗ドメインは書けない）。 */
+function roleCanWriteHere_(){
   const a=S.asg; if(!a||a.role==="viewer"||!S.snap) return false;
   if(a.area!==S.area) return false;
-  if(a.role!=="admin"&&a.dept!==S.dept) return false;
-  // 月末確定(05-2)＝確定値が出る時点で既に翌月のサイクルが始まっており書いても反映先がない → 全欄 閲覧のみ
-  if(MEV.on) return false;
-  // A＝前週Dの自動表示欄。前週Dがある週は閲覧のみ／無い週（初回起票）だけ直接書ける（ユーザー仕様 2026-08-27）
-  if(sec==="A"&&(CM.PREVD||[]).length) return false;
-  if(S.mode==="運営部詳細") return sec==="D"&&S.storeTab==="__total__"; // 運営部=Dのみ・店舗タブは全閲覧（C7）
-  if(S.mode==="商品部詳細") return true; // A/P/D すべて（エリア合計・店舗とも）
+  if(S.mode==="商品部詳細") return a.role==="lead"||(a.role==="buyer"&&a.dept===S.dept);
+  if(S.mode==="運営部詳細") return a.role==="unei";
   return false;
 }
-function canResolveRow(){
-  const a=S.asg; if(!a||a.role==="viewer") return false;
-  if(MEV.on) return false;                                           // 月末確定週は閲覧のみ（済も押せない）
-  return a.area===S.area&&(a.role==="admin"||a.dept===S.dept);
+function canEditSec(sec){
+  if(!roleCanWriteHere_()) return false;
+  // 月末確定(05-2)＝確定値が出る時点で既に翌月のサイクルが始まっており書いても反映先がない → 全欄 閲覧のみ
+  if(MEV.on) return false;
+  if(sec!==secA()&&sec!==secPD()) return false;
+  // A＝前週PDの自動表示欄。前週PDがある週は閲覧のみ／無い週（初回起票）だけ直接書ける
+  if(sec===secA()&&(CM.PREV||[]).length) return false;
+  return true;
 }
+function canResolveRow(){ return roleCanWriteHere_()&&!MEV.on; }
 function cKey(){
   const store=S.storeTab!=="__total__"?((S.stores.find(x=>x.slug===S.storeTab)||{}).full||""):"";
   return {ym:S.ym,snap8:s8(S.snap),area:S.area,store:store,dept:S.dept};
 }
 
-/* ── 週次リンク：前週D → 当週A 自動表示（ユーザー仕様 2026-08-27）──
+/* ── 週次リンク：前週PD → 当週A 自動表示 ──
    ・「一つ前の週」はカレンダーではなく **実在するデータ期間の並び** で決める
      → 週が抜けていれば飛ばして繋がり、後から遡って週が追加されても、開き直せば常に正しい直前週を指す
    ・05-2（月末確定）は連鎖に含めない
@@ -953,105 +1000,125 @@ async function prevWeeks8_(area,ym,snap8,limit){
 function hasText_(arr){ return (arr||[]).some(x=>x&&String(x.text||"").trim()); }
 function lbl8_(s){ return String(s).slice(4,6)+"/"+String(s).slice(6,8); }
 function lblJa_(s){ return (+String(s).slice(4,6))+"月/"+(+String(s).slice(6,8))+"日"; }
-/* 指定スコープの前週D。直前週のDが空なら「PDCA対応がなかった週」とみなして更に遡り、
-   最後に実行結果(D)が記録された週を持ってくる（課題を消さずに引き継ぐ）。戻り値 {items,snap8,ym,label,stale} */
+/* 指定スコープの前週 PD（sec＝PD か UPD）。直前週の PD が空なら「PDCA対応がなかった週」とみなして更に遡り、
+   最後に PD が記録された週を持ってくる（課題を消さずに引き継ぐ）。戻り値 {items,snap8,ym,label,stale} */
 const PREV_LOOKBACK=4;
-async function fetchPrevD_(area,ym,snap8,store,dept){
+async function fetchPrevPD_(area,ym,snap8,store,dept,sec){
   const empty={items:[],snap8:"",ym:"",label:"",stale:false};
   if(!snap8) return empty;
   const chain=await prevWeeks8_(area,ym,snap8,PREV_LOOKBACK);
   for(let i=0;i<chain.length;i++){
     const w=chain[i]; let c;
     try{ c=await capi("getComments",w.ym,w.snap8,area,store,dept); }catch(e){ return empty; }
-    const D=c.D||[];
-    if(hasText_(D)) return {items:D,snap8:w.snap8,ym:w.ym,label:lbl8_(w.snap8),stale:i>0};
+    const P=c[sec]||[];
+    if(hasText_(P)) return {items:P,snap8:w.snap8,ym:w.ym,label:lbl8_(w.snap8),stale:i>0};
   }
   return empty;
 }
-function prevKey_(){ return {ym:PREVD.ym,snap8:PREVD.snap8,area:S.area,store:cKey().store,dept:S.dept}; }
-/* 済は課題（行）に1つ。前週Dがある週は「元のD行」へ、無い週は当週のA行へ立てる。 */
-function rowResolveTarget_(i){ return (CM.PREVD||[]).length?{sec:"PREVD",it:CM.PREVD[i]}:{sec:"A",it:CM.A[i]}; }
+function prevKey_(){ return {ym:PREVW.ym,snap8:PREVW.snap8,area:S.area,store:cKey().store,dept:S.dept}; }
+/* 済は課題（行）に1つ。前週PDがある週は「元のPD行」へ、無い週は当週のA行へ立てる。 */
+function rowResolveTarget_(i){ return (CM.PREV||[]).length?{sec:"PREV",it:CM.PREV[i]}:{sec:secA(),it:CM[secA()][i]}; }
 
 async function renderComments(){
   const el=$("cpanel"); if(!el) return;
   if(!S.snap){ el.innerHTML=""; return; }
   try{ const k=cKey();
-    const r=await apdForScope_(k.area,k.ym,k.snap8,k.store,k.dept,0);
-    CM=r.cm; CM.PREVD=r.pv.items;
-    PREVD={snap8:r.pv.snap8,ym:r.pv.ym,label:r.pv.label,stale:r.pv.stale};
+    const r=await apdForScope_(k.area,k.ym,k.snap8,k.store,k.dept,0,secPD());
+    CM=Object.assign({A:[],PD:[],UA:[],UPD:[]},r.cm); CM.PREV=r.pv.items;
+    PREVW={snap8:r.pv.snap8,ym:r.pv.ym,label:r.pv.label,stale:r.pv.stale};
     MEV={on:!!r.me,label:r.me};
   }
-  catch(e){ CM.PREVD=CM.PREVD||[]; MEV={on:false,label:""}; const m=String(e&&e.message||e);
+  catch(e){ CM.PREV=CM.PREV||[]; MEV={on:false,label:""}; const m=String(e&&e.message||e);
     el.innerHTML=m.includes("COMMENTS_SHEET_ID")
       ? `<div class="note">コメント機能は初期化前です（管理者が GAS エディタで <b>setupCommentSheet</b> を実行すると有効になります）。</div>`
       : `<div class="err">コメントを取得できません：${esc(m)}</div>`;
     return; }
   drawComments();
+  if(S._jumpCm){ S._jumpCm=false; landOn_(el); }
 }
-/* 行=課題（\u2460\u2461\u2026）\u00D7 列=A/P/D（オリジナル踏襲）。セル直接入力\u2192自動保存（スプシ同然）。済は行＝課題単位（Aのresolvedが正）。
+/* 一足飛びの着地: すっと移って、着いた所を光らせる */
+function landOn_(el){
+  if(!el) return;
+  try{ el.scrollIntoView({behavior:"smooth",block:"start"}); }catch(e){ el.scrollIntoView(); }
+  el.classList.remove("landed"); void el.offsetWidth; el.classList.add("landed");
+  setTimeout(()=>el.classList.remove("landed"),1800);
+}
+/* 行=課題（①②…）× 列=A/PD。セル直接入力→自動保存（スプシ同然）。済は行＝課題単位。
    タイピング中はDOMを再構築しない（フォーカス保持）。保存は saveQ で直列化（サーバー側ロック渋滞の防止）。 */
 function drawComments(){
   const el=$("cpanel"); if(!el) return;
+  const secs=SECS(), A=secs[0].k, PD=secs[1].k;
+  const who=S.mode==="運営部詳細"?"運営部":"商品部";
   const so=S.storeTab!=="__total__"?S.stores.find(x=>x.slug===S.storeTab):null;
   const scope=`${S.area} / ${S.dept}${so?" / "+so.short:" / エリア合計"}`;
   const sel=S.snaps.find(x=>x.snapshot===S.snap);
-  const anyEdit=SECTIONS.some(s=>canEditSec(s.k));
-  let h=`<div class="cmcard"><div class="cmhead"><b>PDCA アクション</b><span class="lb">${esc(scope)}・${esc(sel?sel.label:"")}${IS_GAS?"":"（ローカル＝保存はこの端末のみ）"}</span><span class="lb" id="cmsave"></span>`+
-    (S.sheetUrl?`<a href="${esc(safeUrl_(S.sheetUrl))}" target="_blank" rel="noopener" class="btn" style="margin-left:auto;text-decoration:none;padding:3px 10px;font-size:12px">\uD83D\uDCC4 スプレッドシートで開く</a>`:"")+`</div>`;
+  const anyEdit=secs.some(s=>canEditSec(s.k));
+  let h=`<div class="cmcard"><div class="cmhead"><b>PDCA アクション（${who}）</b><span class="lb">${esc(scope)}・${esc(sel?sel.label:"")}${IS_GAS?"":"（ローカル＝保存はこの端末のみ）"}</span><span class="lb" id="cmsave"></span>`+
+    (S.sheetUrl?`<a href="${esc(safeUrl_(S.sheetUrl))}" target="_blank" rel="noopener" class="btn" style="margin-left:auto;text-decoration:none;padding:3px 10px;font-size:12px">📄 スプレッドシートで開く</a>`:"")+`</div>`;
   h+=`<table class="cmt"><thead><tr><th style="width:26px">#</th>`;
-  SECTIONS.forEach(s=>{
-    const lab=(s.k==="A"&&CM.PREVD.length)?`${esc(s.label)}<span class="lb" style="font-weight:400">（前週D ${esc(PREVD.label)}）</span>`:esc(s.label);
-    h+=`<th style="width:31%">${s.icon} ${lab}${canEditSec(s.k)?"":` <span class="badge" style="background:#e2e8f0;color:#475569">閲覧のみ</span>`}</th>`;
+  secs.forEach(s=>{
+    const lab=(s.k===A&&CM.PREV.length)?`${esc(s.label)}<span class="lb" style="font-weight:400">（前週PD ${esc(PREVW.label)}）</span>`:esc(s.label);
+    h+=`<th style="width:46%">${s.icon} ${lab}${canEditSec(s.k)?"":` <span class="badge" style="background:#e2e8f0;color:#475569">閲覧のみ</span>`}</th>`;
   });
   h+=`<th style="width:76px">済</th></tr></thead><tbody id="cmtb">`;
   const n=cmRowCount();
   for(let i=0;i<n;i++) h+=cmRow(i);
-  if(!n) h+=`<tr><td></td><td colspan="3" class="cmempty">（記入なし）</td><td></td></tr>`;
+  if(!n) h+=`<tr><td></td><td colspan="2" class="cmempty">（記入なし）</td><td></td></tr>`;
   h+=`</tbody></table>`;
-  if(anyEdit) h+=`<div class="lb" style="margin-top:6px">セルに直接入力すると自動保存されます。「\u2713済」は行（課題）単位の完了記録です。</div>`;
-  // 未着手警告：Aに前週からの課題が出ているのに、当週のD（実行結果）が空＝サイクルが止まっている
-  //   D が空なら P も成立していないものとして扱う（ユーザー仕様 2026-08-27）
-  if(CM.PREVD.length&&!hasText_(CM.D))
-    h+=`<div class="cmwarn">⚠ ${PREVD.stale?"PDCA対応がなかったため、前週のAをそのまま表示します。":""}<b>${esc(lblJa_(PREVD.snap8))}から課題更新が未着手です。</b>${MEV.on?"":(hasText_(CM.P)?"D（実行結果）を記入して、PDCAサイクルを進めてください。":"P（計画）とD（実行結果）を記入して、PDCAサイクルを進めてください。")}</div>`;
-  if(MEV.on) h+=`<div class="gnote">📌 月末確定は <b>${esc(MEV.label)} 週のA／P／D</b> をそのまま表示しています（<b>閲覧のみ</b>）。確定値が出る時点では既に翌月のPDCAサイクルが始まっているため、この期間には書き込みません。</div>`;
-  if(CM.PREVD.length) h+=`<div class="gnote">A欄は<b>一つ前の週（${esc(PREVD.label)}）のD＝実行結果</b>を自動表示しています（書き込み不可・書き込むのは P／D）。データ期間が後から追加された場合も、開き直せば常に<b>実在する直前の週</b>を指します。</div>`;
+  if(anyEdit) h+=`<div class="lb" style="margin-top:6px">セルに直接入力すると自動保存されます。「✓済」は行（課題）単位の完了記録です。</div>`;
+  else if(S.asg&&S.asg.role!=="viewer"&&!MEV.on) h+=`<div class="lb" style="margin-top:6px">${esc(cmWhyReadonly_())}</div>`;
+  // 未着手警告：Aに前週からの課題が出ているのに、当週のPDが空＝サイクルが止まっている
+  if(CM.PREV.length&&!hasText_(CM[PD]))
+    h+=`<div class="cmwarn">⚠ ${PREVW.stale?"PDCA対応がなかったため、前週のAをそのまま表示します。":""}<b>${esc(lblJa_(PREVW.snap8))}から課題更新が未着手です。</b>${MEV.on?"":"PD（計画と実行）を記入して、PDCAサイクルを進めてください。"}</div>`;
+  if(MEV.on) h+=`<div class="gnote">📌 月末確定は <b>${esc(MEV.label)} 週のA／PD</b> をそのまま表示しています（<b>閲覧のみ</b>）。確定値が出る時点では既に翌月のPDCAサイクルが始まっているため、この期間には書き込みません。</div>`;
+  if(CM.PREV.length) h+=`<div class="gnote">A欄は<b>一つ前の週（${esc(PREVW.label)}）のPD＝計画と実行</b>を自動表示しています（書き込み不可・書き込むのは PD）。データ期間が後から追加された場合も、開き直せば常に<b>実在する直前の週</b>を指します。</div>`;
   el.innerHTML=h+`</div>`;
 }
+/* 書けない理由（担当と画面が合わないとき）を1行で */
+function cmWhyReadonly_(){
+  const a=S.asg; if(!a) return "";
+  if(a.area!==S.area) return `担当エリア（${a.area}）の外なので、見るだけです。`;
+  if(S.mode==="商品部詳細"&&a.role==="unei") return "運営部の PD は「運営部詳細」に書きます（上の「✎ コメントを書く」で移れます）。";
+  if(S.mode==="運営部詳細"&&a.role!=="unei") return "商品部の A・PD は「商品部詳細」に書きます（上の「✎ コメントを書く」で移れます）。";
+  if(a.role==="buyer"&&a.dept!==S.dept) return `担当部門（${a.dept}）の外なので、見るだけです。`;
+  return "";
+}
 function cmRowCount(){
-  const n=Math.max(CM.PREVD.length,CM.A.length,CM.P.length,CM.D.length);
-  return n+(SECTIONS.some(s=>canEditSec(s.k))?1:0); // 編集可なら常に空きの次行を1つ出す
+  const A=secA(), PD=secPD();
+  const n=Math.max(CM.PREV.length,CM[A].length,CM[PD].length);
+  return n+(SECS().some(s=>canEditSec(s.k))?1:0); // 編集可なら常に空きの次行を1つ出す
 }
 function cmRow(i){
   const t=rowResolveTarget_(i), resolved=!!(t.it&&t.it.resolved);
   let h=`<tr id="cmr_${i}" class="${resolved?"cmresolved":""}"><td class="cmmark" id="cmmk_${i}">${cmMark(i)}</td>`;
-  SECTIONS.forEach(s=>{ h+=`<td id="cmtd_${s.k}_${i}">${cmCellHtml(s.k,i)}</td>`; });
+  SECS().forEach(s=>{ h+=`<td id="cmtd_${s.k}_${i}">${cmCellHtml(s.k,i)}</td>`; });
   return h+`<td style="text-align:center" id="cmrs_${i}">${cmResolveHtml(i)}</td></tr>`;
 }
-function cmMark(i){ return (CM.PREVD[i]||SECTIONS.some(s=>CM[s.k][i]))?(MARKS[i]||String(i+1)):"＋"; }
-/* A欄＝前週Dの自動表示（閲覧のみ）。同じ行に当週Aの起票が残っていれば併記する。 */
+function cmMark(i){ return (CM.PREV[i]||SECS().some(s=>CM[s.k][i]))?(MARKS[i]||String(i+1)):"＋"; }
+/* A欄＝前週PDの自動表示（閲覧のみ）。同じ行に当週Aの起票が残っていれば併記する。 */
 function cmPrevACell_(i){
-  const p=CM.PREVD[i], a=CM.A[i]; let h="";
-  if(p) h+=`<div class="cmtext">${esc(p.text)}</div><div class="cmmeta">前週D（${esc(PREVD.label)}）${esc(p.author||"")}</div>`;
+  const p=CM.PREV[i], a=CM[secA()][i]; let h="";
+  if(p) h+=`<div class="cmtext">${esc(p.text)}</div><div class="cmmeta">前週PD（${esc(PREVW.label)}）${esc(p.author||"")}</div>`;
   if(a) h+=`${p?`<div style="height:6px;border-top:1px dashed #cbd5e1;margin-top:6px"></div>`:""}<div class="cmtext">${esc(a.text)}</div><div class="cmmeta">起票 ${esc(a.author||"")}${a.updated_at?"・"+esc(String(a.updated_at).slice(5,16)):""}</div>`;
   return h;
 }
 function cmCellHtml(sec,i){
-  if(sec==="A"&&CM.PREVD.length) return cmPrevACell_(i);
+  if(sec===secA()&&CM.PREV.length) return cmPrevACell_(i);
   const it=CM[sec][i], edit=canEditSec(sec);
   if(it){
     if(!edit) return `<div class="cmtext">${esc(it.text)}</div><div class="cmmeta">${esc(it.author||"")}${it.updated_at?"・"+esc(String(it.updated_at).slice(5,16)):""}</div>`;
     return `<textarea class="cmcell" data-sec="${sec}" data-id="${esc(it.item_id)}" oninput="cInput(this)" onblur="cBlur(this)">${esc(it.text)}</textarea>`+
-      `<div class="cmmeta">${esc(it.author||"")}${it.updated_at?"・"+esc(String(it.updated_at).slice(5,16)):""}<button class="btn" style="float:right;padding:0 6px;font-size:11px" title="行を削除" onclick="cDel('${esc(it.item_id)}')">\uD83D\uDDD1</button></div>`;
+      `<div class="cmmeta">${esc(it.author||"")}${it.updated_at?"・"+esc(String(it.updated_at).slice(5,16)):""}<button class="btn" style="float:right;padding:0 6px;font-size:11px" title="行を削除" onclick="cDel('${esc(it.item_id)}')">🗑</button></div>`;
   }
-  // 各列とも「次の1マス」だけ新規入力セルを出す（\u2460が埋まれば\u2461\u2026の位置に揃う）
-  if(edit&&CM[sec].length===i) return `<textarea class="cmcell" data-sec="${sec}" oninput="cInput(this)" onblur="cBlur(this)" placeholder="＋ 入力すると自動保存\u2026"></textarea>`;
+  // 各列とも「次の1マス」だけ新規入力セルを出す（①が埋まれば②…の位置に揃う）
+  if(edit&&CM[sec].length===i) return `<textarea class="cmcell" data-sec="${sec}" oninput="cInput(this)" onblur="cBlur(this)" placeholder="＋ 入力すると自動保存…"></textarea>`;
   return "";
 }
 function cmResolveHtml(i){
   const it=rowResolveTarget_(i).it; if(!it) return "";
   const resolved=!!it.resolved; let x="";
   if(resolved) x+=`<div class="badge bd-ok">済 ${esc(String(it.resolved_at||"").slice(5,10))}</div><div style="height:3px"></div>`;
-  if(canResolveRow()) x+=`<button class="btn" onclick="cResolve('${esc(it.item_id)}',${resolved?"false":"true"})">${resolved?"戻す":"\u2713 済"}</button>`;
+  if(canResolveRow()) x+=`<button class="btn" onclick="cResolve('${esc(it.item_id)}',${resolved?"false":"true"})">${resolved?"戻す":"✓ 済"}</button>`;
   return x;
 }
 function cmIndicator(st,msg){ const e=$("cmsave"); if(!e) return; e.textContent=msg||""; e.style.color=st==="err"?"#b91c1c":st==="saving"?"#b45309":"#166534"; }
@@ -1076,7 +1143,6 @@ function cFlush(el){
   it.text=el.value; enqueueSave(sec,el.dataset.id);
 }
 /* 新規行の確定: マーカー・済セルを更新し、次の空き行（無ければ追加）と当該列の次の入力マスを必ず用意する。
-   行が既に在る場合もその行の当該列セルへ入力マスを差し込む（A以外の列で新規マスが増えないバグの修正）。
    タイピング中の既存セルは触らない */
 function cmAfterCreate(sec){
   const i=CM[sec].length-1;
@@ -1088,32 +1154,34 @@ function cmAfterCreate(sec){
   if(td&&!td.querySelector("textarea")) td.innerHTML=cmCellHtml(sec,next);
 }
 function enqueueSave(sec,id){
-  cmIndicator("saving","保存中\u2026");
-  const isPrev=(sec==="PREVD");
+  cmIndicator("saving","保存中…");
+  const isPrev=(sec==="PREV");
   const key=isPrev?prevKey_():cKey(); // 保存時点のスコープを固定（後で画面を切り替えても正しい週キーへ書く）
-  const wire=isPrev?"D":sec;          // 前週D行の更新＝元の週のD行をそのまま書き換える（コピーを作らない）
+  const wire=isPrev?secPD():sec;      // 前週PD行の更新＝元の週のPD行をそのまま書き換える（コピーを作らない）
   saveQ=saveQ.then(async()=>{
     const it=(CM[sec]||[]).find(x=>x.item_id===id); if(!it) return;
     try{
       await capi("upsertComment",key,wire,id,it.text,!!it.resolved);
-      cmIndicator("ok","\u2713 自動保存 "+new Date().toTimeString().slice(0,5));
-    }catch(e){ cmIndicator("err","\u26A0 保存失敗（入力を続けると自動で再保存します）"); }
+      cmIndicator("ok","✓ 自動保存 "+new Date().toTimeString().slice(0,5));
+    }catch(e){ cmIndicator("err","⚠ 保存失敗："+String(e&&e.message||e).slice(0,60)); }
   });
 }
 /* 削除は必ず「行（課題）」単位。1セルだけ配列から抜くと、その列だけ上に詰まって
-   A・P・D の対応がずれるため（2026-08-27 修正）、同じ行の全列をまとめて取り除いて番号を振り直す。
-   ※セルの中身を消しただけのときは行を詰めない（空欄のまま位置を保つ）。 */
+   A・PD の対応がずれるため、同じ行の全列をまとめて取り除いて番号を振り直す。
+   ※セルの中身を消しただけのときは行を詰めない（空欄のまま位置を保つ）。
+   消した行はシートに印付きで残る（サーバーが消さずに印を付ける・記録も残る）。 */
 async function cDel(id){
-  const cols=CM.PREVD.length?["PREVD","P","D"]:["A","P","D"];
+  const A=secA(), PD=secPD();
+  const cols=CM.PREV.length?["PREV",A,PD]:[A,PD];   // 前週PDのある週は、同じ行に出ている当週Aの起票も一緒に消す
   let row=-1;
   cols.forEach(s=>{ const k=(CM[s]||[]).findIndex(x=>x&&x.item_id===id); if(k>=0) row=k; });
   if(row<0) return;
   const targets=cols.map(s=>CM[s][row]).filter(Boolean);
   if(!targets.length) return;
   const mk=MARKS[row]||String(row+1);
-  const msg=(CM.PREVD.length&&CM.PREVD[row])
-    ? `課題${mk} を行ごと削除します。\n前週D（${PREVD.label}）の記録も一緒に消えます。\n以降の番号は振り直されます。よろしいですか？`
-    : `課題${mk} を行ごと削除します。\nA・P・D すべて消え、以降の番号は振り直されます。よろしいですか？`;
+  const msg=(CM.PREV.length&&CM.PREV[row])
+    ? `課題${mk} を行ごと削除します。\n前週PD（${PREVW.label}）の記録も一緒に消えます。\n以降の番号は振り直されます。よろしいですか？`
+    : `課題${mk} を行ごと削除します。\nA・PD とも消え、以降の番号は振り直されます。よろしいですか？`;
   if(!confirm(msg)) return;
   cols.forEach(s=>{ if(CM[s].length>row) CM[s].splice(row,1); });   // 全列を同じ位置で抜く＝行として消える
   drawComments();
@@ -1125,7 +1193,7 @@ async function cDel(id){
   });
 }
 function cResolve(id,flag){
-  const sec=(CM.PREVD||[]).length?"PREVD":"A";
+  const sec=(CM.PREV||[]).length?"PREV":secA();
   const it=(CM[sec]||[]).find(x=>x.item_id===id); if(!it) return;
   it.resolved=flag; it.resolved_at=flag?new Date().toISOString().slice(0,19).replace("T"," "):"";
   const i=CM[sec].indexOf(it);
@@ -1146,15 +1214,16 @@ async function renderDataManage(){
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCCA 取込状況（最終バッチ結果）</div><div id="dmStatus" class="lb">読み込み中\u2026</div></div>`+
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 受払CSV 取込</div>`+
       `<div class="cmadd"><input type="file" id="dmUke" multiple accept=".csv"><button class="btn primary" id="dmUkeBtn" onclick="dmUpUke(this)">アップロード</button></div>`+
-      `<div class="lb" style="margin-top:6px">アップロード後、5分毎の自動処理で取込\u2192表示データ再生成。重複ファイルは自動判定で除外されます。</div>`+
+      `<div class="lb" style="margin-top:6px">アップロード後、5分毎の自動処理で取込\u2192表示データ再生成。中身が同じファイルは自動で除外されます。同じ店・同じ時点のデータがすでにあるときは、送る前に「上書きしますか」と確かめます。</div>`+
       `<div class="lb" style="margin-top:4px">旧分類の受払表（2026年8月以前の過去分など）は、新分類へ機械的に置き換えた<b>参考データ</b>として取り込みます。新分類のデータがあれば、そちらを入れてください（後から入れても自動で置き換わります）。</div><div id="dmUkeMsg"></div><div id="dmUkeTrack"></div></div>`+
     `<div class="cmcard"><div class="cmsechead">\uD83D\uDCE5 年度予算（xlsx・スプレッドシート）</div>`+
       `<div class="cmadd"><input type="file" id="dmBud" multiple accept=".xlsx" onchange="budAdd()"><button class="btn primary" id="dmBudBtn" onclick="dmUpBud(this)">まとめてアップロード</button></div>`+
-      `<div class="cmadd" style="margin-top:6px"><button class="btn" onclick="budPickOpen('root')">\uD83D\uDCC2 マイドライブから選ぶ</button><button class="btn" onclick="budPickOpen('shared')">\uD83D\uDC65 共有アイテムから選ぶ</button></div>`+
+      `<div class="cmadd" style="margin-top:6px;display:none" id="dmDriveBtns"><button class="btn" onclick="budPickOpen('root')">\uD83D\uDCC2 マイドライブから選ぶ</button><button class="btn" onclick="budPickOpen('shared')">\uD83D\uDC65 共有アイテムから選ぶ</button><span class="lb">（管理者だけ）</span></div>`+
       `<div id="dmPick"></div>`+
-      `<div class="lb" style="margin-top:6px">PCのファイルでも、ドライブから選んでもOK（スプレッドシートはxlsxへ自動変換）。ファイル名は自由\u2014\u2014名前から<b>年度・エリアを自動判定</b>し「{年度}_{エリア}.xlsx」へ正規化して取込みます。何度でも<b>積み上げ</b>OK、同じファイル・同じ 年度\u00D7エリア の<b>重複は自動排除</b>。<b>東北は3エリア（北東北・宮城・山形）が1冊のままでOK</b>（取込時に自動分割）。判定できなかった行（赤）だけ年度・エリアを選んでください。</div>`+
+      `<div class="lb" style="margin-top:6px">PCのファイルを選んで上げます（管理者は、ドライブからも選べます。スプレッドシートはxlsxへ自動変換）。ファイル名は自由\u2014\u2014名前から<b>年度・エリアを自動判定</b>し「{年度}_{エリア}.xlsx」へ正規化して取込みます。何度でも<b>積み上げ</b>OK、同じファイル・同じ 年度\u00D7エリア の<b>重複は自動排除</b>。<b>東北は3エリア（北東北・宮城・山形）が1冊のままでOK</b>（取込時に自動分割）。判定できなかった行（赤）だけ年度・エリアを選んでください。</div>`+
       `<div id="dmBudQ" style="margin-top:6px"></div><div id="dmBudMsg"></div></div>`;
   await refreshDmStatus_();
+  try{ const r=await capi("getMyRights"); const b=$("dmDriveBtns"); if(b&&r&&r.admin) b.style.display=""; }catch(e){ /* 出さないまま（サーバーも通さない） */ }
 }
 /* 取込状況パネルの再取得。アップロード直後は「取込状況」が固まって見え、反映済みかどうか
    分からなくなる誤認（2026-09-08 発生）を防ぐため、アップロード完了時にも呼ぶ。 */
@@ -1344,34 +1413,63 @@ async function ukeClassInfo_(f){
   const head=lines[0]||"";
   const ym=((head.match(/\[年月\]\s*=\s*(\d{6})/)||head.match(/\[年月日\]\s*=\s*(\d{6})\d{2}/)||[])[1])||"";
   const store=((head.match(/\[店舗名\]\s*=\s*([^)]+?)\s*\)/)||[])[1])||"";
+  // 同じ日付の警告に使う: エリア（グループ１名）・時点（05-4＝[年月日]／05-2＝[年月]＝月末）
+  const area=((head.match(/\[グループ[１1]名\]\s*=\s*([^\s)　]+)/)||[])[1])||"";
+  const day=((head.match(/\[年月日\]\s*=\s*(\d{8})/)||[])[1])||"";
+  const kind=day?"05-4":(ym?"05-2":"");
   let hi=-1;
   for(let i=0;i<Math.min(6,lines.length);i++){
     if(/^"?分類[２2]名"?\s*,/.test(lines[i].trim())){ hi=i; break; }
   }
-  if(hi<0) return {basis:"unknown",ym,store};
+  if(hi<0) return {basis:"unknown",ym,store,area,day,kind};
   const ds=new Set();
   for(let i=hi+1;i<lines.length;i++){
     const d=(lines[i].split(",")[0]||"").replace(/"/g,"").replace(/[\s\u3000]/g,"");
     if(d) ds.add(d);
   }
   const basis=[...ds].some(d=>UKE_NEW_DEPTS.has(d))?"new":[...ds].some(d=>UKE_OLD_DEPTS.has(d))?"old":"new";
-  return {basis,ym,store};
+  return {basis,ym,store,area,day,kind};
 }
-/* 確認ダイアログ。取り込む→true／やめる・Esc→false。既定の選択は「やめる」（警告なので安全側） */
-function ukeAskOld_(olds, total){
+/* 同じ店・同じ時点のデータが、もう画面にあるか（PO 2026-10-14「同じ日付のデータが入った場合は、警告を出して上書きも出来る」）。
+   画面にあるデータ期間（snapshots）と、その期間の店（stores）で見る。画面の一覧に無い月は確かめられない（警告しない）。 */
+async function ukeExisting_(infos){
+  const norm=x=>String(x||"").normalize("NFKC").replace(/[\s\u3000]/g,"");
+  const cache={}, out=[];
+  for(const x of infos){
+    if(!x.area||!x.ym||!x.store||!x.kind) continue;
+    if(!(S.meta.areas||[]).includes(x.area)||!(S.meta.year_months||[]).includes(x.ym)) continue;
+    const k=x.area+"|"+x.ym;
+    if(!cache[k]){ try{ cache[k]=(await API.snapshots(x.area,x.ym)).snapshots||[]; }catch(e){ cache[k]=[]; } }
+    const snap=cache[k].find(o=>x.kind==="05-2"?String(o.file_type||"")==="05-2":(String(o.file_type||"")==="05-4"&&s8(o.snapshot)===x.day));
+    if(!snap) continue;
+    const sk=k+"|"+snap.snapshot;
+    if(!cache[sk]){ try{ cache[sk]=((await API.stores(x.area,x.ym,snap.snapshot)).stores)||[]; }catch(e){ cache[sk]=[]; } }
+    if(cache[sk].some(st=>norm(st.full)===norm(x.store))) out.push(Object.assign({},x,{label:String(snap.label||"").replace("\uD83D\uDCCA","").replace("\uD83D\uDCCC","").trim()}));
+  }
+  return out;
+}
+/* 確認ダイアログ（同じ日付の上書き／旧分類）。取り込む→true／やめる・Esc→false。既定の選択は「やめる」（警告なので安全側） */
+function ukeAsk_(olds, dups, total){
   return new Promise(resolve=>{
     const o=document.createElement("div"); o.id="ukeAsk";
     const ymTxt=ym=>ym?`${ym.slice(0,4)}年${Number(ym.slice(4,6))}月`:"年月不明";
-    const rows=olds.map(x=>`<div>・${esc(ymTxt(x.ym))}　${esc(x.store||"店舗不明")} <span class="fn">${esc(x.name)}</span></div>`).join("");
+    const rowsOld=olds.map(x=>`<div>・${esc(ymTxt(x.ym))}　${esc(x.store||"店舗不明")} <span class="fn">${esc(x.name)}</span></div>`).join("");
+    const rowsDup=dups.map(x=>`<div>・${esc(ymTxt(x.ym))} ${esc(x.label||"")}　${esc(x.store)} <span class="fn">${esc(x.name)}</span></div>`).join("");
+    const secDup=dups.length?
+      `<p><b>同じ店・同じ時点のデータが、すでにあります（${dups.length} / ${total} 件）。</b>取り込むと、今回のデータで上書きされます。</p>`+
+      `<div class="alist">${rowsDup}</div>`+
+      `<div class="anote">新分類のデータは、旧分類のデータより優先されます（旧分類で上げ直しても、新分類のデータが残ります）。月中（速報）と月末確定は別の時点として扱います。</div>`:"";
+    const secOld=olds.length?
+      `<p style="margin-top:10px"><b>旧分類の受払表が含まれています（${olds.length} / ${total} 件）。</b>2026年8月以前の過去分は旧分類のデータです。新分類のデータで改めて入れてください。</p>`+
+      `<div class="alist">${rowsOld}</div>`+
+      `<p>新分類のデータが無い場合も、このまま取り込めます。その場合は、<b>旧分類を新分類へ機械的に置き換えた参考データ</b>になります（温惣菜と冷惣菜など、新分類で分かれたカテゴリは分けられません）。</p>`+
+      `<div class="anote">あとから同じ店・同じ月の新分類のデータを入れると、自動でそちらに置き換わります。</div>`:"";
+    const title=dups.length&&olds.length?"上書きと旧分類を確かめてください":dups.length?"同じ日付のデータがあります（上書き）":`旧分類の受払表が含まれています（${olds.length} / ${total} 件）`;
+    const yes=dups.length?"上書きして取り込む":"参考データとして取り込む";
     o.innerHTML=`<div class="acard" role="alertdialog" aria-modal="true" aria-labelledby="ukeAskT">`+
-      `<div class="ahead" id="ukeAskT"><span>⚠️</span>旧分類の受払表が含まれています（${olds.length} / ${total} 件）</div>`+
-      `<div class="abody">`+
-        `<p>2026年8月以前の過去分は旧分類のデータです。<b>新分類のデータで改めて入れてください。</b></p>`+
-        `<div class="alist">${rows}</div>`+
-        `<p>新分類のデータが無い場合も、このまま取り込めます。その場合は、<b>旧分類を新分類へ機械的に置き換えた参考データ</b>になります（温惣菜と冷惣菜など、新分類で分かれたカテゴリは分けられません）。よろしいですか？</p>`+
-        `<div class="anote">あとから同じ店・同じ月の新分類のデータを入れると、自動でそちらに置き換わります。</div>`+
-      `</div>`+
-      `<div class="afoot"><button class="btn" id="ukeAskNo">やめる</button><button class="btn primary" id="ukeAskYes">参考データとして取り込む</button></div></div>`;
+      `<div class="ahead" id="ukeAskT"><span>⚠️</span>${esc(title)}</div>`+
+      `<div class="abody">${secDup}${secOld}<p style="margin-top:8px">よろしいですか？</p></div>`+
+      `<div class="afoot"><button class="btn" id="ukeAskNo">やめる</button><button class="btn primary" id="ukeAskYes">${esc(yes)}</button></div></div>`;
     document.body.appendChild(o);
     const done=v=>{ document.removeEventListener("keydown",onKey); o.remove(); resolve(v); };
     const onKey=e=>{ if(e.key==="Escape") done(false); };
@@ -1393,7 +1491,8 @@ async function dmUpUke(btn){
   try{
     const infos=await Promise.all(fs.map(f=>ukeClassInfo_(f).then(x=>({...x,name:f.name}))));
     const olds=infos.filter(x=>x.basis==="old");
-    if(olds.length) go=await ukeAskOld_(olds, fs.length);
+    const dups=await ukeExisting_(infos);
+    if(olds.length||dups.length) go=await ukeAsk_(olds, dups, fs.length);
   } finally { UKECHK=false; }
   if(!go){ toast("アップロードをやめました（ファイルは選んだままです）"); return; }
   UKEUP=true;
@@ -1598,42 +1697,42 @@ function vChangeDept(d){ S.dept=d; vRenderBody(); }
 async function vChangeYm(y){ S.ym=y; try{const r=await API.stores(S.area,y,S.snap);S.stores=r.stores||[];}catch(e){} await vLoadSnaps(); vRenderBody(); }
 async function vChangeSnap(v){ S.snap=v; try{const r=await API.stores(S.area,S.ym,v);S.stores=r.stores||[];}catch(e){} vRenderBody(); }
 
-/* 読み取り専用APD（横並び・入力なし） */
+/* 読み取り専用 A／PD（店舗の方の閲覧・印刷。商品部の欄を出す） */
 function apdReadonly(cm,pv,me){
-  const PD=(pv&&pv.items)||[];
-  const n=Math.max(PD.length,cm.A.length,cm.P.length,cm.D.length);
-  let h=`<table class="cmt"><thead><tr><th style="width:26px">#</th><th>\u2705 A：改善アクション</th><th>\uD83D\uDCCB P：計画</th><th>\uD83C\uDFAF D：実行（結果）</th><th style="width:64px">済</th></tr></thead><tbody>`;
-  for(let i=0;i<n;i++){ const a=PD.length?PD[i]:cm.A[i], rs=!!(a&&a.resolved);
-    // A欄＝前週D（あれば）→ 当週Aの起票、の順に併記
-    const aCell=(PD.length&&PD[i]?`<div class="cmtext">${esc(PD[i].text)}</div><div class="cmmeta">前週D（${esc(pv.label)}）</div>`:"")
-      +(cm.A[i]?`<div class="cmtext">${esc(cm.A[i].text)}</div>`:"");
+  const PV=(pv&&pv.items)||[], A=cm.A||[], PD=cm.PD||[];
+  const n=Math.max(PV.length,A.length,PD.length);
+  let h=`<table class="cmt"><thead><tr><th style="width:26px">#</th><th>✅ A：改善アクション</th><th>📝 PD：計画と実行</th><th style="width:64px">済</th></tr></thead><tbody>`;
+  for(let i=0;i<n;i++){ const a=PV.length?PV[i]:A[i], rs=!!(a&&a.resolved);
+    // A欄＝前週PD（あれば）→ 当週Aの起票、の順に併記
+    const aCell=(PV.length&&PV[i]?`<div class="cmtext">${esc(PV[i].text)}</div><div class="cmmeta">前週PD（${esc(pv.label)}）</div>`:"")
+      +(A[i]?`<div class="cmtext">${esc(A[i].text)}</div>`:"");
     h+=`<tr class="${rs?"cmresolved":""}"><td class="cmmark">${MARKS[i]||(i+1)}</td><td>${aCell}</td>`+
-      [cm.P[i],cm.D[i]].map(it=>`<td>${it?`<div class="cmtext">${esc(it.text)}</div>`:""}</td>`).join("")+
+      `<td>${PD[i]?`<div class="cmtext">${esc(PD[i].text)}</div>`:""}</td>`+
       `<td style="text-align:center">${rs?`<span class="badge bd-ok">済 ${esc(String(a.resolved_at||"").slice(5,10))}</span>`:""}</td></tr>`;
   }
-  if(!n) h+=`<tr><td></td><td colspan="3" class="cmempty">（記入なし）</td><td></td></tr>`;
+  if(!n) h+=`<tr><td></td><td colspan="2" class="cmempty">（記入なし）</td><td></td></tr>`;
   let tail="";
-  if(PD.length&&!hasText_(cm.D))
+  if(PV.length&&!hasText_(PD))
     tail+=`<div class="cmwarn">⚠ ${pv.stale?"PDCA対応がなかったため、前週のAをそのまま表示します。":""}<b>${esc(lblJa_(pv.snap8))}から課題更新が未着手です。</b>${me?"":"PDCAサイクルを進めてください。"}</div>`;
-  if(me) tail+=`<div class="gnote">📌 月末確定は <b>${esc(me)} 週のA／P／D</b> をそのまま表示しています（閲覧のみ）。</div>`;
-  if(PD.length) tail+=`<div class="gnote">A欄は一つ前の週（${esc(pv.label)}）のD＝実行結果を自動表示しています。</div>`;
+  if(me) tail+=`<div class="gnote">📌 月末確定は <b>${esc(me)} 週のA／PD</b> をそのまま表示しています（閲覧のみ）。</div>`;
+  if(PV.length) tail+=`<div class="gnote">A欄は一つ前の週（${esc(pv.label)}）のPD＝計画と実行を自動表示しています。</div>`;
   return h+`</tbody></table>`+tail;
 }
-/* 表示用の A/P/D を一式そろえる（本部・閲覧者・スプレッドシートで共通の規則）。
-   月末確定(05-2) → その月の最終週の“画面そのまま”を複製（＝再帰。A欄も最終週から見た前週Dになる・閲覧のみ）
-   通常週        → A欄＝直前週のD（空なら更に遡る）／P・D＝当週 */
-async function apdForScope_(area,ym,snap8,store,dept,depth){
-  const d=depth||0;
+/* 表示用の A／PD を一式そろえる（本部・閲覧者・スプレッドシートで共通の規則）。sec＝前週を A に出す欄（PD か UPD）
+   月末確定(05-2) → その月の最終週の“画面そのまま”を複製（＝再帰。A欄も最終週から見た前週PDになる・閲覧のみ）
+   通常週        → A欄＝直前週のPD（空なら更に遡る）／PD＝当週 */
+async function apdForScope_(area,ym,snap8,store,dept,depth,sec){
+  const d=depth||0, ps=sec||"PD";
   if(await isMonthEnd8_(area,ym,snap8)){
     const p=await prevWeeks8_(area,ym,snap8,1);
     if(p.length&&d<2){
-      const r=await apdForScope_(area,p[0].ym,p[0].snap8,store,dept,d+1);
+      const r=await apdForScope_(area,p[0].ym,p[0].snap8,store,dept,d+1,ps);
       return {cm:r.cm,pv:r.pv,me:lbl8_(p[0].snap8)};
     }
     return {cm:await capi("getComments",ym,snap8,area,store,dept),pv:{items:[],label:"",snap8:"",stale:false},me:""};
   }
   const cm=await capi("getComments",ym,snap8,area,store,dept);
-  const pv=await fetchPrevD_(area,ym,snap8,store,dept);
+  const pv=await fetchPrevPD_(area,ym,snap8,store,dept,ps);
   return {cm:cm,pv:pv,me:""};
 }
 async function vRenderBody(){
