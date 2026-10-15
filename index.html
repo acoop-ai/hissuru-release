@@ -50,8 +50,6 @@
   .asgbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;}
   .asgbar .role-badge{border-radius:6px;padding:2px 8px;font-weight:600;}
   .rb-buyer{background:var(--sky100);color:var(--sky800);} .rb-admin{background:#fef3c7;color:#92400e;} .rb-viewer{background:#f1f5f9;color:#475569;} .rb-unei{background:#dcfce7;color:#166534;}
-  @keyframes landed{0%{box-shadow:0 0 0 4px #f59e0b;}100%{box-shadow:0 0 0 0 rgba(245,158,11,0);}}
-  .landed{animation:landed 1.8s ease-out;border-radius:10px;}
 
   /* モードタブ */
   .modes{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:18px 0 0;}
@@ -210,7 +208,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-15c</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-15d</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -713,7 +711,7 @@ function renderGate(){
   const areaSel=`<select id="gArea" onchange="S.area=this.value"><option value="">担当エリアを選択</option>`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
   const deptSel=`<select id="gDept" onchange="S.dept=this.value"><option value="">担当部門を選択</option>`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`;
   const selects=S.role==="viewer"?"":`<div class="gate-selects"><span class="lb">エリア：</span>${areaSel}${roleNeedsDept_(S.role)?`<span class="lb">部門：</span>${deptSel}`:""}</div>`;
-  // 入口の釦は1つ（PO 2026-10-15「入室時に閲覧かコメント記入かを選ぶ必要はない。ただの入室で良い」）。コメント欄へは入室後の帯の「✎ コメントを書く」で
+  // 入口の釦は1つ（PO 2026-10-15「入室時に閲覧かコメント記入かを選ぶ必要はない。ただの入室で良い」）。書ける担当は、詳細モードの表の下のコメント欄にそのまま書く
   const enterBtns=`<button class="btn primary" style="width:100%;padding:10px" id="gEnter" onclick="enter()">\uD83D\uDEAA ${S.role==="viewer"?"閲覧者として入室する":"入室する"}</button>`;
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
@@ -723,7 +721,7 @@ function renderGate(){
     `<div style="margin-top:10px">${enterBtns}`+
     `<p class="warn" id="gWarn" style="display:none"></p>`+
     (restored?`<p class="hint" style="color:#166534">前回の担当を復元しました。このままでよければ入室してください。</p>`:"")+
-    `<p class="hint">入室後、上の帯の「✎ コメントを書く」で、担当のコメント欄（最新の週）へ一足飛びで移れます。担当も、上の帯から変えられます。</p></div></div></div></div>`;
+    `<p class="hint">書ける担当は、商品部詳細・運営部詳細の表の下のコメント欄に、そのまま書けます。担当は、入室後も上の帯から変えられます。</p></div></div></div></div>`;
   updateGate();
 }
 function setRole(k){ S.role=k; renderGate(); }
@@ -739,16 +737,6 @@ function enter(){
   savePref_({role:S.role,area:S.area,dept:S.dept});   // 次回の入室で復元
   S.entered=true; renderApp();
 }
-/* 「✎ コメントを書く」: 担当のモード（商品部詳細／運営部詳細）・担当の部門・最新の週へ切り替え、コメント欄へ移って光らせる */
-function jumpToComments(){
-  const a=S.asg; if(!a||a.role==="viewer") return;
-  S.area=a.area;
-  if(roleNeedsDept_(a.role)&&a.dept) S.dept=a.dept;
-  S.mode=(a.role==="unei")?"運営部詳細":"商品部詳細";   // 責任者は商品部詳細から（運営部詳細へは上のタブで）
-  S.ym=(S.meta.year_months||[])[0]||S.ym;
-  S._jumpCm=true;
-  renderApp();
-}
 
 /* 入室後 */
 function renderApp(){
@@ -758,8 +746,7 @@ function renderApp(){
   const roleLabel=ROLES.find(r=>r.k===a.role).label;
   const asg=`<div class="asgbar"><span class="lb">担当：</span><span class="role-badge ${rb}">${roleLabel}</span>`+
     (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(roleNeedsDept_(a.role)?`<span class="chip d">${esc(a.dept)}</span>`:"")+
-    (a.role!=="viewer"?`<button class="btn primary" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="jumpToComments()" title="担当のコメント欄（最新の週）へ移ります">\u270E コメントを書く</button>`:"")+
-    `<button class="btn" style="${a.role!=="viewer"?"":"margin-left:auto;"}padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
+    `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
   // 閲覧系タブ（左）と 管理者用データ管理（右端に隔離）を視覚的に分ける
   const modeBtns=MODES.map(m=>`<button class="${S.mode===m?'on':''}" onclick="setMode('${m}')">${modeIcon(m)} ${m}</button>`).join("");
   const adminBtn=(a.role!=="viewer")
@@ -1033,14 +1020,6 @@ async function renderComments(){
       : `<div class="err">コメントを取得できません：${esc(m)}</div>`;
     return; }
   drawComments();
-  if(S._jumpCm){ S._jumpCm=false; landOn_(el); }
-}
-/* 一足飛びの着地: すっと移って、着いた所を光らせる */
-function landOn_(el){
-  if(!el) return;
-  try{ el.scrollIntoView({behavior:"smooth",block:"start"}); }catch(e){ el.scrollIntoView(); }
-  el.classList.remove("landed"); void el.offsetWidth; el.classList.add("landed");
-  setTimeout(()=>el.classList.remove("landed"),1800);
 }
 /* 行=課題（①②…）× 列=A/PD。セル直接入力→自動保存（スプシ同然）。済は行＝課題単位。
    タイピング中はDOMを再構築しない（フォーカス保持）。保存は saveQ で直列化（サーバー側ロック渋滞の防止）。 */
@@ -1077,8 +1056,8 @@ function drawComments(){
 function cmWhyReadonly_(){
   const a=S.asg; if(!a) return "";
   if(a.area!==S.area) return `担当エリア（${a.area}）の外なので、見るだけです。`;
-  if(S.mode==="商品部詳細"&&a.role==="unei") return "運営部の A・PD は「運営部詳細」に書きます（上の「✎ コメントを書く」で移れます）。";
-  if(S.mode==="運営部詳細"&&a.role==="buyer") return "商品部の A・PD は「商品部詳細」に書きます（上の「✎ コメントを書く」で移れます）。";
+  if(S.mode==="商品部詳細"&&a.role==="unei") return "運営部の A・PD は「運営部詳細」に書きます（上のタブで切り替えられます）。";
+  if(S.mode==="運営部詳細"&&a.role==="buyer") return "商品部の A・PD は「商品部詳細」に書きます（上のタブで切り替えられます）。";
   if(roleNeedsDept_(a.role)&&a.dept!==S.dept) return `担当部門（${a.dept}）の外なので、見るだけです。`;
   return "";
 }
