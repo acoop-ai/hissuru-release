@@ -50,7 +50,6 @@
   .asgbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;}
   .asgbar .role-badge{border-radius:6px;padding:2px 8px;font-weight:600;}
   .rb-buyer{background:var(--sky100);color:var(--sky800);} .rb-admin{background:#fef3c7;color:#92400e;} .rb-viewer{background:#f1f5f9;color:#475569;} .rb-unei{background:#dcfce7;color:#166534;}
-  .gate-enter{display:flex;gap:8px;}
   @keyframes landed{0%{box-shadow:0 0 0 4px #f59e0b;}100%{box-shadow:0 0 0 0 rgba(245,158,11,0);}}
   .landed{animation:landed 1.8s ease-out;border-radius:10px;}
 
@@ -211,7 +210,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-15b</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-15c</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -714,10 +713,8 @@ function renderGate(){
   const areaSel=`<select id="gArea" onchange="S.area=this.value"><option value="">担当エリアを選択</option>`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
   const deptSel=`<select id="gDept" onchange="S.dept=this.value"><option value="">担当部門を選択</option>`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`;
   const selects=S.role==="viewer"?"":`<div class="gate-selects"><span class="lb">エリア：</span>${areaSel}${roleNeedsDept_(S.role)?`<span class="lb">部門：</span>${deptSel}`:""}</div>`;
-  const enterBtns=S.role==="viewer"
-    ? `<button class="btn primary" style="width:100%;padding:10px" id="gEnter" onclick="enter(false)">\uD83D\uDEAA 閲覧者として入室する</button>`
-    : `<div class="gate-enter"><button class="btn" style="flex:1;padding:10px" id="gEnter" onclick="enter(false)">\uD83D\uDD22 数字を見る</button>`+
-      `<button class="btn primary" style="flex:1;padding:10px" id="gEnterCm" onclick="enter(true)">\u270E コメントを書く</button></div>`;
+  // 入口の釦は1つ（PO 2026-10-15「入室時に閲覧かコメント記入かを選ぶ必要はない。ただの入室で良い」）。コメント欄へは入室後の帯の「✎ コメントを書く」で
+  const enterBtns=`<button class="btn primary" style="width:100%;padding:10px" id="gEnter" onclick="enter()">\uD83D\uDEAA ${S.role==="viewer"?"閲覧者として入室する":"入室する"}</button>`;
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
     `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">\uD83D\uDEAA</div><h3>担当を選んで入室してください</h3>`+
@@ -726,22 +723,21 @@ function renderGate(){
     `<div style="margin-top:10px">${enterBtns}`+
     `<p class="warn" id="gWarn" style="display:none"></p>`+
     (restored?`<p class="hint" style="color:#166534">前回の担当を復元しました。このままでよければ入室してください。</p>`:"")+
-    `<p class="hint">「コメントを書く」は、担当のコメント欄（最新の週）へ一足飛びで移ります。入室後も、上の帯から移れます・担当を変えられます。</p></div></div></div></div>`;
+    `<p class="hint">入室後、上の帯の「✎ コメントを書く」で、担当のコメント欄（最新の週）へ一足飛びで移れます。担当も、上の帯から変えられます。</p></div></div></div></div>`;
   updateGate();
 }
 function setRole(k){ S.role=k; renderGate(); }
 function updateGate(){
   const ready=roleReady_();
-  ["gEnter","gEnterCm"].forEach(id=>{ const b=$(id); if(b) b.disabled=!ready; });
+  const b=$("gEnter"); if(b) b.disabled=!ready;
   const w=$("gWarn"); if(w){ if(!ready){ w.style.display="block"; w.textContent=roleNeedsDept_(S.role)?"担当エリアと担当部門を選択してください":"担当エリアを選択してください"; } else w.style.display="none"; }
 }
 document.addEventListener("change",updateGate);
-function enter(toComments){
+function enter(){
   if(!roleReady_()) return;
   S.asg={role:S.role,area:S.area,dept:roleNeedsDept_(S.role)?S.dept:""};
   savePref_({role:S.role,area:S.area,dept:S.dept});   // 次回の入室で復元
-  S.entered=true;
-  if(toComments&&S.role!=="viewer") jumpToComments(); else renderApp();
+  S.entered=true; renderApp();
 }
 /* 「✎ コメントを書く」: 担当のモード（商品部詳細／運営部詳細）・担当の部門・最新の週へ切り替え、コメント欄へ移って光らせる */
 function jumpToComments(){
