@@ -211,7 +211,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-15a</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-15b</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -572,16 +572,17 @@ const S={ meta:null, viewMode:"hq", entered:false, asg:null, role:"buyer", area:
   mode:"商品部詳細", ym:"", snap:"", snaps:[], stores:[], storeTab:"__total__" };
 const MODE_BG={ "商品部詳細":"#E1F5FE","商品部全体":"#E1F5FE","運営部詳細":"#E8F5E9","運営部全体":"#E8F5E9","店舗事業部会議":"#EDE7F6" };
 const MODES=["商品部詳細","商品部全体","運営部詳細","運営部全体","仕入分析","店舗事業部会議"];
-/* 入口の担当（PO 2026-10-14）。どこに書けるかは、ここで選んだ担当で決める（サーバーは本部ドメインかを確かめる）。
-   旧「全体管理者」（admin）は「商品部の責任者」（lead）。三田さんの言う「管理者」とぶつかるため名前を変えた。 */
+/* 入口の担当（PO 2026-10-14・10-15）。どこに書けるかは、ここで選んだ担当で決める（サーバーは本部ドメインかを確かめる）。
+   商品部の担当（BY）と運営部の担当（SV）は、エリアと担当部門を選ぶ。責任者（課長以上）は商品部と運営部を分けない＝両方の全部門。
+   旧「全体管理者」（admin）は「責任者」（lead）。三田さんの言う「管理者」とぶつかるため名前を変えた。 */
 const ROLES=[
-  {k:"buyer",label:"商品部の担当",icon:"\u270E",desc:"担当の部門の A・PD を書けます（商品部詳細）"},
-  {k:"lead",label:"商品部の責任者",icon:"\uD83D\uDEE1",desc:"課長以上。担当エリアの全部門の A・PD を書けます（商品部詳細）"},
-  {k:"unei",label:"運営部",icon:"\uD83D\uDEB6",desc:"担当エリアの運営部の A・PD を書けます（運営部詳細・店ごと）"},
+  {k:"buyer",label:"商品部の担当",icon:"\u270E",desc:"担当部門の商品部の A・PD を書けます（商品部詳細）"},
+  {k:"unei",label:"運営部の担当",icon:"\uD83D\uDEB6",desc:"担当部門の運営部の A・PD を書けます（運営部詳細・店ごと）"},
+  {k:"lead",label:"責任者",icon:"\uD83D\uDEE1",desc:"課長以上。担当エリアの全部門の、商品部と運営部の A・PD を書けます"},
   {k:"viewer",label:"閲覧者",icon:"\uD83D\uDC41",desc:"見るだけ（書けません）"},
 ];
 const ROLE_ALIAS={admin:"lead"};   // 端末に残る前回の担当（旧名）を読み替える
-function roleNeedsDept_(r){ return r==="buyer"; }
+function roleNeedsDept_(r){ return r==="buyer"||r==="unei"; }
 function roleReady_(){ return S.role==="viewer"||(!!S.area&&(!roleNeedsDept_(S.role)||!!S.dept)); }
 
 async function boot(){
@@ -746,8 +747,8 @@ function enter(toComments){
 function jumpToComments(){
   const a=S.asg; if(!a||a.role==="viewer") return;
   S.area=a.area;
-  if(a.role==="buyer"&&a.dept) S.dept=a.dept;
-  S.mode=(a.role==="unei")?"運営部詳細":"商品部詳細";
+  if(roleNeedsDept_(a.role)&&a.dept) S.dept=a.dept;
+  S.mode=(a.role==="unei")?"運営部詳細":"商品部詳細";   // 責任者は商品部詳細から（運営部詳細へは上のタブで）
   S.ym=(S.meta.year_months||[])[0]||S.ym;
   S._jumpCm=true;
   renderApp();
@@ -760,7 +761,7 @@ function renderApp(){
   const rb=a.role==="buyer"?"rb-buyer":a.role==="lead"?"rb-admin":a.role==="unei"?"rb-unei":"rb-viewer";
   const roleLabel=ROLES.find(r=>r.k===a.role).label;
   const asg=`<div class="asgbar"><span class="lb">担当：</span><span class="role-badge ${rb}">${roleLabel}</span>`+
-    (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(a.role==="buyer"?`<span class="chip d">${esc(a.dept)}</span>`:"")+
+    (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(roleNeedsDept_(a.role)?`<span class="chip d">${esc(a.dept)}</span>`:"")+
     (a.role!=="viewer"?`<button class="btn primary" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="jumpToComments()" title="担当のコメント欄（最新の週）へ移ります">\u270E コメントを書く</button>`:"")+
     `<button class="btn" style="${a.role!=="viewer"?"":"margin-left:auto;"}padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
   // 閲覧系タブ（左）と 管理者用データ管理（右端に隔離）を視覚的に分ける
@@ -944,7 +945,7 @@ function roleCanWriteHere_(){
   const a=S.asg; if(!a||a.role==="viewer"||!S.snap) return false;
   if(a.area!==S.area) return false;
   if(S.mode==="商品部詳細") return a.role==="lead"||(a.role==="buyer"&&a.dept===S.dept);
-  if(S.mode==="運営部詳細") return a.role==="unei";
+  if(S.mode==="運営部詳細") return a.role==="lead"||(a.role==="unei"&&a.dept===S.dept);
   return false;
 }
 function canEditSec(sec){
@@ -1080,9 +1081,9 @@ function drawComments(){
 function cmWhyReadonly_(){
   const a=S.asg; if(!a) return "";
   if(a.area!==S.area) return `担当エリア（${a.area}）の外なので、見るだけです。`;
-  if(S.mode==="商品部詳細"&&a.role==="unei") return "運営部の PD は「運営部詳細」に書きます（上の「✎ コメントを書く」で移れます）。";
-  if(S.mode==="運営部詳細"&&a.role!=="unei") return "商品部の A・PD は「商品部詳細」に書きます（上の「✎ コメントを書く」で移れます）。";
-  if(a.role==="buyer"&&a.dept!==S.dept) return `担当部門（${a.dept}）の外なので、見るだけです。`;
+  if(S.mode==="商品部詳細"&&a.role==="unei") return "運営部の A・PD は「運営部詳細」に書きます（上の「✎ コメントを書く」で移れます）。";
+  if(S.mode==="運営部詳細"&&a.role==="buyer") return "商品部の A・PD は「商品部詳細」に書きます（上の「✎ コメントを書く」で移れます）。";
+  if(roleNeedsDept_(a.role)&&a.dept!==S.dept) return `担当部門（${a.dept}）の外なので、見るだけです。`;
   return "";
 }
 function cmRowCount(){
