@@ -211,7 +211,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-14a</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-15a</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -705,7 +705,9 @@ function applyPref_(){
 
 function renderGate(){
   $("page").style.background="";
-  const p=applyPref_();
+  // 前回の担当は、入口を最初に出したときの1回だけ当てる（押して選び直した担当・エリア・部門を、描き直しのたびに上書きしない。2026-10-15 担当の札が切り替わらない不具合）
+  const p=S._prefDone?{}:applyPref_();
+  S._prefDone=true;
   const restored=!!(p.role||p.area||p.dept);
   const roleCards=ROLES.map(r=>`<button class="role ${S.role===r.k?'on':''}" onclick="setRole('${r.k}')"><div class="rt">${r.icon} ${r.label}</div><div class="rd">${r.desc}</div></button>`).join("");
   const areaSel=`<select id="gArea" onchange="S.area=this.value"><option value="">担当エリアを選択</option>`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
