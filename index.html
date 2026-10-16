@@ -256,6 +256,33 @@
   #navtoast{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--hdrH,46px) + 56px);background:#0f172a;color:#fff;font-size:12.5px;padding:6px 14px;border-radius:999px;opacity:0;transition:opacity .25s;z-index:120;pointer-events:none;white-space:nowrap;}
   .cmwho{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:700;}
   .cmwho.can{background:#dcfce7;color:#166534;} .cmwho.cant{background:#e2e8f0;color:#334155;}
+  /* ── 第3便: 済のライフサイクル（2026-10-16）── 済の報告（淡い緑・表のいちばん下）・🕘 週ごとの履歴（課題×週） */
+  tr.cmrepsep td{background:#dcfce7;color:#166534;font-weight:700;font-size:12.5px;padding:3px 8px;}
+  tr.cmrep td{background:#f0fdf4;}
+  .cmmark.rep{color:#166534;font-weight:700;}
+  .nopd{color:#92400e;}
+  .cmdel{float:right;padding:0 6px;font-size:11px;}
+  .cmhead .hbtn{margin-left:8px;border:1px solid #0284c7;color:#075985;background:#fff;border-radius:7px;padding:3px 10px;font-size:12.5px;font-weight:600;cursor:pointer;min-height:28px;font-family:inherit;}
+  .cmhead .hbtn:hover{background:#f0f9ff;}
+  .cmhead .hbtn[aria-expanded="true"]{background:#e0f2fe;}
+  .hpanel{margin-top:12px;border-top:1px dashed #cbd5e1;padding-top:10px;}
+  .hhead{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:13px;}
+  .hhead .hsp{margin-left:auto;}
+  .hhead .btn{padding:3px 10px;font-size:12px;}
+  .hwrap{overflow-x:auto;margin-top:6px;border:1px solid var(--border);border-radius:8px;}
+  table.hist{border-collapse:collapse;min-width:640px;width:100%;table-layout:fixed;font-size:12.5px;}
+  table.hist th,table.hist td{border:1px solid var(--border);text-align:center;padding:0;}
+  table.hist thead th{background:var(--bg-muted);}
+  table.hist th.il,table.hist td.il{text-align:left;width:210px;padding:4px 8px;position:sticky;left:0;background:#fff;z-index:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  table.hist thead th.il{background:var(--bg-muted);}
+  table.hist th.cur{background:#e0f2fe;}
+  table.hist .me{border-left:3px solid #94a3b8;}
+  table.hist button{border:none;background:none;width:100%;min-height:28px;cursor:pointer;font-size:14px;font-family:inherit;border-radius:4px;color:var(--fg);}
+  table.hist thead button{font-size:12px;font-weight:700;color:#0369a1;}
+  table.hist button:hover,table.hist button.on{background:#e0f2fe;}
+  table.hist tr.done td.il{color:var(--muted);}
+  .hdet{border:1px solid #e0f2fe;background:#f0f9ff;border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.6;margin-top:6px;white-space:pre-wrap;}
+  @media print{ .cmhead .hbtn,.hdet.empty{display:none !important;} .hwrap{overflow:visible !important;} }
   /* 全部門（計）（2026-10-16b）: カテゴリはたたんでおき、釦で出す。A・PD は部門ごとなので、部門を選ぶ近道を出す */
   table.c.foldcats tr.catrow{display:none;}
   .allnote{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border:1px dashed #94a3b8;border-radius:10px;background:#f8fafc;padding:10px 12px;font-size:13px;color:#334155;}
@@ -276,7 +303,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-16b</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-16c</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -404,6 +431,7 @@ function cached_(key,fn){
 }
 function loadJson(prod,sample){ return cached_("L|"+prod+"|"+sample,()=>loadJson0_(prod,sample)); }
 async function loadJson0_(prod,sample){
+  window.__gasN=(window.__gasN||0)+1;   // サーバーへの往復の数（覚えた表は数えない）
   if(IS_GAS) return JSON.parse(await gsCall("getJson",prod));
   // ローカル: 本番outboxミラー（本番と同一命名）を優先、無ければサンプル
   // no-store＝ミラーを更新しても古い内容を掴まない（ブラウザキャッシュで欠損・追加に気づけない事故の防止）
@@ -414,6 +442,7 @@ async function loadJson0_(prod,sample){
    （サンプルに救済されると欠損に気づけず、誤ったデータを表示してしまうため）。 */
 function loadJsonStrict(prod){ return cached_("S|"+prod,()=>loadJsonStrict0_(prod)); }
 async function loadJsonStrict0_(prod){
+  window.__gasN=(window.__gasN||0)+1;
   if(IS_GAS) return JSON.parse(await gsCall("getJson",prod));
   const m=await fetch("../outbox_mirror/"+prod,{cache:"no-store"});
   if(!m.ok) throw new Error("未収載: "+prod);
@@ -735,7 +764,7 @@ function drawShiire(gp,inv){
 /* \u2500\u2500 状態・入室 \u2500\u2500 */
 /* role/area/dept は入室ゲートの選択値。入室確定で asg（担当）へ固定コピーし、以後 area/dept は表示側の選択として独立に動く */
 const S={ meta:null, viewMode:"hq", entered:false, asg:null, role:"buyer", area:"", dept:"",
-  mode:"商品部全体", ym:"", snap:"", snaps:[], stores:[], storeTab:"__total__", metric:"sales_month" };
+  mode:"商品部全体", ym:"", snap:"", snaps:[], stores:[], storeTab:"__total__", metric:"sales_month", hist:false };
 const MODE_BG={ "商品部詳細":"#E1F5FE","商品部全体":"#E1F5FE","運営部詳細":"#E8F5E9","運営部全体":"#E8F5E9","店舗事業部会議":"#EDE7F6" };
 /* 入口の担当（PO 2026-10-14・10-15）。どこに書けるかは、ここで選んだ担当で決める（サーバーは本部ドメインかを確かめる）。
    商品部の担当（BY）と運営部の担当（SV）は、エリアと担当部門を選ぶ。責任者（課長以上）は商品部と運営部を分けない＝両方の全部門。
@@ -905,7 +934,7 @@ function enter(){
   S.asg={role:S.role,area:S.area,dept:roleNeedsDept_(S.role)?S.dept:""};
   savePref_({role:S.role,area:S.area,dept:S.dept});   // 次回の入室で復元
   // 第2便: 入ると、担当で決めた段から始まる（運営部の担当＝運営部全体・ほか＝商品部全体）。店はエリア合計・指標は売上・期間は最新
-  S.mode=START_BY_ROLE[S.role]||"商品部全体"; S.storeTab="__total__"; S.metric="sales_month"; S.snap="";
+  S.mode=START_BY_ROLE[S.role]||"商品部全体"; S.storeTab="__total__"; S.metric="sales_month"; S.snap=""; S.hist=false;
   if(S.role==="lead") S.dept=ALL_DEPT;   // 責任者は、はじめから全部門（計）（PO 2026-10-16）。ほかの担当は担当部門から
   S.entered=true; navInit_(); show_({why:"入室"});
 }
@@ -925,18 +954,18 @@ const LV_TIP={
   "運営部全体":"部門・カテゴリ × 店で、1つの指標を並べます",
   "運営部詳細":"店（またはエリア合計）の全部門の明細と、運営部の A・PD"
 };
-const NAV={seq:0,land:null,trail:[]};
+const NAV={seq:0,land:null,trail:[],cmDrawn:-1,histLand:null};   // cmDrawn＝A・PD の欄を描いた番号・histLand＝欄が出てから着く所（履歴）
 function metricLabel_(k){ const m=METRICS.find(x=>x.key===(k||S.metric)); return m?m.label:"売上"; }
 function storeShortOf_(slug){ if(!slug||slug==="__total__") return "エリア合計"; const s=(S.stores||[]).find(x=>x.slug===slug); return s?s.short:"店"; }
 function slugOfFull_(full){ if(!full) return "__total__"; const s=(S.stores||[]).find(x=>x.full===full); return s?s.slug:null; }
-function viewState_(){ return {mode:S.mode,area:S.area,ym:S.ym,snap:S.snap,dept:S.dept,storeTab:S.storeTab,metric:S.metric}; }
+function viewState_(){ return {mode:S.mode,area:S.area,ym:S.ym,snap:S.snap,dept:S.dept,storeTab:S.storeTab,metric:S.metric,hist:!!S.hist}; }
 function describe_(v){
   if(!v) return "";
   const st=storeShortOf_(v.storeTab);
   if(v.mode==="商品部全体") return `商品部全体（${deptLabel_(v.dept)}）`;
-  if(v.mode==="商品部詳細") return `商品部詳細（${st}・${deptLabel_(v.dept)}）`;
+  if(v.mode==="商品部詳細") return `商品部詳細（${st}・${deptLabel_(v.dept)}）${v.hist&&!isAll_(v.dept)?"・🕘 履歴":""}`;
   if(v.mode==="運営部全体") return `運営部全体（${metricLabel_(v.metric)}）`;
-  if(v.mode==="運営部詳細") return `運営部詳細（${st}）`;
+  if(v.mode==="運営部詳細") return `運営部詳細（${st}）${v.hist&&!isAll_(v.dept)?"・🕘 履歴":""}`;
   if(v.mode==="店舗事業部会議") return `店舗事業部会議（${st}）`;
   return v.mode;
 }
@@ -956,6 +985,7 @@ function nav_(patch,o){
   Object.assign(S,patch);
   try{ history.pushState({hissuru:{v:viewState_(),d:d+1}},""); }catch(e){}
   NAV.trail.length=d+1; NAV.trail[d+1]=viewState_();
+  if(o.light){ drawNav_(); o.light(); return; }   // 見方の一部だけ（🕘 履歴の開け閉め）: 表は描き直さず、A・PD の欄だけ組み直す
   show_({why:o.why||"",land:o.land||"",from:o.from||""});
 }
 /* ブラウザが覚える履歴は 50 まで（Chrome）。それより前の所は消えているので、戻れなかったら釦を薄くする（押しても動かない、にしない） */
@@ -967,7 +997,10 @@ function goBack_(){
 window.addEventListener("popstate",e=>{
   const h=e.state&&e.state.hissuru;
   if(!h||!S.entered||S.viewMode==="viewer") return;
-  Object.assign(S,h.v); NAV.trail[h.d]=h.v;
+  const cur=viewState_(), nv=Object.assign({},h.v,{hist:!!h.v.hist});
+  const onlyHist=cur.hist!==nv.hist&&Object.keys(cur).every(k=>k==="hist"||cur[k]===nv[k]);
+  Object.assign(S,nv); NAV.trail[h.d]=nv;
+  if(onlyHist&&PL&&$("cpanel")&&cmHere_()){ drawNav_(); histApply_({back:true}); navToast_("← 元の場所へ戻りました"); return; }   // 🕘 履歴の開け閉めだけを戻す
   show_({why:"戻る",restore:true,sc:h.sc,from:h.from});
 });
 function show_(o){ NAV.seq++; NAV.land=Object.assign({t0:performance.now()},o||{}); renderApp(); }
@@ -978,7 +1011,13 @@ window.addEventListener("resize",setHdrH_);
 document.addEventListener("click",e=>{
   const j=e.target.closest&&e.target.closest("[data-jump]");
   if(j){ e.preventDefault(); const el=$(j.dataset.jump); if(el) glideTo_(el.getBoundingClientRect().top+window.scrollY-stickyH_()-8,()=>flash_(el)); return; }
-  const t=e.target.closest&&e.target.closest("[data-go]"); if(!t||!S.entered) return;
+  // 第3便: A・PD の欄（済・戻す・消す）と 🕘 履歴（マス・週の見出し）
+  const q=s=>e.target.closest&&e.target.closest(s);
+  const cr=q("[data-cres]"); if(cr){ cResolve(cr.dataset.cres,cr.dataset.on==="1"); return; }
+  const cd=q("[data-cdel]"); if(cd){ cDel(cd.dataset.cdel); return; }
+  const hc=q("[data-hk]"); if(hc){ histShow_(hc.dataset.hk,+hc.dataset.hj,hc); return; }
+  const hw=q("[data-hweek]"); if(hw){ histGoWeek_(+hw.dataset.hweek); return; }
+  const t=q("[data-go]"); if(!t||!S.entered) return;
   const go=t.dataset.go, a=t.dataset.a||"", b=t.dataset.b||"", k=t.dataset.k||"";
   if(go==="shohin"||go==="unei"){
     const slug=slugOfFull_(a);
@@ -1035,6 +1074,13 @@ function land_(seq){
   const L=(window.__navlog=window.__navlog||[]); L.push({why:o.why||"",mode:S.mode,store:storeShortOf_(S.storeTab),dept:S.dept,metric:S.metric,ms});
   if(L.length>200) L.splice(0,L.length-200);
   window.__navN=(window.__navN||0)+1;
+  // 🕘 履歴へ着く・履歴を開いていた所へ戻る: A・PD の欄は表より後に出るので、欄が出てから（renderComments）着く
+  if(cmHere_()&&(o.land==="hist"||(o.restore&&S.hist))){
+    const w=document.querySelector("#body .tbl-wrap"), sc=o.sc||{};
+    if(o.restore&&w){ w.scrollLeft=sc.tx||0; w.scrollTop=sc.ty||0; }
+    if(NAV.cmDrawn===seq) histLand_(o); else NAV.histLand=Object.assign({seq:seq},o);
+    return;
+  }
   if(o.restore){
     const sc=o.sc||{}, w=document.querySelector("#body .tbl-wrap");
     if(w){ w.scrollLeft=sc.tx||0; w.scrollTop=sc.ty||0; }
@@ -1119,14 +1165,18 @@ function drawNav_(){
     `<div class="crumbs" aria-label="いま見ている所">${ctx}${crumbs_()}</div>`;
 }
 function crumbs_(){
-  const st=storeShortOf_(S.storeTab), m=S.mode;
-  const c=(mode,label)=>mode===m?`<span class="crumb cur" aria-current="page">${esc(label)}</span>`:`<button class="crumb" onclick="setMode('${mode}')" title="${esc(LV_TIP[mode]||"")}">${esc(label)}</button>`;
+  const st=storeShortOf_(S.storeTab), m=S.mode, hist=S.hist&&cmHere_();
+  // 🕘 履歴を開いている間は、末尾に「🕘 履歴」。いまの段の名前を押すと、履歴を閉じる（1つ上へ）
+  const c=(mode,label)=>mode!==m?`<button class="crumb" onclick="setMode('${mode}')" title="${esc(LV_TIP[mode]||"")}">${esc(label)}</button>`
+    :hist?`<button class="crumb" onclick="histToggle_()" title="週ごとの履歴を閉じる">${esc(label)}</button>`
+    :`<span class="crumb cur" aria-current="page">${esc(label)}</span>`;
   const sep=`<span class="sep">›</span>`;
+  const tail=hist?sep+`<span class="crumb cur" aria-current="page">🕘 履歴</span>`:"";
   const top=c("商品部全体","🛒 商品部全体");
   if(m==="商品部全体") return top;
-  if(m==="商品部詳細") return top+sep+c("商品部詳細",`🛒 商品部詳細：${st}`);
+  if(m==="商品部詳細") return top+sep+c("商品部詳細",`🛒 商品部詳細：${st}`)+tail;
   if(m==="運営部全体") return top+sep+c("運営部全体",`🏢 運営部全体：${metricLabel_()}`);
-  if(m==="運営部詳細") return top+sep+c("運営部全体",`🏢 運営部全体：${metricLabel_()}`)+sep+c("運営部詳細",`🏢 運営部詳細：${st}`);
+  if(m==="運営部詳細") return top+sep+c("運営部全体",`🏢 運営部全体：${metricLabel_()}`)+sep+c("運営部詳細",`🏢 運営部詳細：${st}`)+tail;
   if(m==="店舗事業部会議") return `<span class="crumb cur">🏪 店舗事業部会議：${esc(st)}</span>`;
   if(m==="仕入分析") return `<span class="crumb cur">📦 仕入分析</span>`;
   return `<span class="crumb cur">⚙️ データ管理</span>`;
@@ -1313,49 +1363,71 @@ async function storeDetailHtml(slug,so,dept){
   }
 }
 
-/* ── G2: PDCA コメント（正本=Google Sheets・即時保存・済は行（課題）に1つ） ──
-   欄（PO 2026-10-14）: P と D を1つの「PD：計画と実行」にまとめた。
-     商品部詳細＝商品部の A・PD（シートの section＝A・PD）／運営部詳細＝運営部の A・PD（UA・UPD）。
-     運営部は別の欄・商品部と同じ粒度（エリア合計と店ごと×部門）。
-   A欄＝一つ前の週の PD を自動表示（商品部は商品部の PD、運営部は運営部の PD）。 */
+/* ── G2: PDCA コメント（正本=Google Sheets・即時保存）。第3便（2026-10-16）: 課題ごとに、済のライフサイクル ──
+   欄（PO 2026-10-14）: 商品部詳細＝商品部の A・PD（シートの section＝A・PD）／運営部詳細＝運営部の A・PD（UA・UPD）。
+   週 x の表は pdcaWeek_（下・GAS の会議用まとめと同じ文字）で組み立てる（PO 2026-10-16「1〜5 すべて A」）:
+     出ている課題（A＝前の週までの PD・4週まで）→ 今週生まれた課題 → ✓ 先週 済になった課題（1回・書けない・戻せる）。
+   済は課題に1つ（resolveComment。本文と記入者は変えない）。消すのは、その週に書いた欄だけ（前の週の PD は消さない）。
+   読むのは場所ごとに1回（getCommentPlace）。🕘 週ごとの履歴＝課題×週の表（同じ行から組み立てる）。 */
 const SEC_SETS={
-  "商品部詳細":[{k:"A",icon:"✅",label:"A：改善アクション"},{k:"PD",icon:"📝",label:"PD：計画と実行"}],
-  "運営部詳細":[{k:"UA",icon:"✅",label:"A：改善アクション（運営部）"},{k:"UPD",icon:"🚶",label:"PD：計画と実行（運営部）"}]
+  "商品部詳細":[{k:"A",icon:"✅",label:"A：改善アクション（前の週までの PD）"},{k:"PD",icon:"📝",label:"PD：計画と実行"}],
+  "運営部詳細":[{k:"UA",icon:"✅",label:"A：改善アクション（運営部・前の週までの PD）"},{k:"UPD",icon:"🚶",label:"PD：計画と実行（運営部）"}]
 };
+const CM_MODES=["商品部詳細","運営部詳細"];
+/* A・PD の欄（と 🕘 履歴）がある画面か。全部門（計）の画面には欄が無い（部門ごとの欄のため・読まない・書かない） */
+function cmHere_(){ return CM_MODES.includes(S.mode)&&!isAll_(S.dept); }
 function SECS(){ return SEC_SETS[S.mode]||SEC_SETS["商品部詳細"]; }
-function secA(){ return SECS()[0].k; }
-function secPD(){ return SECS()[1].k; }
+function pair_(){ const s=SECS(); return {a:s[0].k,pd:s[1].k}; }
 const MARKS=["①","②","③","④","⑤","⑥","⑦","⑧","⑨","⑩","⑪","⑫","⑬","⑭","⑮"];
-let CM={A:[],PD:[],UA:[],UPD:[],PREV:[]}, cmSeq=0, saveQ=Promise.resolve();
-/* A欄へ自動表示する「一つ前の週の PD」の出所。空＝前週なし＝その週はAに直接起票できる。
-   stale=true は「直前週にPDCA対応が無く、更に前の週から引き継いだ」状態。 */
-let PREVW={snap8:"",ym:"",label:"",stale:false};
-/* 月末確定(05-2)週で複製表示している元の週次。on の間は全欄が閲覧のみ。 */
-let MEV={on:false,label:""};
+/* PL＝いま開いている場所（エリア・店・部門）の行と週の並び（getCommentPlace で1回に読む）。
+   書く・済・消すは、PL の行を先に直して表を組み直し、サーバーへは saveQ で1つずつ送る（サーバー側ロックの渋滞を防ぐ） */
+let PL=null, cmSeq=0, saveQ=Promise.resolve();
+const HIST={span:8,d:null};   // 🕘 週ごとの履歴: 列の数（「もっと前の8週」で足す。場所が変わると 8 に戻す）・いま出している表
 
-/* GAS 関数呼び出し（ローカル開発は localStorage モック） */
-async function capi(fn,...args){ if(IS_GAS) return gsCall(fn,...args); return mockApi(fn,args); }
+/* GAS 関数呼び出し（ローカル開発は localStorage モック）。__gasN＝サーバーへの往復の数（速さを数えるため） */
+async function capi(fn,...args){ window.__gasN=(window.__gasN||0)+1; if(IS_GAS) return gsCall(fn,...args); return mockApi(fn,args); }
 function mockRows(){ try{return JSON.parse(localStorage.getItem("mock_comments")||"[]");}catch(e){return [];} }
 function mockSave(r){ localStorage.setItem("mock_comments",JSON.stringify(r)); }
 function mockNow(){ return new Date().toISOString().slice(0,19).replace("T"," "); }
-function mockKey(o){ return [o.year_month,o.snapshot8,o.area,o.store,o.dept].map(v=>String(v==null?"":v)).join("|"); }
+function mockPlace_(r){ return [r.area,r.store||"",r.dept].join("|"); }
+function mockPair_(s){ return (s==="UA"||s==="UPD")?"U":"S"; }
+function mockKey_(r){ return [r.year_month,r.snapshot8,r.area,r.store||"",r.dept].map(v=>String(v==null?"":v)).join("|"); }
+/* サーバー（Code.gs）と同じ決まりの、手元だけのまね（店舗のアカウントの扱いは試験 test_code_gs.js で確かめる） */
 function mockApi(fn,args){
-  if(fn==="getComments"){ const [ym,sn,area,store,dept]=args; const out={A:[],PD:[],UA:[],UPD:[]};
-    const want=[ym,sn,area,store,dept].map(v=>String(v==null?"":v)).join("|");
-    mockRows().forEach(r=>{ if(!r.deleted_at&&mockKey(r)===want&&out[r.section]) out[r.section].push(r); });
-    return Promise.resolve(out); }
-  if(fn==="upsertComment"){ const [key,sec,id,text,resolved]=args; const rows=mockRows(); const now=mockNow();
-    if(!["A","PD","UA","UPD"].includes(sec)) return Promise.reject(new Error("この欄には書けません: "+sec));
+  const rows=mockRows(), SECS4=["A","PD","UA","UPD"];
+  if(fn==="getCommentPlace"){ const [area,store,dept,from]=args, want=[area,store||"",dept].join("|");
+    const mine=rows.filter(r=>!r.deleted_at&&mockPlace_(r)===want&&SECS4.includes(r.section)), near={};
+    const ik=r=>mockPair_(r.section)+"|"+(r.issue_id||r.item_id);
+    mine.forEach(r=>{ if(!from||String(r.year_month)>=from) near[ik(r)]=1; });
+    return Promise.resolve({rows:mine.filter(r=>!from||String(r.year_month)>=from||near[ik(r)]).map(r=>({ym:String(r.year_month),snap8:String(r.snapshot8),
+      section:r.section,item_id:r.item_id,issue_id:r.issue_id||"",text:r.text,resolved:!!r.resolved,resolved_at:r.resolved_at||"",
+      resolved_week:r.resolved_week||"",author:r.author||"",updated_at:r.updated_at||""}))}); }
+  if(fn==="upsertComment"){ const [key,sec,id,text,resolved,iss]=args, now=mockNow(), kk=mockKey_({year_month:key.ym,snapshot8:key.snap8,area:key.area,store:key.store,dept:key.dept});
+    if(!SECS4.includes(sec)) return Promise.reject(new Error("この欄には書けません: "+sec));
     const ex=rows.find(r=>r.item_id===id);
     if(ex){
-      if(mockKey(ex)!==[key.ym,key.snap8,key.area,key.store||"",key.dept].join("|")||ex.section!==sec) return Promise.reject(new Error("このコメントは、この画面の欄のものではありません"));
+      if(mockKey_(ex)!==kk||ex.section!==sec) return Promise.reject(new Error("このコメントは、この画面の欄のものではありません"));
       if(ex.deleted_at) return Promise.reject(new Error("このコメントは削除されています"));
-      ex.text=text; ex.resolved=!!resolved; ex.resolved_at=resolved?(ex.resolved_at||now):""; ex.updated_at=now;
+      if(resolved!=null&&!!resolved!==!!ex.resolved) return Promise.reject(new Error("画面が古い版です。読み込み直してください"));
+      ex.text=text; ex.updated_at=now; ex.author="ローカル開発";
+    }else{
+      if(resolved===true) return Promise.reject(new Error("画面が古い版です。読み込み直してください"));
+      const place=[key.area,key.store||"",key.dept].join("|");
+      if(iss&&iss!==id&&!rows.some(r=>!r.deleted_at&&mockPlace_(r)===place&&SECS4.includes(r.section)&&mockPair_(r.section)===mockPair_(sec)&&(r.issue_id||r.item_id)===iss))
+        return Promise.reject(new Error("この課題は、この画面の欄にありません"));
+      rows.push({year_month:key.ym,snapshot8:key.snap8,area:key.area,store:key.store||"",dept:key.dept,section:sec,item_id:id,text:text,resolved:false,resolved_at:"",
+        author:"ローカル開発",updated_at:now,source:"mock",deleted_at:"",deleted_by:"",issue_id:iss||"",resolved_week:""});
     }
-    else rows.push({year_month:key.ym,snapshot8:key.snap8,area:key.area,store:key.store||"",dept:key.dept,section:sec,
-      item_id:id,text:text,resolved:!!resolved,resolved_at:resolved?now:"",author:"ローカル開発",updated_at:now,source:"mock",deleted_at:"",deleted_by:""});
     mockSave(rows); return Promise.resolve({item_id:id}); }
-  if(fn==="deleteComment"){ const rows=mockRows(); const ex=rows.find(r=>r.item_id===args[0]);
+  if(fn==="resolveComment"){ const [key,sec,id,flag,week]=args;
+    const t=rows.find(r=>r.item_id===id);
+    if(!t||t.deleted_at||mockKey_(t)!==mockKey_({year_month:key.ym,snapshot8:key.snap8,area:key.area,store:key.store,dept:key.dept})||t.section!==sec) return Promise.reject(new Error("このコメントは、この画面の欄のものではありません"));
+    if(flag&&!(/^\d{8}$/.test(String(week))&&String(week)>=String(t.snapshot8))) return Promise.reject(new Error("済の週が不正です"));
+    const iss=t.issue_id||t.item_id, place=mockPlace_(t), pr=mockPair_(t.section);
+    rows.forEach(r=>{ if(r.deleted_at||mockPlace_(r)!==place||!SECS4.includes(r.section)||mockPair_(r.section)!==pr||(r.issue_id||r.item_id)!==iss) return;
+      const on=flag&&r===t; r.resolved=on; r.resolved_at=on?mockNow():""; r.resolved_week=on?String(week):""; });
+    mockSave(rows); return Promise.resolve({item_id:id,resolved:flag}); }
+  if(fn==="deleteComment"){ const ex=rows.find(r=>r.item_id===args[0]);
     if(ex&&!ex.deleted_at){ ex.deleted_at=mockNow(); ex.deleted_by="ローカル開発"; }
     mockSave(rows); return Promise.resolve({deleted:!!ex}); }
   if(fn==="uploadInbox") return Promise.resolve({ok:true,name:args[1],by:"ローカル開発",at:"(モック)"});
@@ -1374,25 +1446,24 @@ function roleCanWriteHere_(){
   if(S.mode==="運営部詳細") return a.role==="lead"||(a.role==="unei"&&a.dept===S.dept);
   return false;
 }
-function canEditSec(sec){
-  if(!roleCanWriteHere_()) return false;
-  // 月末確定(05-2)＝確定値が出る時点で既に翌月のサイクルが始まっており書いても反映先がない → 全欄 閲覧のみ
-  if(MEV.on) return false;
-  if(sec!==secA()&&sec!==secPD()) return false;
-  // A＝前週PDの自動表示欄。前週PDがある週は閲覧のみ／無い週（初回起票）だけ直接書ける
-  if(sec===secA()&&(CM.PREV||[]).length) return false;
-  return true;
+/* 書ける欄: 月末確定(05-2)＝確定値が出る時点で既に翌月のサイクルが始まっており書いても反映先がない → 全欄 閲覧のみ。
+   A に直接書けるのは、前の週までの課題が出ていない週だけ（出ている週は、A＝前の週までの PD・書くのは PD） */
+function canEditSec(sec,v){
+  if(!roleCanWriteHere_()||!PL||PL.monthEnd) return false;
+  const P=pair_();
+  if(sec===P.pd) return true;
+  return sec===P.a&&!!(v&&v.canWriteA);
 }
-function canResolveRow(){ return roleCanWriteHere_()&&!MEV.on; }
+function canResolve_(){ return roleCanWriteHere_()&&!!PL&&!PL.monthEnd; }
 function cKey(){
   const store=S.storeTab!=="__total__"?((S.stores.find(x=>x.slug===S.storeTab)||{}).full||""):"";
-  return {ym:S.ym,snap8:s8(S.snap),area:S.area,store:store,dept:S.dept};
+  return {ym:S.ym,snap8:s8(S.snap),snap:S.snap,area:S.area,store:store,dept:S.dept};
 }
 
-/* ── 週次リンク：前週PD → 当週A 自動表示 ──
-   ・「一つ前の週」はカレンダーではなく **実在するデータ期間の並び** で決める
-     → 週が抜けていれば飛ばして繋がり、後から遡って週が追加されても、開き直せば常に正しい直前週を指す
-   ・05-2（月末確定）は連鎖に含めない
+/* ── 週の並び ──
+   ・「一つ前の週」はカレンダーではなく **実在するデータ期間（05-4）の並び** で決める
+     → 週が抜けていれば飛ばして繋がり、月をまたいでつなぐ。後から週が追加されても、開き直せば常に正しい直前週を指す
+   ・05-2（月末確定）は週に数えない（表示は、その月の最終週のまま・閲覧のみ）
    ・Sheets へ転記行を書かない（表示で解決）ので、「張り直し漏れ」という事故が原理的に起きない */
 const SNAPS_CACHE={};
 function prevYm_(ym){ const d=new Date(+String(ym).slice(0,4),+String(ym).slice(4,6)-2,1); return String(d.getFullYear())+String(d.getMonth()+1).padStart(2,"0"); }
@@ -1403,100 +1474,256 @@ async function snapsRaw_(area,ym){
   else { try{ src=(await API.snapshots(area,ym)).snapshots||[]; }catch(e){ src=[]; } }
   SNAPS_CACHE[k]=src; return src;
 }
-async function weeklySnaps8_(area,ym){
-  const src=await snapsRaw_(area,ym);
-  return Array.from(new Set(src.filter(o=>String(o.file_type||"")==="05-4").map(o=>s8(o.snapshot)).filter(Boolean))).sort();
+/* その月の週次（05-4）を古い順に {snap8, ym, snapshot} */
+async function weekly_(area,ym){
+  const seen={};
+  return (await snapsRaw_(area,ym)).filter(o=>String(o.file_type||"")==="05-4").map(o=>({snap8:s8(o.snapshot),ym:ym,snapshot:o.snapshot}))
+    .filter(w=>w.snap8&&!seen[w.snap8]&&(seen[w.snap8]=1)).sort((p,q)=>p.snap8<q.snap8?-1:1);
 }
-/* その週が月末確定(05-2)か。表示中の月に限らず判定できる（複製元をたどるため） */
+/* その週が月末確定(05-2)か。表示中の月に限らず判定できる */
 async function isMonthEnd8_(area,ym,snap8){
   const hit=(await snapsRaw_(area,ym)).find(o=>s8(o.snapshot)===String(snap8));
   return !!hit&&String(hit.file_type||"")==="05-2";
 }
-/* 指定週より前の週次を「新しい順」に最大 limit 件（月を遡って集める） */
-async function prevWeeks8_(area,ym,snap8,limit){
-  const out=[]; let y=ym, guard=0;
-  let pool=(await weeklySnaps8_(area,y)).filter(x=>x<snap8);
-  while(guard<6){
-    for(let i=pool.length-1;i>=0&&out.length<limit;i--) out.push({snap8:pool[i],ym:y});
-    if(out.length>=limit) break;
-    y=prevYm_(y); pool=await weeklySnaps8_(area,y); guard++;             // 月初は前月末の週へ繋ぐ
-    if(!pool.length&&guard>=3) break;                                    // データが尽きたら打ち切り
+/* 指定週より前の週次を「新しい順」に最大 n 件（月をさかのぼって集める。要る前の月は並べて先に読み、覚える）。
+   月は、いまの月と前の5か月まで・前の月を3つ見て週が無くなったら打ち切り（GAS の _prevWeeks8_ と同じ） */
+async function weeksBefore_(area,ym,snap8,n){
+  const months=[ym]; for(let i=1;i<6;i++) months.push(prevYm_(months[i-1]));
+  const have=(await weekly_(area,ym)).filter(w=>w.snap8<snap8).length;          // いまの月の分（多くは画面がもう持っている）
+  await Promise.all(months.slice(1,1+Math.max(0,Math.min(5,Math.ceil((n-have)/4)))).map(m=>snapsRaw_(area,m)));   // 1か月に4〜5週
+  const out=[];
+  for(let g=0;g<months.length&&out.length<n;g++){
+    const pool=(await weekly_(area,months[g])).filter(w=>w.snap8<snap8);
+    for(let j=pool.length-1;j>=0&&out.length<n;j--) out.push(pool[j]);
+    if(g>=3&&!pool.length) break;
   }
   return out;
 }
-/* 中身のある記入が1件でもあるか。空文字だけの行（＝セルを消しただけ）は「記入なし」とみなす。
-   行を詰めないために空の item は残す設計なので、有無の判定は必ずこれを通す。 */
-function hasText_(arr){ return (arr||[]).some(x=>x&&String(x.text||"").trim()); }
 function lbl8_(s){ return String(s).slice(4,6)+"/"+String(s).slice(6,8); }
 function lblJa_(s){ return (+String(s).slice(4,6))+"月/"+(+String(s).slice(6,8))+"日"; }
-/* 指定スコープの前週 PD（sec＝PD か UPD）。直前週の PD が空なら「PDCA対応がなかった週」とみなして更に遡り、
-   最後に PD が記録された週を持ってくる（課題を消さずに引き継ぐ）。戻り値 {items,snap8,ym,label,stale} */
-const PREV_LOOKBACK=4;
-async function fetchPrevPD_(area,ym,snap8,store,dept,sec){
-  const empty={items:[],snap8:"",ym:"",label:"",stale:false};
-  if(!snap8) return empty;
-  const chain=await prevWeeks8_(area,ym,snap8,PREV_LOOKBACK);
-  for(let i=0;i<chain.length;i++){
-    const w=chain[i]; let c;
-    try{ c=await capi("getComments",w.ym,w.snap8,area,store,dept); }catch(e){ return empty; }
-    const P=c[sec]||[];
-    if(hasText_(P)) return {items:P,snap8:w.snap8,ym:w.ym,label:lbl8_(w.snap8),stale:i>0};
-  }
-  return empty;
-}
-function prevKey_(){ return {ym:PREVW.ym,snap8:PREVW.snap8,area:S.area,store:cKey().store,dept:S.dept}; }
-/* 済は課題（行）に1つ。前週PDがある週は「元のPD行」へ、無い週は当週のA行へ立てる。 */
-function rowResolveTarget_(i){ return (CM.PREV||[]).length?{sec:"PREV",it:CM.PREV[i]}:{sec:secA(),it:CM[secA()][i]}; }
 
-async function renderComments(seq){
-  const el=$("cpanel"); if(!el) return;
-  if(!S.snap){ el.innerHTML=""; return; }
-  try{ const k=cKey();
-    const r=await apdForScope_(k.area,k.ym,k.snap8,k.store,k.dept,0,secPD());
-    if(seq!=null&&seq!==NAV.seq) return;   // 待っている間に別の所が押された（前の画面のコメントで上書きしない）
-    CM=Object.assign({A:[],PD:[],UA:[],UPD:[]},r.cm); CM.PREV=r.pv.items;
-    PREVW={snap8:r.pv.snap8,ym:r.pv.ym,label:r.pv.label,stale:r.pv.stale};
-    MEV={on:!!r.me,label:r.me};
+/* ==== 週の組み立て（第3便）ここから ==== 画面（index.html）と GAS（Code.gs）に同じ文字のまま置く（試験 test_week_rule.js が、同じ文字か・同じ答えかを確かめる）
+   ある場所（エリア・店・部門）の、ある欄の組（商品部＝A・PD／運営部＝UA・UPD）の、週 x の A・PD の表を、課題（issue_id）ごとに組み立てる。
+   rows  … その場所の行（正本に並んだ順・消した行は入れない）。{snap8, section, item_id, issue_id, text, resolved, resolved_week, …}
+   pair  … {a:"A", pd:"PD"} か {a:"UA", pd:"UPD"}
+   prevW … x より前の週（05-4 のデータ期間の日付8桁。月をまたいで。05-2 は入れない）
+   x     … 組み立てる週（05-4。月末確定〈05-2〉のときは、呼ぶ側がその月の最終週に置き換え、全欄を閲覧のみにする）
+   決まり（PO 2026-10-16「1〜5 すべて A」）:
+     出ている     … x より前に書き始め、「出す文」（いちばん新しい、字のある PD。無ければ A）の週が直近4週の中。済でないか、x で済
+     今週生まれた … x に初めて字が書かれた課題
+     済の報告     … 済にした週が、1つ前の週（w1）から x の前まで（A の表のいちばん下に1回・書けない・戻せる）
+     出さない     … 済にした週が w1 より前／出す文が4週より前（履歴だけ。データは消さない）
+   戻り値 {x, w1, live, born, report, warn, canWriteA}。並び＝書き始めた週の順、同じ週は正本の順 */
+var PDCA_LOOKBACK = 4;
+function pdcaWeek_(rows, pair, prevW, x) {
+  x = String(x);
+  var ws = [], seen = {};
+  (prevW || []).forEach(function (w) { w = String(w); if (w < x && !seen[w]) { seen[w] = 1; ws.push(w); } });
+  ws.sort();
+  var w1 = ws.length ? ws[ws.length - 1] : "";
+  var lim = ws.length ? ws[Math.max(0, ws.length - PDCA_LOOKBACK)] : x;
+  var has = function (r) { return String(r.text == null ? "" : r.text).trim() !== ""; };
+  var wk = function (r) { return String(r.snap8 == null ? "" : r.snap8); };
+  var sec = function (r) { return String(r.section == null ? "" : r.section); };
+  var nextOf = function (w) { for (var i = 0; i < ws.length; i++) if (ws[i] > w) return ws[i]; return x > w ? x : w + "+"; };   // x より後なら x より大きい値
+  var resWeek = function (r) {        // 済にした週。移す前の行（済の週が空）は前の画面の決まりで読む: A の行＝その週・PD の行＝次の週
+    if (!(r.resolved === true || String(r.resolved).toLowerCase() === "true")) return "";
+    var w = String(r.resolved_week == null ? "" : r.resolved_week);
+    if (/^\d{8}$/.test(w)) return w;
+    return sec(r) === pair.a ? wk(r) : nextOf(wk(r));
+  };
+  var pick = function (rs, s, from, to) {   // 欄 s の字のある行のうち、from ≦ 週 < to でいちばん新しい週の行（同じ週に2つあれば、つなぐ）
+    var best = "", list = [];
+    rs.forEach(function (r) {
+      var w = wk(r);
+      if (sec(r) !== s || !has(r) || w < from || w >= to) return;
+      if (w > best) { best = w; list = [r]; } else if (w === best) list.push(r);
+    });
+    return list.length ? { w: best, text: list.map(function (r) { return String(r.text); }).join("\n"), row: list[0] } : null;
+  };
+  var groups = {}, order = [];
+  (rows || []).forEach(function (r, i) {
+    var s = sec(r);
+    if ((s !== pair.a && s !== pair.pd) || !wk(r) || wk(r) > x || r.deleted_at) return;
+    var k = String(r.issue_id || "") || String(r.item_id || "");
+    if (!k) return;
+    if (!groups[k]) { groups[k] = { n: i, rows: [] }; order.push(k); }
+    groups[k].rows.push(r);
+  });
+  var out = { x: x, w1: w1, live: [], born: [], report: [], warn: null, canWriteA: true };
+  order.forEach(function (k) {
+    var rs = groups[k].rows, birth = "", R = "", holder = null;
+    rs.forEach(function (r) { if (has(r) && (!birth || wk(r) < birth)) birth = wk(r); });
+    if (!birth) return;                                            // 字のある行が無い課題は出さない
+    rs.forEach(function (r) { var w = resWeek(r); if (w && w <= x && (!R || w < R)) { R = w; holder = r; } });
+    var first = pick(rs, pair.a, birth, birth + "~") || pick(rs, pair.pd, birth, birth + "~");
+    var at = function (s) { return rs.filter(function (r) { return wk(r) === x && sec(r) === s; }); };
+    var it = { key: k, n: groups[k].n, birth: birth, head: first ? first.text : "", rw: R, here: R === x, holder: holder,
+               a: null, aRows: [], pdRows: at(pair.pd), pdRes: null, noPd: false, target: null };
+    if (R && R < x) {
+      if (R < w1) return;                                          // 済の報告の週を過ぎた → 出さない（履歴だけ）
+      it.a = pick(rs, pair.pd, "", R) || pick(rs, pair.a, "", R + "~");
+      it.pdRes = pick(rs, pair.pd, R, x);
+      out.report.push(it);
+      return;
+    }
+    if (birth === x) {
+      it.aRows = at(pair.a);
+      it.target = (pick(rs, pair.a, x, x + "~") || pick(rs, pair.pd, x, x + "~") || {}).row || null;
+      out.born.push(it);
+      return;
+    }
+    it.a = pick(rs, pair.pd, "", x) || pick(rs, pair.a, "", x);
+    if (!it.a || it.a.w < lim) return;                             // 4週 PD が無い → 出さない（履歴だけ）
+    it.noPd = it.a.w < w1;
+    it.target = it.a.row;
+    out.live.push(it);
+  });
+  var byBirth = function (p, q) { return p.birth < q.birth ? -1 : (p.birth > q.birth ? 1 : p.n - q.n); };
+  out.live.sort(byBirth); out.born.sort(byBirth); out.report.sort(byBirth);
+  out.canWriteA = out.live.length === 0;
+  var wrote = out.live.concat(out.born).some(function (it) { return it.pdRows.some(has); });
+  if (out.live.length && !wrote) {
+    var from = "";
+    out.live.forEach(function (it) { if (it.a.w > from) from = it.a.w; });
+    out.warn = { from: from, stale: from < w1 };
   }
-  catch(e){ CM.PREV=CM.PREV||[]; MEV={on:false,label:""}; const m=String(e&&e.message||e);
+  return out;
+}
+/* ==== 週の組み立て（第3便）ここまで ==== */
+
+/* 場所（エリア・店・部門）の行を1回で読む（getCommentPlace）。need＝x より前に要る週の数（A・PD の欄＝5・履歴＝列の数＋4）。
+   月末確定は、その月の最終週（x）で組み立て、閲覧のみ（me＝その週の MM/DD） */
+async function loadPlace_(k,need){
+  let x=k.snap8, xym=k.ym, xsnap=k.snap, me="", monthEnd=false;
+  if(await isMonthEnd8_(k.area,k.ym,k.snap8)){
+    monthEnd=true;
+    const p=await weeksBefore_(k.area,k.ym,k.snap8,1);
+    if(p.length){ x=p[0].snap8; xym=p[0].ym; xsnap=p[0].snapshot; me=lbl8_(x); }
+  }
+  const weeks=await weeksBefore_(k.area,xym,x,need);
+  const from=weeks.length?weeks[weeks.length-1].ym:xym;
+  const r=await capi("getCommentPlace",k.area,k.store,k.dept,from);
+  return {area:k.area,store:k.store,dept:k.dept,rows:(r&&r.rows)||[],need,weeks,from,xw:{snap8:x,ym:xym,snapshot:xsnap},x,me,monthEnd,o:null};
+}
+async function renderComments(seq){
+  const el=$("cpanel"); if(!el||!cmHere_()) return;   // 全部門（計）の画面では読まない（失敗のあとの読み直しが、全部門の一言を上書きしないように）
+  if(!S.snap){ el.innerHTML=""; return; }
+  const t0=performance.now(), g0=window.__gasN||0, k=cKey();
+  if(!PL||PL.area!==k.area||PL.store!==k.store||PL.dept!==k.dept) HIST.span=8;
+  let r;
+  try{ r=await loadPlace_(k,S.hist?HIST.span+PDCA_LOOKBACK:PDCA_LOOKBACK+1); }
+  catch(e){
+    if(seq!=null&&seq!==NAV.seq) return;
+    PL=null; const m=String(e&&e.message||e);
     el.innerHTML=m.includes("COMMENTS_SHEET_ID")
       ? `<div class="note">コメント機能は初期化前です（管理者が GAS エディタで <b>setupCommentSheet</b> を実行すると有効になります）。</div>`
       : `<div class="err">コメントを取得できません：${esc(m)}</div>`;
-    return; }
-  drawComments();
+    return;
+  }
+  if(seq!=null&&seq!==NAV.seq) return;   // 待っている間に別の所が押された（前の画面のコメントで上書きしない）
+  PL=r; drawComments();
+  // A・PD の欄が出るまでの時間と、サーバーへの往復の数（新しい 200 件だけ持つ）
+  const L=(window.__cmlog=window.__cmlog||[]); L.push({ms:Math.round(performance.now()-t0),gas:(window.__gasN||0)-g0,rows:r.rows.length,hist:!!S.hist});
+  if(L.length>200) L.splice(0,L.length-200);
+  NAV.cmDrawn=seq;
+  if(NAV.histLand&&NAV.histLand.seq===seq){ const o=NAV.histLand; NAV.histLand=null; histLand_(o); }
 }
-/* 行=課題（①②…）× 列=A/PD。セル直接入力→自動保存（スプシ同然）。済は行＝課題単位。
-   タイピング中はDOMを再構築しない（フォーカス保持）。保存は saveQ で直列化（サーバー側ロック渋滞の防止）。 */
+function cmView_(){ return pdcaWeek_(PL.rows,pair_(),PL.weeks.map(w=>w.snap8),PL.x); }
+/* 行＝課題（①②…）× 列＝A/PD。セル直接入力→自動保存（スプシ同然）。
+   タイピング中はDOMを再構築しない（フォーカス・日本語の変換を保つ）。済・消すのあとは表を組み直す。 */
 function drawComments(){
-  const el=$("cpanel"); if(!el) return;
-  const secs=SECS(), A=secs[0].k, PD=secs[1].k;
+  const el=$("cpanel"); if(!el||!PL||!cmHere_()) return;
+  const secs=SECS(), P=pair_(), v=cmView_();
   const who=S.mode==="運営部詳細"?"運営部":"商品部";
   const so=S.storeTab!=="__total__"?S.stores.find(x=>x.slug===S.storeTab):null;
   const scope=`${S.area} / ${S.dept}${so?" / "+so.short:" / エリア合計"}`;
   const sel=S.snaps.find(x=>x.snapshot===S.snap);
-  const anyEdit=secs.some(s=>canEditSec(s.k));
+  const o={edA:canEditSec(P.a,v),edPD:canEditSec(P.pd,v),res:canResolve_(),labels:secs,badges:true,tb:true};
+  PL.o=o;
+  const anyEdit=o.edA||o.edPD;
   const whoTag=anyEdit?`<span class="cmwho can">✎ あなたが書ける欄</span>`:`<span class="cmwho cant">閲覧のみ</span>`;
   let h=`<div class="cmcard"><div class="cmhead"><b>PDCA アクション（${who}）</b>${whoTag}<span class="lb">${esc(scope)}・${esc(sel?sel.label:"")}${IS_GAS?"":"（ローカル＝保存はこの端末のみ）"}</span><span class="lb" id="cmsave"></span>`+
     `<a href="#" data-jump="body" class="lb" style="margin-left:auto">↑ 表へ</a>`+
+    `<button type="button" class="hbtn" id="histBtn" aria-expanded="${S.hist?"true":"false"}" aria-controls="cmhist" onclick="histToggle_()" title="課題 × 週の表（直近8週）。もう一度押すと閉じます（← ひとつ前に戻る でも戻れます）">🕘 週ごとの履歴</button>`+
     (S.sheetUrl?`<a href="${esc(safeUrl_(S.sheetUrl))}" target="_blank" rel="noopener" class="btn" style="margin-left:8px;text-decoration:none;padding:3px 10px;font-size:12px">📄 スプレッドシートで開く</a>`:"")+`</div>`;
-  h+=`<table class="cmt"><thead><tr><th style="width:26px">#</th>`;
-  secs.forEach(s=>{
-    const lab=(s.k===A&&CM.PREV.length)?`${esc(s.label)}<span class="lb" style="font-weight:400">（前週PD ${esc(PREVW.label)}）</span>`:esc(s.label);
-    h+=`<th style="width:46%">${s.icon} ${lab}${canEditSec(s.k)?"":` <span class="badge" style="background:#e2e8f0;color:#475569">閲覧のみ</span>`}</th>`;
-  });
-  h+=`<th style="width:76px">済</th></tr></thead><tbody id="cmtb">`;
-  const n=cmRowCount();
-  for(let i=0;i<n;i++) h+=cmRow(i);
-  if(!n) h+=`<tr><td></td><td colspan="2" class="cmempty">（記入なし）</td><td></td></tr>`;
-  h+=`</tbody></table>`;
-  if(anyEdit) h+=`<div class="lb" style="margin-top:6px">セルに直接入力すると自動保存されます。「✓済」は行（課題）単位の完了記録です。</div>`;
-  else if(S.asg&&S.asg.role!=="viewer"&&!MEV.on) h+=`<div class="lb" style="margin-top:6px">${esc(cmWhyReadonly_())}</div>`;
-  // 未着手警告：Aに前週からの課題が出ているのに、当週のPDが空＝サイクルが止まっている
-  if(CM.PREV.length&&!hasText_(CM[PD]))
-    h+=`<div class="cmwarn">⚠ ${PREVW.stale?"PDCA対応がなかったため、前週のAをそのまま表示します。":""}<b>${esc(lblJa_(PREVW.snap8))}から課題更新が未着手です。</b>${MEV.on?"":"PD（計画と実行）を記入して、PDCAサイクルを進めてください。"}</div>`;
-  if(MEV.on) h+=`<div class="gnote">📌 月末確定は <b>${esc(MEV.label)} 週のA／PD</b> をそのまま表示しています（<b>閲覧のみ</b>）。確定値が出る時点では既に翌月のPDCAサイクルが始まっているため、この期間には書き込みません。</div>`;
-  if(CM.PREV.length) h+=`<div class="gnote">A欄は<b>一つ前の週（${esc(PREVW.label)}）のPD＝計画と実行</b>を自動表示しています（書き込み不可・書き込むのは PD）。データ期間が後から追加された場合も、開き直せば常に<b>実在する直前の週</b>を指します。</div>`;
+  h+=cmTableHtml_(v,P,o);
+  if(anyEdit) h+=`<div class="lb" style="margin-top:6px">セルに直接入力すると自動保存されます。「✓ 済」は課題ごとの完了の記録です（次の週に1回「済の報告」として下に出て、その次の週から出なくなります）。🗑 で消すのは、この週に書いた欄だけです。</div>`;
+  else if(S.asg&&S.asg.role!=="viewer"&&!PL.monthEnd) h+=`<div class="lb" style="margin-top:6px">${esc(cmWhyReadonly_())}</div>`;
+  h+=cmTailHtml_(v,PL,true);
+  if(S.hist) h+=histHtml_();
   el.innerHTML=h+`</div>`;
+  el.querySelectorAll("textarea.cmcell").forEach(t=>{ t._pl=PL; });
+  if(S.hist) histFit_();
+}
+/* 表（本部・店舗の方の画面・印刷で同じもの）。o={edA, edPD, res, labels, badges, tb} */
+function cmTableHtml_(v,P,o){
+  const ro=` <span class="badge" style="background:#e2e8f0;color:#475569">閲覧のみ</span>`, L=o.labels;
+  let h=`<table class="cmt"><thead><tr><th style="width:26px">#</th>`+
+    `<th style="width:46%">${L[0].icon} ${esc(L[0].label)}${o.badges&&!o.edA?ro:""}</th>`+
+    `<th style="width:46%">${L[1].icon} ${esc(L[1].label)}${o.badges&&!o.edPD?ro:""}</th>`+
+    `<th style="width:84px">済</th></tr></thead><tbody${o.tb?' id="cmtb"':""}>`;
+  let n=0;
+  v.live.forEach(it=>{ h+=cmLiveRow_(it,n++,v,P,o); });
+  v.born.forEach(it=>{ h+=cmBornRow_(it,n++,P,o); });
+  if(o.edPD) h+=cmNewRow_(P,o);
+  else if(!n&&!v.report.length) h+=`<tr><td></td><td colspan="2" class="cmempty">（記入なし）</td><td></td></tr>`;
+  if(v.report.length){
+    h+=`<tr class="cmrepsep"><td colspan="4">✓ 先週 済になった課題（この週だけ・書けません${o.res?"・戻せます":""}）</td></tr>`;
+    v.report.forEach(it=>{ h+=cmRepRow_(it,P,o); });
+  }
+  return h+`</tbody></table>`;
+}
+function cmSrc_(a,P){ return `${esc(lbl8_(a.w))} の ${a.row&&a.row.section===P.a?"A":"PD"}`; }
+function cmMeta_(r){ return `${esc(r.author||"")}${r.updated_at?"・"+esc(String(r.updated_at).slice(5,16)):""}`; }
+function cmDelBtn_(id){ return `<button type="button" class="btn cmdel" data-cdel="${esc(id)}" title="この欄を消す（この週に書いた欄だけ。前の週の PD は消えません）">🗑</button>`; }
+/* 書ける欄（いまある行・新しい欄）。iss＝新しい欄を書いたときにつなぐ課題 */
+function cmTa_(sec,r,iss){
+  if(r) return `<textarea class="cmcell" data-sec="${esc(sec)}" data-id="${esc(r.item_id)}" oninput="cInput(this)" onblur="cBlur(this)">${esc(r.text)}</textarea>`+
+    `<div class="cmmeta">${cmMeta_(r)}${cmDelBtn_(r.item_id)}</div>`;
+  return `<textarea class="cmcell" data-sec="${esc(sec)}"${iss?` data-iss="${esc(iss)}"`:""} oninput="cInput(this)" onblur="cBlur(this)" placeholder="＋ 入力すると自動保存…"></textarea>`;
+}
+/* その週のその欄（ふつうは1つ）。書けるときは入力欄・書けないときは字のある行だけ */
+function cmCell_(sec,rows,iss,edit){
+  if(edit) return rows.length?rows.map(r=>cmTa_(sec,r)).join(""):cmTa_(sec,null,iss);
+  return rows.filter(r=>String(r.text||"").trim()).map(r=>`<div class="cmtext">${esc(r.text)}</div><div class="cmmeta">${cmMeta_(r)}</div>`).join("");
+}
+function cmResHtml_(it,o,isRep){
+  const done=it.here||isRep; let x="";
+  if(done) x+=`<div class="badge bd-ok">済 ${esc(lbl8_(it.rw))}週</div>`;
+  if(o.res) x+=`${done?`<div style="height:3px"></div>`:""}<button type="button" class="btn cmres" data-cres="${esc(it.key)}" data-on="${done?"0":"1"}">${done?"戻す":"✓ 済"}</button>`;
+  return x;
+}
+function cmLiveRow_(it,i,v,P,o){
+  const a=it.a;
+  return `<tr class="${it.here?"cmresolved":""}" data-iss="${esc(it.key)}"><td class="cmmark">${MARKS[i]||i+1}</td>`+
+    `<td><div class="cmtext">${esc(a.text)}</div><div class="cmmeta">${cmSrc_(a,P)}${a.row&&a.row.author?"・"+esc(a.row.author):""}${it.noPd?`・<b class="nopd">${esc(lbl8_(v.w1))} は PD なし</b>`:""}</div></td>`+
+    `<td>${cmCell_(P.pd,it.pdRows,it.key,o.edPD)}</td><td class="cmrs">${cmResHtml_(it,o,false)}</td></tr>`;
+}
+function cmBornRow_(it,i,P,o){
+  return `<tr class="${it.here?"cmresolved":""}" data-iss="${esc(it.key)}"><td class="cmmark">${MARKS[i]||i+1}</td>`+
+    `<td>${cmCell_(P.a,it.aRows,it.key,o.edA)}</td><td>${cmCell_(P.pd,it.pdRows,it.key,o.edPD)}</td><td class="cmrs">${cmResHtml_(it,o,false)}</td></tr>`;
+}
+/* いちばん下の「＋」の行（書くと、今週生まれた課題になる） */
+function cmNewRow_(P,o){
+  return `<tr data-new="1"><td class="cmmark">＋</td><td>${o.edA?cmTa_(P.a,null,""):""}</td><td>${cmTa_(P.pd,null,"")}</td><td class="cmrs"></td></tr>`;
+}
+/* 済の報告（済にした週の次の週に1回・書けない・戻せる） */
+function cmRepRow_(it,P,o){
+  const now=it.pdRows.filter(r=>String(r.text||"").trim());
+  return `<tr class="cmrep" data-iss="${esc(it.key)}"><td class="cmmark rep">✓</td>`+
+    `<td>${it.a?`<div class="cmtext">${esc(it.a.text)}</div><div class="cmmeta">${cmSrc_(it.a,P)}</div>`:""}</td>`+
+    `<td>${it.pdRes?`<div class="cmtext">${esc(it.pdRes.text)}</div><div class="cmmeta">${esc(lbl8_(it.pdRes.w))} の PD（済の週の結果）</div>`:""}`+
+    now.map(r=>`<div class="cmtext">${esc(r.text)}</div><div class="cmmeta">${esc(lbl8_(r.snap8))} の PD</div>`).join("")+`</td>`+
+    `<td class="cmrs">${cmResHtml_(it,o,true)}</td></tr>`;
+}
+/* 表の下の注意（未着手の警告・月末確定・A 欄の読み方）。hq＝本部の画面か */
+function cmTailHtml_(v,pl,hq){
+  let h="";
+  if(v.warn) h+=`<div class="cmwarn">⚠ ${v.warn.stale?"PDCA対応がなかったため、前の週までの課題をそのまま表示します。":""}<b>${esc(lblJa_(v.warn.from))}から課題更新が未着手です。</b>${pl.monthEnd?"":(hq?"PD（計画と実行）を記入して、PDCAサイクルを進めてください。":"PDCAサイクルを進めてください。")}</div>`;
+  if(pl.monthEnd) h+=`<div class="gnote">📌 月末確定は ${pl.me?`<b>${esc(pl.me)} 週のA／PD</b> をそのまま表示しています（<b>閲覧のみ</b>）`:`<b>閲覧のみ</b>です`}。${hq?"確定値が出る時点では既に翌月のPDCAサイクルが始まっているため、この期間には書き込みません。":""}</div>`;
+  if(v.live.length||v.report.length) h+=`<div class="gnote">A欄は<b>前の週までの PD</b>を課題ごとに自動表示しています（書かなかった週があっても4週まで${hq?"・書き込むのは PD":""}）。<b>済にした課題</b>は、次の週に1回「✓ 先週 済になった課題」として表のいちばん下に出て、その次の週から出なくなります${hq?"（🕘 週ごとの履歴で、いつでも見られます）":""}。</div>`;
+  return h;
 }
 /* 書けない理由（担当と画面が合わないとき）を1行で */
 function cmWhyReadonly_(){
@@ -1507,44 +1734,6 @@ function cmWhyReadonly_(){
   if(roleNeedsDept_(a.role)&&a.dept!==S.dept) return `担当部門（${a.dept}）の外なので、見るだけです。`;
   return "";
 }
-function cmRowCount(){
-  const A=secA(), PD=secPD();
-  const n=Math.max(CM.PREV.length,CM[A].length,CM[PD].length);
-  return n+(SECS().some(s=>canEditSec(s.k))?1:0); // 編集可なら常に空きの次行を1つ出す
-}
-function cmRow(i){
-  const t=rowResolveTarget_(i), resolved=!!(t.it&&t.it.resolved);
-  let h=`<tr id="cmr_${i}" class="${resolved?"cmresolved":""}"><td class="cmmark" id="cmmk_${i}">${cmMark(i)}</td>`;
-  SECS().forEach(s=>{ h+=`<td id="cmtd_${s.k}_${i}">${cmCellHtml(s.k,i)}</td>`; });
-  return h+`<td style="text-align:center" id="cmrs_${i}">${cmResolveHtml(i)}</td></tr>`;
-}
-function cmMark(i){ return (CM.PREV[i]||SECS().some(s=>CM[s.k][i]))?(MARKS[i]||String(i+1)):"＋"; }
-/* A欄＝前週PDの自動表示（閲覧のみ）。同じ行に当週Aの起票が残っていれば併記する。 */
-function cmPrevACell_(i){
-  const p=CM.PREV[i], a=CM[secA()][i]; let h="";
-  if(p) h+=`<div class="cmtext">${esc(p.text)}</div><div class="cmmeta">前週PD（${esc(PREVW.label)}）${esc(p.author||"")}</div>`;
-  if(a) h+=`${p?`<div style="height:6px;border-top:1px dashed #cbd5e1;margin-top:6px"></div>`:""}<div class="cmtext">${esc(a.text)}</div><div class="cmmeta">起票 ${esc(a.author||"")}${a.updated_at?"・"+esc(String(a.updated_at).slice(5,16)):""}</div>`;
-  return h;
-}
-function cmCellHtml(sec,i){
-  if(sec===secA()&&CM.PREV.length) return cmPrevACell_(i);
-  const it=CM[sec][i], edit=canEditSec(sec);
-  if(it){
-    if(!edit) return `<div class="cmtext">${esc(it.text)}</div><div class="cmmeta">${esc(it.author||"")}${it.updated_at?"・"+esc(String(it.updated_at).slice(5,16)):""}</div>`;
-    return `<textarea class="cmcell" data-sec="${sec}" data-id="${esc(it.item_id)}" oninput="cInput(this)" onblur="cBlur(this)">${esc(it.text)}</textarea>`+
-      `<div class="cmmeta">${esc(it.author||"")}${it.updated_at?"・"+esc(String(it.updated_at).slice(5,16)):""}<button class="btn" style="float:right;padding:0 6px;font-size:11px" title="行を削除" onclick="cDel('${esc(it.item_id)}')">🗑</button></div>`;
-  }
-  // 各列とも「次の1マス」だけ新規入力セルを出す（①が埋まれば②…の位置に揃う）
-  if(edit&&CM[sec].length===i) return `<textarea class="cmcell" data-sec="${sec}" oninput="cInput(this)" onblur="cBlur(this)" placeholder="＋ 入力すると自動保存…"></textarea>`;
-  return "";
-}
-function cmResolveHtml(i){
-  const it=rowResolveTarget_(i).it; if(!it) return "";
-  const resolved=!!it.resolved; let x="";
-  if(resolved) x+=`<div class="badge bd-ok">済 ${esc(String(it.resolved_at||"").slice(5,10))}</div><div style="height:3px"></div>`;
-  if(canResolveRow()) x+=`<button class="btn" onclick="cResolve('${esc(it.item_id)}',${resolved?"false":"true"})">${resolved?"戻す":"✓ 済"}</button>`;
-  return x;
-}
 function cmIndicator(st,msg){ const e=$("cmsave"); if(!e) return; e.textContent=msg||""; e.style.color=st==="err"?"#b91c1c":st==="saving"?"#b45309":"#166534"; }
 function newId(){ return "it_"+Date.now().toString(36)+"_"+(++cmSeq)+Math.random().toString(36).slice(2,6); }
 
@@ -1553,78 +1742,174 @@ function cInput(el){
   clearTimeout(el._t); el._t=setTimeout(()=>cFlush(el),700); // 手が止まって0.7秒で自動保存
 }
 function cBlur(el){ clearTimeout(el._t); cFlush(el); }
+/* 入力欄の中身を、その欄を出した時点の場所・週（el._pl）の行へ。画面を切り替えたあとに遅れて来ても、別の週へは書かない */
 function cFlush(el){
+  const pl=el._pl||PL; if(!pl) return;
   const sec=el.dataset.sec;
   if(!el.dataset.id){
     if(!el.value.trim()) return;
-    const id=newId(); el.dataset.id=id;
-    CM[sec].push({item_id:id,text:el.value,resolved:false,author:$("user").textContent||"",updated_at:""});
-    cmAfterCreate(sec);
-    enqueueSave(sec,id);
+    const id=newId(), iss=el.dataset.iss||id; el.dataset.id=id;
+    pl.rows.push({ym:pl.xw.ym,snap8:pl.x,section:sec,item_id:id,issue_id:iss,text:el.value,resolved:false,resolved_at:"",resolved_week:"",author:$("user").textContent||"",updated_at:""});
+    cmAfterNew_(el,iss,id,pl);
+    enqueueSave(id,pl);
     return;
   }
-  const it=CM[sec].find(x=>x.item_id===el.dataset.id); if(!it||it.text===el.value) return;
-  it.text=el.value; enqueueSave(sec,el.dataset.id);
+  const it=pl.rows.find(x=>x.item_id===el.dataset.id); if(!it||it.text===el.value) return;
+  it.text=el.value; enqueueSave(it.item_id,pl);
 }
-/* 新規行の確定: マーカー・済セルを更新し、次の空き行（無ければ追加）と当該列の次の入力マスを必ず用意する。
-   タイピング中の既存セルは触らない */
-function cmAfterCreate(sec){
-  const i=CM[sec].length-1;
-  const mk=$("cmmk_"+i); if(mk) mk.textContent=cmMark(i);
-  const rs=$("cmrs_"+i); if(rs) rs.innerHTML=cmResolveHtml(i);
-  const next=i+1;
-  if(!$("cmr_"+next)&&$("cmtb")) $("cmtb").insertAdjacentHTML("beforeend",cmRow(next));
-  const td=$("cmtd_"+sec+"_"+next);
-  if(td&&!td.querySelector("textarea")) td.innerHTML=cmCellHtml(sec,next);
+/* 新しい欄を書いたあと（打っている欄は作り直さない）: 消す釦を足す。「＋」の行なら、今週生まれた課題にして、下に次の「＋」の行 */
+function cmAfterNew_(el,iss,id,pl){
+  if(!el.isConnected) return;
+  el.insertAdjacentHTML("afterend",`<div class="cmmeta">${esc($("user").textContent||"")}${cmDelBtn_(id)}</div>`);
+  const tr=el.closest("tr"); if(!tr||tr.dataset.new!=="1") return;
+  tr.dataset.new=""; tr.dataset.iss=iss;
+  tr.querySelectorAll("textarea.cmcell").forEach(t=>{ if(!t.dataset.id) t.dataset.iss=iss; });
+  const n=[...tr.parentNode.querySelectorAll("tr[data-iss]")].filter(r=>!r.classList.contains("cmrep")).length;
+  const mk=tr.querySelector(".cmmark"); if(mk) mk.textContent=MARKS[n-1]||String(n);
+  const rs=tr.querySelector(".cmrs"); if(rs&&pl.o&&pl.o.res) rs.innerHTML=`<button type="button" class="btn cmres" data-cres="${esc(iss)}" data-on="1">✓ 済</button>`;
+  tr.insertAdjacentHTML("afterend",cmNewRow_(pair_(),pl.o||{edA:false}));
+  const nx=tr.nextElementSibling; if(nx) nx.querySelectorAll("textarea.cmcell").forEach(t=>{ t._pl=pl; });
 }
-function enqueueSave(sec,id){
+function enqueueSave(id,pl){
+  pl=pl||PL; const it=pl&&pl.rows.find(x=>x.item_id===id); if(!it) return;
+  const key={ym:it.ym,snap8:it.snap8,area:pl.area,store:pl.store,dept:pl.dept};   // 保存時点の場所・週を固定（後で画面を切り替えても正しい週へ書く）
   cmIndicator("saving","保存中…");
-  const isPrev=(sec==="PREV");
-  const key=isPrev?prevKey_():cKey(); // 保存時点のスコープを固定（後で画面を切り替えても正しい週キーへ書く）
-  const wire=isPrev?secPD():sec;      // 前週PD行の更新＝元の週のPD行をそのまま書き換える（コピーを作らない）
   saveQ=saveQ.then(async()=>{
-    const it=(CM[sec]||[]).find(x=>x.item_id===id); if(!it) return;
     try{
-      await capi("upsertComment",key,wire,id,it.text,!!it.resolved);
+      await capi("upsertComment",key,it.section,it.item_id,it.text,null,it.issue_id||"");   // 済は送らない（済・戻すは resolveComment）
       cmIndicator("ok","✓ 自動保存 "+new Date().toTimeString().slice(0,5));
     }catch(e){ cmIndicator("err","⚠ 保存失敗："+String(e&&e.message||e).slice(0,60)); }
   });
 }
-/* 削除は必ず「行（課題）」単位。1セルだけ配列から抜くと、その列だけ上に詰まって
-   A・PD の対応がずれるため、同じ行の全列をまとめて取り除いて番号を振り直す。
-   ※セルの中身を消しただけのときは行を詰めない（空欄のまま位置を保つ）。
+/* 消すのは、その欄（その週に書いた行）だけ。前の週の PD は消さない（PO 2026-10-16 Q5）。
    消した行はシートに印付きで残る（サーバーが消さずに印を付ける・記録も残る）。 */
-async function cDel(id){
-  const A=secA(), PD=secPD();
-  const cols=CM.PREV.length?["PREV",A,PD]:[A,PD];   // 前週PDのある週は、同じ行に出ている当週Aの起票も一緒に消す
-  let row=-1;
-  cols.forEach(s=>{ const k=(CM[s]||[]).findIndex(x=>x&&x.item_id===id); if(k>=0) row=k; });
-  if(row<0) return;
-  const targets=cols.map(s=>CM[s][row]).filter(Boolean);
-  if(!targets.length) return;
-  const mk=MARKS[row]||String(row+1);
-  const msg=(CM.PREV.length&&CM.PREV[row])
-    ? `課題${mk} を行ごと削除します。\n前週PD（${PREVW.label}）の記録も一緒に消えます。\n以降の番号は振り直されます。よろしいですか？`
-    : `課題${mk} を行ごと削除します。\nA・PD とも消え、以降の番号は振り直されます。よろしいですか？`;
-  if(!confirm(msg)) return;
-  cols.forEach(s=>{ if(CM[s].length>row) CM[s].splice(row,1); });   // 全列を同じ位置で抜く＝行として消える
+function cDel(id){
+  const pl=PL; if(!pl) return;
+  const r=pl.rows.find(x=>x.item_id===id); if(!r) return;
+  const lab=r.section===pair_().a?"A":"PD";
+  if(!confirm(`この欄（${lab}・${lbl8_(r.snap8)} の週）を消します。\n前の週の PD は消えません（記録にも残ります）。よろしいですか？`)) return;
+  pl.rows=pl.rows.filter(x=>x!==r);
   drawComments();
   saveQ=saveQ.then(async()=>{
-    let ng=0;
-    for(const it of targets){ try{ await capi("deleteComment",it.item_id); }catch(e){ ng++; } }
-    if(ng){ toast("削除に失敗した項目があります",true); renderComments(); }
-    else toast("行を削除しました（番号を振り直しました）");
+    try{ await capi("deleteComment",id); toast("消しました（記録には残ります）"); }
+    catch(e){ toast("消せませんでした："+String(e&&e.message||e).slice(0,40),true); if(PL===pl) renderComments(); }
   });
 }
-function cResolve(id,flag){
-  const sec=(CM.PREV||[]).length?"PREV":secA();
-  const it=(CM[sec]||[]).find(x=>x.item_id===id); if(!it) return;
-  it.resolved=flag; it.resolved_at=flag?new Date().toISOString().slice(0,19).replace("T"," "):"";
-  const i=CM[sec].indexOf(it);
-  const tr=$("cmr_"+i); if(tr) tr.className=flag?"cmresolved":"";
-  const rs=$("cmrs_"+i); if(rs) rs.innerHTML=cmResolveHtml(i);
-  enqueueSave(sec,id);
+/* 済・戻す（課題ごと）。済＝その週の A に出している行に「この週に済」。戻す＝その課題の済を外す（済の週と済の報告の週だけ出る） */
+function cResolve(iss,flag){
+  const pl=PL; if(!pl||!canResolve_()) return;
+  const v=cmView_(), it=v.live.concat(v.born,v.report).find(o=>o.key===iss); if(!it) return;
+  const row=flag?it.target:(it.holder||it.target); if(!row) return;
+  const P=pair_(), x=pl.x;
+  pl.rows.forEach(r=>{ if((r.section===P.a||r.section===P.pd)&&(r.issue_id||r.item_id)===iss){ r.resolved=false; r.resolved_at=""; r.resolved_week=""; } });
+  if(flag){ row.resolved=true; row.resolved_week=x; }
+  drawComments();
+  const key={ym:row.ym,snap8:row.snap8,area:pl.area,store:pl.store,dept:pl.dept};
+  cmIndicator("saving","保存中…");
+  saveQ=saveQ.then(async()=>{
+    try{ await capi("resolveComment",key,row.section,row.item_id,flag,x); cmIndicator("ok",(flag?"✓ 済にしました ":"戻しました ")+new Date().toTimeString().slice(0,5)); }
+    catch(e){ cmIndicator("err","⚠ 保存失敗："+String(e&&e.message||e).slice(0,60)); if(PL===pl) renderComments(); }
+  });
 }
+
+/* ── 🕘 週ごとの履歴（課題 × 週。直近8週・右がいまの週）──
+   列ごとに同じ決まり（pdcaWeek_）で組み立て直し、その週の課題の様子を印にする（✎ 書いた／○ A に出ていた／✅ 済にした週／☑ 済の報告）。
+   開く・閉じる・週を押して移るは「← ひとつ前に戻る」に積む（ブラウザの戻るも同じ）。読み足しが要るときだけ GAS へ行く。 */
+function histCols_(){
+  const all=[PL.xw].concat(PL.weeks);            // 新しい順
+  return all.slice(0,HIST.span).map((w,i)=>({w:w,prev:all.slice(i+1).map(o=>o.snap8)})).reverse();
+}
+function histData_(){
+  const P=pair_(), cols=histCols_(), byKey={}, order=[];
+  cols.forEach((c,j)=>{
+    const v=c.v=pdcaWeek_(PL.rows,P,c.prev,c.w.snap8);
+    const put=(it,g,pos)=>{ if(!byKey[it.key]){ byKey[it.key]={key:it.key,birth:it.birth,head:it.head,cells:{}}; order.push(it.key); } byKey[it.key].cells[j]={g:g,it:it,pos:pos}; };
+    v.live.forEach((it,p)=>put(it,"live",p)); v.born.forEach((it,p)=>put(it,"born",v.live.length+p)); v.report.forEach((it,p)=>put(it,"report",p));
+  });
+  // 並び: いまの週（右端）で出ている課題 → 済の報告 → ほか（新しく動いた順）
+  const last=cols.length-1;
+  const rank=k=>{ const c=byKey[k].cells[last]; return c?(c.g==="report"?1:0):2; };
+  const seen=k=>Math.max.apply(null,Object.keys(byKey[k].cells).map(Number));
+  order.sort((p,q)=>rank(p)-rank(q)||(rank(p)<2?byKey[p].cells[last].pos-byKey[q].cells[last].pos:(seen(q)-seen(p)||(byKey[q].birth>byKey[p].birth?1:-1))));
+  return {cols:cols,rows:order.map(k=>byKey[k])};
+}
+function histMark_(cell){
+  if(!cell) return "";
+  if(cell.g==="report") return "☑";
+  if(cell.it.here) return "✅";
+  if(cell.g==="born") return "✎";
+  return cell.it.pdRows.some(r=>String(r.text||"").trim())?"✎":"○";
+}
+function histHtml_(){
+  const d=HIST.d=histData_(), cols=d.cols, last=cols.length-1;
+  const me=j=>j>0&&cols[j].w.ym!==cols[j-1].w.ym;
+  let h=`<div id="cmhist" class="hpanel"><div class="hhead"><b>🕘 週ごとの履歴</b><span class="lb">直近${cols.length}週（右がいまの週）。マスを押すと、その週の文が下に出ます。週を押すと、その週へ移ります</span>`+
+    `<span class="hsp"></span><button type="button" class="btn" onclick="histMore_()" title="さらに前の8週を左に足します">◀ もっと前の8週</button><button type="button" class="btn" onclick="histToggle_()">閉じる</button></div>`+
+    `<div class="legend"><span>✎ 書いた</span><span>○ A に出ていた（書かなかった）</span><span>✅ 済にした週</span><span>☑ 済の報告</span><span>太い線＝月の切れ目（月末確定）</span></div>`;
+  if(!d.rows.length) return h+`<div class="note">この ${cols.length} 週に、課題はありません。</div></div>`;
+  h+=`<div class="hwrap"><table class="hist"><thead><tr><th class="il">課題（書き始めた週）</th>`+
+    cols.map((c,j)=>`<th class="${j===last?"cur":""}${me(j)?" me":""}"><button type="button" data-hweek="${j}" data-k="hw:${esc(c.w.snap8)}" title="押すと、データ期間を ${esc(lbl8_(c.w.snap8))} の週へ${me(j)?`（${+cols[j-1].w.ym.slice(4)}月の月末確定のあと）`:""}${j===last?"（いま見ている週）":""}">${esc(lbl8_(c.w.snap8))}</button></th>`).join("")+`</tr></thead><tbody>`;
+  d.rows.forEach(r=>{
+    const off=!(r.cells[last]&&r.cells[last].g!=="report"), head=String(r.head||"").replace(/\s+/g," ");
+    const lab=`${lbl8_(r.birth)}〜 ${head.length>18?head.slice(0,18)+"…":head}`;
+    h+=`<tr class="${off?"done":""}"><td class="il" title="${esc(head)}">${esc(lab)}</td>`+cols.map((c,j)=>{
+      const m=histMark_(r.cells[j]);
+      return `<td class="${me(j)?"me":""}">${m?`<button type="button" class="hc" data-hk="${esc(r.key)}" data-hj="${j}" aria-label="${esc(lab)}・${esc(lbl8_(c.w.snap8))}">${m}</button>`:""}</td>`;
+    }).join("")+`</tr>`;
+  });
+  return h+`</tbody></table></div><div class="hdet empty" id="hdet" aria-live="polite">マスを押すと、その週の A・PD がここに出ます。</div></div>`;
+}
+/* マス → その週のその課題の A・PD の文を、表のすぐ下に */
+function histShow_(key,j,btn){
+  const d=HIST.d; if(!d) return;
+  const r=d.rows.find(x=>x.key===key), c=d.cols[j]; if(!r||!c) return;
+  const cell=r.cells[j], it=cell&&cell.it, P=pair_();
+  const txt=rs=>rs.filter(x=>String(x.text||"").trim()).map(x=>String(x.text)).join("\n");
+  const L=[];
+  if(!it) L.push("この週は、A に出ていません。");
+  else if(cell.g==="report"){ L.push("済の報告（この週だけ・書けません）"); L.push("A："+(it.a?it.a.text:"")); L.push("PD："+(it.pdRes?it.pdRes.text:"")); L.push("（"+lbl8_(it.rw)+" の週に済。次の週から A に出ません）"); }
+  else{
+    L.push("A："+(cell.g==="born"?(txt(it.aRows)||"（今週から書き始めた課題）"):it.a.text+"（"+lbl8_(it.a.w)+" の "+(it.a.row.section===P.a?"A":"PD")+"）"));
+    L.push("PD："+(txt(it.pdRows)||"（書いていない）"));
+    if(it.here) L.push("→ ✓ 済（"+lbl8_(it.rw)+" の週）");
+  }
+  const det=$("hdet"); det.classList.remove("empty");
+  det.innerHTML=`<b>${esc(lbl8_(c.w.snap8))} の週 — ${esc(String(r.head||"").slice(0,40))}</b>\n`+esc(L.join("\n"));
+  document.querySelectorAll("#cmhist button.hc.on").forEach(b=>b.classList.remove("on"));
+  if(btn) btn.classList.add("on");
+}
+/* 週の見出し → 画面のデータ期間をその週へ（履歴は開いたまま・戻るで戻れる） */
+function histGoWeek_(j){
+  const c=HIST.d&&HIST.d.cols[j]; if(!c) return;
+  if(c.w.snapshot===S.snap){ histLand_({}); return; }
+  nav_({ym:c.w.ym,snap:c.w.snapshot},{why:"履歴の週",from:"hw:"+c.w.snap8,land:"hist"});
+}
+/* 開く・閉じる（見方の一部だけ変わる＝表は描き直さず、A・PD の欄だけ組み直す） */
+function histToggle_(){ if(!PL||!$("cpanel")||!cmHere_()) return; nav_({hist:!S.hist},{why:"履歴",light:()=>histApply_({})}); }
+function histMore_(){ HIST.span+=8; histApply_({more:true}); }
+async function histApply_(o){
+  if(!PL||!$("cpanel")||!cmHere_()) return;
+  if(S.hist&&PL.need<HIST.span+PDCA_LOOKBACK){                 // 履歴に要る週の行が足りない → 書きかけを送り終えてから、1回だけ読み足す
+    const pl=PL, k=cKey();
+    const hb=$("histBtn"); if(hb) hb.textContent="🕘 読み込み中…";
+    let r=null;
+    try{ await saveQ; r=await loadPlace_(k,HIST.span+PDCA_LOOKBACK); }catch(e){ toast("履歴を読めませんでした："+String(e&&e.message||e).slice(0,40),true); }
+    if(PL!==pl) return;
+    if(r) PL=r;
+  }
+  drawComments();
+  if(o.back){ const el=$("cpanel"); if(el) glideTo_(el.getBoundingClientRect().top+window.scrollY-stickyH_()-8,()=>flash_(el)); return; }
+  if(S.hist) histLand_(o);
+}
+function histFit_(){ const w=document.querySelector("#cmhist .hwrap"); if(w&&w.scrollWidth>w.clientWidth+2) w.scrollLeft=w.scrollWidth; }   // あふれるときは、いまの週（右端）を見せる
+function histLand_(o){
+  o=o||{};
+  if(o.restore){ glideTo_((o.sc&&o.sc.y)||0,()=>flash_(byKey_(o.from))); navToast_("← 元の場所へ戻りました"); return; }
+  const el=$("cmhist"); if(!el) return;
+  glideTo_(el.getBoundingClientRect().top+window.scrollY-stickyH_()-8,()=>flash_(o.more?el.querySelector("table.hist"):el));
+  if(!o.more) navToast_("🕘 週ごとの履歴（"+lbl8_(PL.x)+" の週まで）");
+}
+
 function toast(msg,bad){
   let t=$("toast"); if(!t){ t=document.createElement("div"); t.id="toast"; document.body.appendChild(t); }
   t.textContent=msg; t.className=bad?"bad":""; t.style.opacity=1;
@@ -2121,52 +2406,19 @@ function vChangeDept(d){ S.dept=d; vRenderBody(); }
 async function vChangeYm(y){ S.ym=y; try{const r=await API.stores(S.area,y,S.snap);S.stores=r.stores||[];}catch(e){} await vLoadSnaps(); vRenderBody(); }
 async function vChangeSnap(v){ S.snap=v; try{const r=await API.stores(S.area,S.ym,v);S.stores=r.stores||[];}catch(e){} vRenderBody(); }
 
-/* 読み取り専用 A／PD（店舗の方の閲覧・印刷。商品部の欄を出す） */
-function apdReadonly(cm,pv,me){
-  const PV=(pv&&pv.items)||[], A=cm.A||[], PD=cm.PD||[];
-  const n=Math.max(PV.length,A.length,PD.length);
-  let h=`<table class="cmt"><thead><tr><th style="width:26px">#</th><th>✅ A：改善アクション</th><th>📝 PD：計画と実行</th><th style="width:64px">済</th></tr></thead><tbody>`;
-  for(let i=0;i<n;i++){ const a=PV.length?PV[i]:A[i], rs=!!(a&&a.resolved);
-    // A欄＝前週PD（あれば）→ 当週Aの起票、の順に併記
-    const aCell=(PV.length&&PV[i]?`<div class="cmtext">${esc(PV[i].text)}</div><div class="cmmeta">前週PD（${esc(pv.label)}）</div>`:"")
-      +(A[i]?`<div class="cmtext">${esc(A[i].text)}</div>`:"");
-    h+=`<tr class="${rs?"cmresolved":""}"><td class="cmmark">${MARKS[i]||(i+1)}</td><td>${aCell}</td>`+
-      `<td>${PD[i]?`<div class="cmtext">${esc(PD[i].text)}</div>`:""}</td>`+
-      `<td style="text-align:center">${rs?`<span class="badge bd-ok">済 ${esc(String(a.resolved_at||"").slice(5,10))}</span>`:""}</td></tr>`;
-  }
-  if(!n) h+=`<tr><td></td><td colspan="2" class="cmempty">（記入なし）</td><td></td></tr>`;
-  let tail="";
-  if(PV.length&&!hasText_(PD))
-    tail+=`<div class="cmwarn">⚠ ${pv.stale?"PDCA対応がなかったため、前週のAをそのまま表示します。":""}<b>${esc(lblJa_(pv.snap8))}から課題更新が未着手です。</b>${me?"":"PDCAサイクルを進めてください。"}</div>`;
-  if(me) tail+=`<div class="gnote">📌 月末確定は <b>${esc(me)} 週のA／PD</b> をそのまま表示しています（閲覧のみ）。</div>`;
-  if(PV.length) tail+=`<div class="gnote">A欄は一つ前の週（${esc(pv.label)}）のPD＝計画と実行を自動表示しています。</div>`;
-  return h+`</tbody></table>`+tail;
-}
-/* 表示用の A／PD を一式そろえる（本部・閲覧者・スプレッドシートで共通の規則）。sec＝前週を A に出す欄（PD か UPD）
-   月末確定(05-2) → その月の最終週の“画面そのまま”を複製（＝再帰。A欄も最終週から見た前週PDになる・閲覧のみ）
-   通常週        → A欄＝直前週のPD（空なら更に遡る）／PD＝当週 */
-async function apdForScope_(area,ym,snap8,store,dept,depth,sec){
-  const d=depth||0, ps=sec||"PD";
-  if(await isMonthEnd8_(area,ym,snap8)){
-    const p=await prevWeeks8_(area,ym,snap8,1);
-    if(p.length&&d<2){
-      const r=await apdForScope_(area,p[0].ym,p[0].snap8,store,dept,d+1,ps);
-      return {cm:r.cm,pv:r.pv,me:lbl8_(p[0].snap8)};
-    }
-    return {cm:await capi("getComments",ym,snap8,area,store,dept),pv:{items:[],label:"",snap8:"",stale:false},me:""};
-  }
-  const cm=await capi("getComments",ym,snap8,area,store,dept);
-  const pv=await fetchPrevPD_(area,ym,snap8,store,dept,ps);
-  return {cm:cm,pv:pv,me:""};
+/* 店舗の方の閲覧・印刷（商品部の欄）。本部と同じ決まり（pdcaWeek_）・済の報告まで出す（🕘 履歴は出さない）・書けない */
+async function viewerApd_(store){
+  const r=await loadPlace_({ym:S.ym,snap8:s8(S.snap),snap:S.snap,area:S.area,store:store,dept:S.dept},PDCA_LOOKBACK+1);
+  const P={a:"A",pd:"PD"}, v=pdcaWeek_(r.rows,P,r.weeks.map(w=>w.snap8),r.x);
+  return cmTableHtml_(v,P,{edA:false,edPD:false,res:false,labels:SEC_SETS["商品部詳細"],badges:false,tb:false})+cmTailHtml_(v,r,false);
 }
 async function vRenderBody(){
   const b=$("vbody"); if(!b) return; b.innerHTML=`<div class="note">読み込み中…</div>`;
   if(!S.snap){ b.innerHTML=`<div class="note">データ期間がありません。年月・エリアを変えてお試しください。</div>`; return; }
-  const sp=s8(S.snap);
   const section=(head,chipCls,chipTxt,inner)=>`<div class="cmcard"><div class="chips"><span class="chip ${chipCls}">${esc(chipTxt)}</span><b>${esc(head)}</b><span class="lb">${esc(snapLabelNow())}</span></div>${inner}</div>`;
   const nodata=`<div class="note">この条件の実績データがありません。</div>`;
-  const areaHtml=async()=>{ const d=await API.detail(S.area,S.ym,S.snap,S.dept).catch(e=>isNoFile(e)?null:Promise.reject(e)); const r=await apdForScope_(S.area,S.ym,sp,"",S.dept); return section(`エリア合計（${S.area}／${S.dept}）`,"a",S.area,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(r.cm,r.pv,r.me)); };
-  const storeHtml=async(st)=>{ const d=await API.detailStore(S.area,S.ym,S.snap,S.dept,st.slug).catch(e=>isNoFile(e)?null:Promise.reject(e)); const r=await apdForScope_(S.area,S.ym,sp,st.full,S.dept); return section(`自店舗・自部門（${st.short}／${S.dept}）`,"s",st.short,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apdReadonly(r.cm,r.pv,r.me)); };
+  const areaHtml=async()=>{ const d=await API.detail(S.area,S.ym,S.snap,S.dept).catch(e=>isNoFile(e)?null:Promise.reject(e)); const apd=await viewerApd_(""); return section(`エリア合計（${S.area}／${S.dept}）`,"a",S.area,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apd); };
+  const storeHtml=async(st)=>{ const d=await API.detailStore(S.area,S.ym,S.snap,S.dept,st.slug).catch(e=>isNoFile(e)?null:Promise.reject(e)); const apd=await viewerApd_(st.full); return section(`自店舗・自部門（${st.short}／${S.dept}）`,"s",st.short,(d?renderSection(d):nodata)+`<div style="margin-top:10px"></div>`+apd); };
   try{
     if(S.storeTab==="__area__"){ b.innerHTML=await areaHtml(); }
     else if(S.storeTab==="__all__"){
