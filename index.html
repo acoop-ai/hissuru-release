@@ -203,15 +203,80 @@
     body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     @page{size:A4 landscape;margin:10mm;}
   }
+
+  /* ── 第2便: 押して掘り下げる（2026-10-16） ── */
+  /* 段の地図（4つのモードを、押してつながる形で並べる。押せば直接その段へ） */
+  .modes{align-items:stretch;}
+  .tree{display:grid;grid-template-columns:auto 74px auto;grid-template-rows:auto 18px auto;align-items:center;padding:5px 10px;border:1px solid var(--border);border-radius:10px;background:#fff;}
+  .lvbtn{display:flex;align-items:baseline;gap:6px;white-space:nowrap;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;padding:3px 10px;color:#334155;text-align:left;min-height:30px;line-height:1.25;}
+  .lvbtn:hover{background:#f0f9ff;border-color:#7dd3fc;}
+  .lvbtn.on{background:#0284c7;border-color:#0284c7;color:#fff;font-weight:600;}
+  .lvbtn .lvs{display:inline-block;font-size:11.5px;color:#475569;font-weight:400;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lvbtn.on .lvs{color:#e0f2fe;}
+  .lvarr{font-size:11px;color:#475569;text-align:center;white-space:nowrap;line-height:1.2;}
+  .lvarr b{display:block;font-size:14px;color:#0369a1;font-weight:700;}
+  .lvdown{font-size:11px;color:#475569;padding-left:18px;white-space:nowrap;}
+  .lvdown b{color:#0369a1;}
+  .othermodes{display:flex;flex-direction:column;justify-content:center;gap:6px;}
+  .modes .othermodes button{text-align:left;}
+  /* いま見ている所（パンくず）と「ひとつ前に戻る」。上に貼り付けて、いつも見えるように */
+  .navbar{position:sticky;top:var(--hdrH,46px);z-index:35;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:10px;padding:6px 10px;margin:10px 0 0;box-shadow:0 2px 6px rgba(15,23,42,.06);}
+  .navbar .back{white-space:nowrap;font-weight:600;}
+  .navbar .back:not(:disabled){border-color:#0284c7;color:#075985;}
+  .crumbs{display:flex;align-items:center;gap:2px 4px;flex-wrap:wrap;font-size:13px;min-width:0;}
+  .crumb{border:none;background:none;color:var(--sky700);cursor:pointer;padding:3px 5px;min-height:28px;border-radius:5px;text-decoration:underline;text-underline-offset:3px;font-size:13px;font-family:inherit;}
+  .crumb:hover{background:var(--sky50);}
+  .crumb.cur{color:var(--fg);font-weight:700;text-decoration:none;cursor:default;background:none;}
+  .crumbs .sep{color:#64748b;}
+  .crumbs .ctx{font-size:12px;color:#334155;background:#f1f5f9;border-radius:6px;padding:2px 7px;margin-right:4px;white-space:nowrap;}
+  /* 押して下りられる所（行・列の見出し・マス） */
+  table.c tr.go{cursor:pointer;}
+  table.c tr.go:hover td{background:#e0f2fe;}
+  table.c tr.total.go:hover td{background:#334155;}
+  .gl{color:#0369a1;font-weight:700;}
+  tr.total .gl{color:#bae6fd;}
+  .gch{font-weight:700;margin-left:4px;color:#0284c7;}
+  tr.total .gch{color:#7dd3fc;}
+  table.c th.go{cursor:pointer;color:#075985;}
+  table.c th.go:hover{background:#e0f2fe;}
+  table.c td.gocell{cursor:pointer;}
+  table.c td.gocell:hover{outline:2px solid #38bdf8;outline-offset:-2px;}
+  tr.curdept td.h{box-shadow:inset 4px 0 0 #0284c7;}
+  .howto{display:flex;flex-wrap:wrap;align-items:center;gap:4px 18px;font-size:12.5px;color:#0c4a6e;background:var(--sky50);border:1px solid var(--sky100);border-radius:8px;padding:6px 10px;margin:8px 0;}
+  .howto b{color:#075985;}
+  .howto a{color:#0369a1;font-weight:700;}
+  .mtabs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:0 0 8px;}
+  .mtabs button{border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:12.5px;padding:4px 10px;color:#334155;}
+  .mtabs button.on{background:#0369a1;border-color:#0369a1;color:#fff;font-weight:600;}
+  /* 着いた所を光らせる（移動は滑らせ、着地を光らせる） */
+  .landed{animation:landed 1.6s ease-out;}
+  @keyframes landed{0%{box-shadow:0 0 0 4px #7dd3fc;background-color:#e0f2fe;}100%{box-shadow:0 0 0 0 rgba(125,211,252,0);}}
+  tr.landed td{animation:landedtd 1.6s ease-out;}
+  @keyframes landedtd{0%{background-color:#bae6fd;}100%{}}
+  #navtoast{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--hdrH,46px) + 56px);background:#0f172a;color:#fff;font-size:12.5px;padding:6px 14px;border-radius:999px;opacity:0;transition:opacity .25s;z-index:120;pointer-events:none;white-space:nowrap;}
+  .cmwho{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:700;}
+  .cmwho.can{background:#dcfce7;color:#166534;} .cmwho.cant{background:#e2e8f0;color:#334155;}
+  @media (max-width:760px){
+    .tree{grid-template-columns:1fr 44px 1fr;padding:6px;}
+    .lvbtn{font-size:12.5px;padding:3px 7px;flex-direction:column;align-items:flex-start;gap:0;white-space:normal;}
+    .lvbtn .lvs{max-width:125px;}
+    .lvarr span{display:none;}
+    .othermodes{flex-direction:row;flex-wrap:wrap;}
+    .modes .admin-sep{margin-left:0;border-left:none;padding-left:0;}
+    .navbar{flex-wrap:wrap;gap:4px 8px;}
+    .crumbs .ctx{display:none;}
+  }
+  @media print{ .navbar,.howto,.mtabs,#navtoast{display:none !important;} }
 </style>
 </head>
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-15d</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-16a</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
+<div id="navtoast"></div>
 <div class="page" id="page">
 <main id="app"><div class="note">読み込み中…</div></main>
 </div>
@@ -320,7 +385,20 @@ const SLUG={area:{},dept:{}};
 const FB={area:{"北東北":"kitatohoku","北関東":"kitakanto","宮城":"miyagi","山形":"yamagata","首都圏":"shutoken"},
           dept:{"農産":"nosan","畜産":"chikusan","水産":"suisan","惣菜":"sozai","日配":"nippai","グロッサリー":"grocery","ベーカリー":"bakery"}};
 const aslug=a=>SLUG.area[a]||FB.area[a]||a, dslug=d=>SLUG.dept[d]||FB.dept[d]||d, s8=s=>(s||"").slice(0,8);
-async function loadJson(prod,sample){
+/* 第2便: 読んだ表は、このページを開いている間だけ覚える（5分）。戻る・同じ店を開き直すときに、GAS へ取りに行かない＝すぐ出る。
+   取込状況（status.json）は追いかけて読み直すので覚えない。失敗したものは覚えない（次に押したとき取り直す）。 */
+const JCACHE=new Map(), JCACHE_TTL=5*60*1000, JCACHE_MAX=80;
+function cached_(key,fn){
+  if(/status\.json$/.test(key)) return fn();
+  const now=Date.now(), hit=JCACHE.get(key);
+  if(hit&&now-hit.t<JCACHE_TTL) return hit.p;
+  const p=fn(); JCACHE.set(key,{t:now,p});
+  p.catch(()=>{ if(JCACHE.get(key)&&JCACHE.get(key).p===p) JCACHE.delete(key); });
+  if(JCACHE.size>JCACHE_MAX) JCACHE.delete(JCACHE.keys().next().value);
+  return p;
+}
+function loadJson(prod,sample){ return cached_("L|"+prod+"|"+sample,()=>loadJson0_(prod,sample)); }
+async function loadJson0_(prod,sample){
   if(IS_GAS) return JSON.parse(await gsCall("getJson",prod));
   // ローカル: 本番outboxミラー（本番と同一命名）を優先、無ければサンプル
   // no-store＝ミラーを更新しても古い内容を掴まない（ブラウザキャッシュで欠損・追加に気づけない事故の防止）
@@ -329,7 +407,8 @@ async function loadJson(prod,sample){
 }
 /* サンプルへ落とさない厳格版。「無ければ別のファイルへ」という分岐に使う
    （サンプルに救済されると欠損に気づけず、誤ったデータを表示してしまうため）。 */
-async function loadJsonStrict(prod){
+function loadJsonStrict(prod){ return cached_("S|"+prod,()=>loadJsonStrict0_(prod)); }
+async function loadJsonStrict0_(prod){
   if(IS_GAS) return JSON.parse(await gsCall("getJson",prod));
   const m=await fetch("../outbox_mirror/"+prod,{cache:"no-store"});
   if(!m.ok) throw new Error("未収載: "+prod);
@@ -444,8 +523,9 @@ function legend(){
 }
 
 /* カテゴリ縦積み表（shohin_detail）: \u25C6全体合計\u2192\u25B6部門小計\u2192カテゴリ行 */
-function renderSection(d){
-  const cols=d.columns;
+/* opts.deptGo（第2便・運営部詳細の店）: 部門の小計の行を押すと、下の運営部の A・PD がその部門に替わる */
+function renderSection(d,opts){
+  const o=opts||{}, cols=d.columns;
   let h=`<div class="tbl-wrap"><table class="c"><thead><tr>`+
     `<th class="h" style="left:0">部門</th><th class="h" style="left:56px">カテゴリ</th>`+
     cols.map(c=>`<th>${esc(c.label)}<span class="u">${c.type==="amount"?"千円":"%"}</span></th>`).join("")+`</tr></thead><tbody>`;
@@ -457,7 +537,9 @@ function renderSection(d){
   const noYoy=splitNoYoyRows(d.rows,r=>(r.cells||{}).sales_month||null), noted=new Set();
   let prevDept=null;
   d.rows.forEach(r=>{
-    if(r.dept!==prevDept && dtMap[r.dept]){ h+=totalRow(dtMap[r.dept],cols,false,2); }
+    if(r.dept!==prevDept && dtMap[r.dept]){ h+=totalRow(dtMap[r.dept],cols,false,2,
+      o.deptGo?{go:"cdept",a:r.dept,k:"d:"+r.dept,title:`押すと、下の運営部の A・PD を ${r.dept} に替えます`}:null,
+      (r.dept===S.dept&&o.deptGo)?" curdept":""); }
     prevDept=r.dept;
     const ny=noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
     const ep=estPrior(d.ym,r.category);
@@ -473,18 +555,25 @@ function renderSection(d){
   });
   return h+`</tbody></table></div>`+splitNote(noted)+estNote(d.ym);
 }
-function totalRow(t,cols,dark,hspan){
-  return `<tr class="${dark?"total":"subtotal"}"><td class="h" colspan="${hspan}" style="left:0">${esc(t.label)}</td>`+
+function totalRow(t,cols,dark,hspan,g,cls){
+  return `<tr class="${dark?"total":"subtotal"}${g?" go":""}${cls||""}"${goAttr_(g)}><td class="h" colspan="${hspan}" style="left:0">${goLabel_(t.label,g)}</td>`+
     cols.map(c=>`<td>${cellHtml(t.cells[c.key],c,dark)}</td>`).join("")+`</tr>`;
 }
 /* 集計表（by_store 行=店舗 / by_dept 行=部門）: \u25C6合計\u2192行 */
-function renderRollup(d,headLabel,labelOf){
-  const cols=d.columns;
+/* 押して下りる所の印（第2便）。data-go＝行き先の種類・data-a/b＝引数・data-k＝戻ったときに光らせる目印 */
+function goAttr_(g){ return g?` data-go="${esc(g.go)}" data-a="${esc(g.a||"")}" data-b="${esc(g.b||"")}" data-k="${esc(g.k||"")}" title="${esc(g.title||"")}"`:""; }
+function goLabel_(t,g){ return g?`<span class="gl">${esc(t)}</span><span class="gch" aria-hidden="true">›</span>`:esc(t); }
+/* opts（第2便）: rowGo(r)＝その行を押した先（無ければ押せない）・totalGo＝合計の行・headGo(c)＝列の見出しを押した先・rowCls(r)＝行に足すクラス */
+function renderRollup(d,headLabel,labelOf,opts){
+  const o=opts||{}, cols=d.columns;
   let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" style="left:0">${esc(headLabel)}</th>`+
-    cols.map(c=>`<th>${esc(c.label)}<span class="u">${c.type==="amount"?"千円":"%"}</span></th>`).join("")+`</tr></thead><tbody>`;
-  if(d.grand_total) h+=`<tr class="total"><td class="h" style="left:0">${esc(d.grand_total.label||"\u25C6 合計")}</td>`+cols.map(c=>`<td>${cellHtml(d.grand_total.cells[c.key],c,true)}</td>`).join("")+`</tr>`;
+    cols.map(c=>{ const g=o.headGo?o.headGo(c):null;
+      return `<th${g?` class="go"`:""}${goAttr_(g)}>${esc(c.label)}<span class="u">${c.type==="amount"?"千円":"%"}</span>${g?`<span class="gch" aria-hidden="true">›</span>`:""}</th>`; }).join("")+`</tr></thead><tbody>`;
+  const tg=o.totalGo||null;
+  if(d.grand_total) h+=`<tr class="total${tg?" go":""}"${goAttr_(tg)}><td class="h" style="left:0">${goLabel_(d.grand_total.label||"\u25C6 合計",tg)}</td>`+cols.map(c=>`<td>${cellHtml(d.grand_total.cells[c.key],c,true)}</td>`).join("")+`</tr>`;
   d.rows.forEach(r=>{
-    h+=`<tr class="datarow"><td class="h" style="left:0">${esc(labelOf(r))}</td>`+cols.map(c=>{
+    const g=o.rowGo?o.rowGo(r):null;
+    h+=`<tr class="datarow${g?" go":""}${o.rowCls?o.rowCls(r):""}"${goAttr_(g)}><td class="h" style="left:0">${goLabel_(labelOf(r),g)}</td>`+cols.map(c=>{
       let cls=""; if(c.key==="gross_profit_month"&&r.alerts){ cls=r.alerts.gp_negative?" gp-neg":(r.alerts.loss_alert?" gp-loss":""); }
       return `<td class="${cls}">${cellHtml(r.cells[c.key],c,false)}</td>`;
     }).join("")+`</tr>`;
@@ -493,27 +582,36 @@ function renderRollup(d,headLabel,labelOf){
 }
 /* 運営部全体（逆ピボット 行=部門/カテゴリ \u00D7 列=店舗・指標選択） */
 let _uneibu=null;
+/* 第2便: 指標は切り替えのタブ（7つ）。商品部全体で押した列の見出しが、ここで選ばれた状態で開く */
 function renderUneibu(d){
   _uneibu=d;
-  const opts=d.columns.map(c=>`<option value="${esc(c.key)}">${esc(c.label)}</option>`).join("");
-  return `<div style="margin-bottom:8px"><label class="lb">指標 </label><select id="uMetric" onchange="drawUneibu(this.value)">${opts}</select> <span class="lb">行=部門・カテゴリ \u00D7 列=店舗</span></div><div id="uTbl"></div>`;
+  if(!d.columns.some(c=>c.key===S.metric)) S.metric=d.columns[0].key;
+  const tabs=d.columns.map(c=>`<button class="${c.key===S.metric?"on":""}" data-go="umetric" data-a="${esc(c.key)}" data-k="m:${esc(c.key)}">${esc(c.label)}</button>`).join("");
+  return `<div class="mtabs" id="uMetricTabs"><span class="lb">指標</span>${tabs}<span class="lb" style="margin-left:6px">行＝部門・カテゴリ × 列＝店</span></div><div id="uTbl"></div>`;
 }
 function drawUneibu(mkey){
-  const d=_uneibu,col=d.columns.find(c=>c.key===mkey),st=d.stores||[];
-  let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" style="left:0">部門・カテゴリ</th><th>合計</th>`+st.map(s=>`<th>${esc(s.short)}</th>`).join("")+`</tr></thead><tbody>`;
+  const d=_uneibu,col=d.columns.find(c=>c.key===mkey)||d.columns[0],st=d.stores||[];
+  mkey=col.key;
+  const hd=(full,label)=>{ const g={go:"unei",a:full,k:"h:"+(full||"__total__"),title:`押すと、${full?label:"エリア合計"}の全部門の明細と、運営部の A・PD（運営部詳細）`};
+    return `<th class="go"${goAttr_(g)}>${esc(label)}<span class="gch" aria-hidden="true">›</span></th>`; };
+  let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" style="left:0">部門・カテゴリ</th>${hd("","合計")}`+st.map(s=>hd(s.full,s.short)).join("")+`</tr></thead><tbody>`;
   /* 前年比を出さない中分類は、列（合計・店舗）ごとに判定する（店によって分かれ方が違うため） */
   const cats=d.rows.filter(r=>r.type!=="dept");
   const nyGrand=splitNoYoyRows(cats,r=>(r.grand||{}).sales_month||null), nyStore={};
   st.forEach(s=>nyStore[s.short]=splitNoYoyRows(cats,r=>((r.stores||{})[s.short]||{}).sales_month||null));
   const noted=new Set();
-  d.rows.forEach(r=>{
+  /* マスを押す＝その店の運営部詳細を、その行の部門で開く（部門の行・カテゴリの行とも）。合計の行は部門を変えない */
+  const cell=(full,dept,inner,k)=>`<td class="gocell" data-go="unei" data-a="${esc(full)}" data-b="${esc(dept||"")}" data-k="${esc(k)}">${inner}</td>`;
+  d.rows.forEach((r,ri)=>{
     const k=(r.dept||"")+"|"+r.category, isCat=r.type!=="dept";
     const ny=set=>{ const v=isCat&&set.has(k); if(v) noted.add(r.category); return v; };
-    h+=`<tr class="${r.type==="dept"?"subtotal":"datarow"}"><td class="h" style="left:0">${esc(r.label)}</td>`;
-    h+=`<td>${cellHtml((r.grand||{})[mkey],col,false,ny(nyGrand),isCat&&estPrior(d.ym,r.category))}</td>`;
-    h+=st.map(s=>`<td>${cellHtml((r.stores&&r.stores[s.short]||{})[mkey],col,false,ny(nyStore[s.short]),isCat&&estPrior(d.ym,r.category))}</td>`).join("")+`</tr>`;
+    const cur=(r.dept===S.dept)?" curdept":"";
+    h+=`<tr class="${r.type==="dept"?"subtotal":"datarow"}${cur}"${r.type==="dept"?` data-k="d:${esc(r.dept)}"`:""}><td class="h" style="left:0">${esc(r.label)}</td>`;
+    h+=cell("",r.dept,cellHtml((r.grand||{})[mkey],col,false,ny(nyGrand),isCat&&estPrior(d.ym,r.category)),"c:__total__|"+ri);
+    h+=st.map(s=>cell(s.full,r.dept,cellHtml((r.stores&&r.stores[s.short]||{})[mkey],col,false,ny(nyStore[s.short]),isCat&&estPrior(d.ym,r.category)),"c:"+s.full+"|"+ri)).join("")+`</tr>`;
   });
-  const gt=d.grand_total; if(gt){ h+=`<tr class="total"><td class="h" style="left:0">${esc(gt.label||"\u25C6 合計")}</td><td>${cellHtml((gt.grand||{})[mkey],col,true)}</td>`+st.map(s=>`<td>${cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true)}</td>`).join("")+`</tr>`; }
+  const gt=d.grand_total;
+  if(gt){ h+=`<tr class="total"><td class="h" style="left:0">${esc(gt.label||"◆ 合計")}</td>${cell("","",cellHtml((gt.grand||{})[mkey],col,true),"c:__total__|gt")}`+st.map(s=>cell(s.full,"",cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true),"c:"+s.full+"|gt")).join("")+`</tr>`; }
   $("uTbl").innerHTML=h+`</tbody></table></div>`+splitNote(noted)+estNote(d.ym);
 }
 /* 事業部会議（18列2段＋前年比較3列） */
@@ -566,9 +664,8 @@ function drawShiire(gp,inv){
 /* \u2500\u2500 状態・入室 \u2500\u2500 */
 /* role/area/dept は入室ゲートの選択値。入室確定で asg（担当）へ固定コピーし、以後 area/dept は表示側の選択として独立に動く */
 const S={ meta:null, viewMode:"hq", entered:false, asg:null, role:"buyer", area:"", dept:"",
-  mode:"商品部詳細", ym:"", snap:"", snaps:[], stores:[], storeTab:"__total__" };
+  mode:"商品部全体", ym:"", snap:"", snaps:[], stores:[], storeTab:"__total__", metric:"sales_month" };
 const MODE_BG={ "商品部詳細":"#E1F5FE","商品部全体":"#E1F5FE","運営部詳細":"#E8F5E9","運営部全体":"#E8F5E9","店舗事業部会議":"#EDE7F6" };
-const MODES=["商品部詳細","商品部全体","運営部詳細","運営部全体","仕入分析","店舗事業部会議"];
 /* 入口の担当（PO 2026-10-14・10-15）。どこに書けるかは、ここで選んだ担当で決める（サーバーは本部ドメインかを確かめる）。
    商品部の担当（BY）と運営部の担当（SV）は、エリアと担当部門を選ぶ。責任者（課長以上）は商品部と運営部を分けない＝両方の全部門。
    旧「全体管理者」（admin）は「責任者」（lead）。三田さんの言う「管理者」とぶつかるため名前を変えた。 */
@@ -735,121 +832,359 @@ function enter(){
   if(!roleReady_()) return;
   S.asg={role:S.role,area:S.area,dept:roleNeedsDept_(S.role)?S.dept:""};
   savePref_({role:S.role,area:S.area,dept:S.dept});   // 次回の入室で復元
-  S.entered=true; renderApp();
+  // 第2便: 入ると、担当で決めた段から始まる（運営部の担当＝運営部全体・ほか＝商品部全体）。店はエリア合計・指標は売上・期間は最新
+  S.mode=START_BY_ROLE[S.role]||"商品部全体"; S.storeTab="__total__"; S.metric="sales_month"; S.snap="";
+  S.entered=true; navInit_(); show_({why:"入室"});
+}
+
+/* ══ 第2便: 押して掘り下げる ══
+   段: 商品部全体（基本）─店を押す→ 商品部詳細
+        └ 列の見出し（指標）を押す → 運営部全体 ─店を押す→ 運営部詳細
+   戻る: 「← ひとつ前に戻る」1本。見方を変える操作（下りる・段の地図・店のタブ・エリア・年月・期間・部門・指標）は、
+         すべてブラウザの履歴に1つずつ積む。ブラウザの戻ると同じ動き。戻ると、押した所へ帰って光る。 */
+const TREE=["商品部全体","商品部詳細","運営部全体","運営部詳細"];
+const START_BY_ROLE={buyer:"商品部全体",lead:"商品部全体",viewer:"商品部全体",unei:"運営部全体"};
+const METRICS=[{key:"sales_month",label:"売上"},{key:"gross_profit_month",label:"粗利"},{key:"gross_profit_rate_month",label:"粗利率"},
+  {key:"discount_amount",label:"値引き"},{key:"discount_rate",label:"値引率"},{key:"discard_amount",label:"廃棄額"},{key:"discard_rate",label:"廃棄率"}];
+const LV_TIP={
+  "商品部全体":"店ごとに、選んだ部門の数字を並べます（はじめの画面）",
+  "商品部詳細":"店（またはエリア合計）× 部門の、カテゴリの明細と、商品部の A・PD",
+  "運営部全体":"部門・カテゴリ × 店で、1つの指標を並べます",
+  "運営部詳細":"店（またはエリア合計）の全部門の明細と、運営部の A・PD"
+};
+const NAV={seq:0,land:null,trail:[]};
+function metricLabel_(k){ const m=METRICS.find(x=>x.key===(k||S.metric)); return m?m.label:"売上"; }
+function storeShortOf_(slug){ if(!slug||slug==="__total__") return "エリア合計"; const s=(S.stores||[]).find(x=>x.slug===slug); return s?s.short:"店"; }
+function slugOfFull_(full){ if(!full) return "__total__"; const s=(S.stores||[]).find(x=>x.full===full); return s?s.slug:null; }
+function viewState_(){ return {mode:S.mode,area:S.area,ym:S.ym,snap:S.snap,dept:S.dept,storeTab:S.storeTab,metric:S.metric}; }
+function describe_(v){
+  if(!v) return "";
+  const st=storeShortOf_(v.storeTab);
+  if(v.mode==="商品部全体") return `商品部全体（${v.dept}）`;
+  if(v.mode==="商品部詳細") return `商品部詳細（${st}・${v.dept}）`;
+  if(v.mode==="運営部全体") return `運営部全体（${metricLabel_(v.metric)}）`;
+  if(v.mode==="運営部詳細") return `運営部詳細（${st}）`;
+  if(v.mode==="店舗事業部会議") return `店舗事業部会議（${st}）`;
+  return v.mode;
+}
+function curNav_(){ try{ return (history.state&&history.state.hissuru)||null; }catch(e){ return null; } }
+function navInit_(){
+  NAV.trail=[viewState_()];
+  try{ history.replaceState({hissuru:{v:viewState_(),d:0}},""); }catch(e){}
+}
+function scrollState_(){ const w=document.querySelector("#body .tbl-wrap"); return {y:window.scrollY,tx:w?w.scrollLeft:0,ty:w?w.scrollTop:0}; }
+/* 見方を変える: いまの見方（と、いまの位置・押した所）を履歴に残してから変える */
+function nav_(patch,o){
+  o=o||{};
+  const cur=curNav_()||{v:viewState_(),d:0}, d=cur.d||0;
+  const here=Object.assign({},cur,{v:viewState_(),sc:scrollState_(),from:o.from||""});
+  try{ history.replaceState({hissuru:here},""); }catch(e){}
+  NAV.trail[d]=here.v;
+  Object.assign(S,patch);
+  try{ history.pushState({hissuru:{v:viewState_(),d:d+1}},""); }catch(e){}
+  NAV.trail.length=d+1; NAV.trail[d+1]=viewState_();
+  show_({why:o.why||"",land:o.land||"",from:o.from||""});
+}
+/* ブラウザが覚える履歴は 50 まで（Chrome）。それより前の所は消えているので、戻れなかったら釦を薄くする（押しても動かない、にしない） */
+function goBack_(){
+  const c=curNav_(); if(!(c&&c.d>0)) return;
+  const d=c.d; history.back();
+  setTimeout(()=>{ const n=curNav_(), b=$("navBack"); if(n&&n.d===d&&b){ b.disabled=true; b.title="これより前には戻れません（ブラウザが覚えている所まで）"; } },800);
+}
+window.addEventListener("popstate",e=>{
+  const h=e.state&&e.state.hissuru;
+  if(!h||!S.entered||S.viewMode==="viewer") return;
+  Object.assign(S,h.v); NAV.trail[h.d]=h.v;
+  show_({why:"戻る",restore:true,sc:h.sc,from:h.from});
+});
+function show_(o){ NAV.seq++; NAV.land=Object.assign({t0:performance.now()},o||{}); renderApp(); }
+function setHdrH_(){ const hd=document.querySelector("header"); if(hd) document.documentElement.style.setProperty("--hdrH",hd.offsetHeight+"px"); }
+window.addEventListener("resize",setHdrH_);
+
+/* 押して下りる（表の行・列の見出し・マス・指標のタブ・部門の行）。印は goAttr_ が付ける */
+document.addEventListener("click",e=>{
+  const j=e.target.closest&&e.target.closest("[data-jump]");
+  if(j){ e.preventDefault(); const el=$(j.dataset.jump); if(el) glideTo_(el.getBoundingClientRect().top+window.scrollY-stickyH_()-8,()=>flash_(el)); return; }
+  const t=e.target.closest&&e.target.closest("[data-go]"); if(!t||!S.entered) return;
+  const go=t.dataset.go, a=t.dataset.a||"", b=t.dataset.b||"", k=t.dataset.k||"";
+  if(go==="shohin"||go==="unei"){
+    const slug=slugOfFull_(a);
+    if(slug==null){ toast("この店の明細は、この期間の一覧にありません",true); return; }
+    const patch={mode:go==="shohin"?"商品部詳細":"運営部詳細",storeTab:slug};
+    if(go==="unei"&&b) patch.dept=b;
+    nav_(patch,{from:k,why:go==="shohin"?"店の行":"店（運営部）"});
+  }
+  else if(go==="metric") nav_({mode:"運営部全体",metric:a},{from:k,why:"指標の見出し"});
+  else if(go==="umetric"){ if(a!==S.metric) nav_({metric:a},{from:k,why:"指標のタブ"}); }
+  else if(go==="cdept"){ if(a!==S.dept) nav_({dept:a},{from:k,why:"部門の行",land:"comments"}); else { const el=$("cpanel"); if(el) glideTo_(el.getBoundingClientRect().top+window.scrollY-stickyH_()-8,()=>flash_(el)); } }
+});
+
+/* 移動は滑らせて、着いた所を光らせる（0.28〜0.65秒・動きを減らす設定では即座に） */
+function stickyH_(){ const hd=document.querySelector("header"), nb=$("navbar"); return (hd?hd.offsetHeight:0)+(nb?nb.offsetHeight:0); }
+function glideTo_(y,cb){
+  y=Math.max(0,Math.min(Math.round(y),document.documentElement.scrollHeight-window.innerHeight));
+  const y0=window.scrollY, dist=Math.abs(y-y0);
+  let done=false;
+  const off=()=>{ ["wheel","touchstart","keydown"].forEach(ev=>window.removeEventListener(ev,cancel)); };
+  const finish=()=>{ if(done) return; done=true; off(); window.scrollTo(0,y); if(cb) cb(); };
+  const cancel=()=>{ done=true; off(); };
+  if(dist<4||matchMedia("(prefers-reduced-motion: reduce)").matches){ finish(); return; }
+  const dur=Math.min(650,Math.max(280,dist*0.45)), t0=performance.now();
+  const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+  ["wheel","touchstart","keydown"].forEach(ev=>window.addEventListener(ev,cancel,{passive:true}));
+  const step=now=>{ if(done) return; const p=Math.min(1,(now-t0)/dur); window.scrollTo(0,y0+(y-y0)*ease(p)); if(p<1) requestAnimationFrame(step); else finish(); };
+  requestAnimationFrame(step); setTimeout(finish,dur+150);   // 画面が裏にあると合図が止まるので、時間切れの保険
+}
+function flash_(el){ if(!el) return; el.classList.remove("landed"); void el.offsetWidth; el.classList.add("landed"); setTimeout(()=>el.classList.remove("landed"),1700); }
+function navToast_(msg){ const t=$("navtoast"); if(!t) return; t.textContent=msg; t.style.opacity=1; clearTimeout(t._h); t._h=setTimeout(()=>{ t.style.opacity=0; },1400); }
+/* 表の枠の中で、その行が見える所まで送る（ページは動かさない） */
+function revealInTable_(row){
+  const w=row&&row.closest(".tbl-wrap"); if(!w) return;
+  const th=w.querySelector("thead"), hh=th?th.offsetHeight:0;
+  const top=row.getBoundingClientRect().top-w.getBoundingClientRect().top+w.scrollTop-hh-6;
+  if(top<w.scrollTop||top>w.scrollTop+w.clientHeight-hh-40) w.scrollTop=Math.max(0,top);
+}
+function byKey_(k){ if(!k) return null; try{ return document.querySelector(`#app [data-k="${CSS.escape(k)}"]`); }catch(e){ return null; } }
+/* 表が出たあとの着地 */
+function land_(seq){
+  if(seq!==NAV.seq) return;
+  const o=NAV.land||{}; NAV.land=null;
+  const ms=Math.round(performance.now()-(o.t0||performance.now()));
+  // 押してから表が出るまでの時間（速さを数字で見るため・新しい 200 件だけ持つ。__navN は通しの回数）
+  const L=(window.__navlog=window.__navlog||[]); L.push({why:o.why||"",mode:S.mode,store:storeShortOf_(S.storeTab),dept:S.dept,metric:S.metric,ms});
+  if(L.length>200) L.splice(0,L.length-200);
+  window.__navN=(window.__navN||0)+1;
+  if(o.restore){
+    const sc=o.sc||{}, w=document.querySelector("#body .tbl-wrap");
+    if(w){ w.scrollLeft=sc.tx||0; w.scrollTop=sc.ty||0; }
+    const el=byKey_(o.from);
+    glideTo_(sc.y||0,()=>flash_(el));
+    navToast_("← 元の場所へ戻りました");
+    return;
+  }
+  if(o.why==="入室"){ revealDept_(); return; }   // 入ったときは動かさない（担当の部門の行だけ、表の中で見せる）
+  if(o.land==="comments"){
+    const el=$("cpanel"); if(el) glideTo_(el.getBoundingClientRect().top+window.scrollY-stickyH_()-8,()=>flash_(el));
+    navToast_("→ 運営部の A・PD（"+S.dept+"）");
+    return;
+  }
+  const v=$("view"); if(!v) return;
+  const top=v.getBoundingClientRect().top+window.scrollY-stickyH_()-6;
+  if(window.scrollY>top) glideTo_(top);
+  flash_(document.querySelector("#navbar .crumb.cur"));
+  revealDept_();
+  if(S.mode==="運営部全体") flash_(document.querySelector(`#uMetricTabs button.on`));
+  navToast_("→ "+describe_(viewState_()));
+}
+/* 来た文脈を見せる: 運営部全体＝いまの部門の行・運営部詳細（店）＝その部門の小計の行。表の枠の中だけ送って光らせる */
+function revealDept_(){
+  if(!(S.mode==="運営部全体"||(S.mode==="運営部詳細"&&S.storeTab!=="__total__"))) return;
+  const row=byKey_("d:"+S.dept); if(row){ revealInTable_(row); flash_(row); }
 }
 
 /* 入室後 */
 function renderApp(){
+  if(S.mode==="データ管理"&&S.asg&&S.asg.role==="viewer") S.mode="商品部全体";
   $("page").style.background=MODE_BG[S.mode]||"";
   const a=S.asg;
   const rb=a.role==="buyer"?"rb-buyer":a.role==="lead"?"rb-admin":a.role==="unei"?"rb-unei":"rb-viewer";
   const roleLabel=ROLES.find(r=>r.k===a.role).label;
   const asg=`<div class="asgbar"><span class="lb">担当：</span><span class="role-badge ${rb}">${roleLabel}</span>`+
     (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(roleNeedsDept_(a.role)?`<span class="chip d">${esc(a.dept)}</span>`:"")+
+    `<span class="lb" style="margin-left:6px">${esc(writeHint_())}</span>`+
     `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
-  // 閲覧系タブ（左）と 管理者用データ管理（右端に隔離）を視覚的に分ける
-  const modeBtns=MODES.map(m=>`<button class="${S.mode===m?'on':''}" onclick="setMode('${m}')">${modeIcon(m)} ${m}</button>`).join("");
+  // 段の地図（4つのモードを、押してつながる形で）。押せば直接その段へ（明細の段は、いまの店かエリア合計）
+  const lvSub={
+    "商品部全体":`行＝店・${S.dept}`,
+    "商品部詳細":`${storeShortOf_(S.storeTab)}・${S.dept}・A・PD`,
+    "運営部全体":`部門×店・${metricLabel_()}`,
+    "運営部詳細":`${storeShortOf_(S.storeTab)}・全部門・A・PD`
+  };
+  const lv=m=>`<button class="lvbtn ${S.mode===m?"on":""}" data-mode="${m}" onclick="setMode('${m}')" title="${esc(LV_TIP[m])}"${S.mode===m?' aria-current="page"':""}>${modeIcon(m)} ${m}<span class="lvs">${esc(lvSub[m])}</span></button>`;
+  const tree=`<div class="tree" role="navigation" aria-label="商品部・運営部の段（表を押して掘り下げる）" title="商品部・運営部の段の地図。押すと、その段へ直接移れます">`+
+    lv("商品部全体")+`<div class="lvarr"><b>→</b><span>店を押す</span></div>`+lv("商品部詳細")+
+    `<div class="lvdown"><b>↓</b> 列の見出し（指標）を押す</div><div></div><div></div>`+
+    lv("運営部全体")+`<div class="lvarr"><b>→</b><span>店を押す</span></div>`+lv("運営部詳細")+`</div>`;
+  const others=`<div class="othermodes">`+["店舗事業部会議","仕入分析"].map(m=>`<button class="${S.mode===m?'on':''}" onclick="setMode('${m}')">${modeIcon(m)} ${m}</button>`).join("")+`</div>`;
   const adminBtn=(a.role!=="viewer")
     ? `<span class="admin-sep"><span class="lbl">管理者用</span><button class="admin" onclick="openStoreView_()" title="店舗の方が見る閲覧・印刷画面を別タブで開きます">🏪 店舗閲覧・印刷</button><button class="admin ${S.mode==="データ管理"?'on':''}" onclick="setMode('データ管理')" title="受払CSV・年度予算の取込（管理者向け）">${modeIcon("データ管理")} データ管理</button></span>`
     : "";
-  const modes=`<div class="modes">`+modeBtns+adminBtn+`</div>`;
+  const modes=`<div class="modes">`+tree+others+adminBtn+`</div>`;
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
-    asg+modes+`<div id="printTitle"></div>`+`<div id="view" style="margin-top:14px"><div class="note">読み込み中\u2026</div></div>`;
+    asg+modes+`<div class="navbar" id="navbar"></div><div id="printTitle"></div>`+`<div id="view" style="margin-top:10px"><div class="note">読み込み中…</div></div>`;
+  setHdrH_();
+  drawNav_();
   refreshView();
 }
-function modeIcon(m){ return m.startsWith("商品部")?"\uD83D\uDED2":m.startsWith("運営部")?"\uD83C\uDFE2":m==="仕入分析"?"\uD83D\uDCE6":m==="店舗事業部会議"?"\uD83C\uDFEA":m==="データ管理"?"\u2699\uFE0F":"\u2022"; }
-function backToGate(){ S.entered=false; S.asg=null; if(S.mode==="データ管理")S.mode="商品部詳細"; renderGate(); }
-function setMode(m){ S.mode=m; renderApp(); }
+/* 担当の帯のひとこと: どこに書けるか */
+function writeHint_(){
+  const a=S.asg; if(!a) return "";
+  if(a.role==="buyer") return `✎ 書ける所＝商品部詳細（${a.dept}）の A・PD`;
+  if(a.role==="unei") return `✎ 書ける所＝運営部詳細（${a.dept}）の A・PD`;
+  if(a.role==="lead") return "✎ 書ける所＝商品部詳細と運営部詳細の A・PD（全部門）";
+  return "見るだけ";
+}
+/* いま見ている所（パンくず）と「ひとつ前に戻る」 */
+function drawNav_(){
+  const el=$("navbar"); if(!el) return;
+  const h=curNav_(), d=h?h.d:0, prev=d>0?NAV.trail[d-1]:null;
+  const tip=prev?("戻る先: "+describe_(prev)):"まだ戻る先はありません（押して見方を変えると、ここで1つずつ戻れます）";
+  const sel=S.snaps.find(x=>x.snapshot===S.snap);
+  const snapTxt=sel?String(sel.label||"").replace(/\(.*?\)/,"").replace(/\s+/g," ").trim():"";
+  const showDept=!["店舗事業部会議","データ管理"].includes(S.mode);
+  const ctx=S.mode==="データ管理"?"":`<span class="ctx">${esc(S.area)}${showDept?"・"+esc(S.dept):""}${snapTxt?"・"+esc(snapTxt):""}</span>`;
+  el.innerHTML=`<button class="btn back" id="navBack" onclick="goBack_()" ${d>0?"":"disabled"} title="${esc(tip)}">← ひとつ前に戻る</button>`+
+    `<div class="crumbs" aria-label="いま見ている所">${ctx}${crumbs_()}</div>`;
+}
+function crumbs_(){
+  const st=storeShortOf_(S.storeTab), m=S.mode;
+  const c=(mode,label)=>mode===m?`<span class="crumb cur" aria-current="page">${esc(label)}</span>`:`<button class="crumb" onclick="setMode('${mode}')" title="${esc(LV_TIP[mode]||"")}">${esc(label)}</button>`;
+  const sep=`<span class="sep">›</span>`;
+  const top=c("商品部全体","🛒 商品部全体");
+  if(m==="商品部全体") return top;
+  if(m==="商品部詳細") return top+sep+c("商品部詳細",`🛒 商品部詳細：${st}`);
+  if(m==="運営部全体") return top+sep+c("運営部全体",`🏢 運営部全体：${metricLabel_()}`);
+  if(m==="運営部詳細") return top+sep+c("運営部全体",`🏢 運営部全体：${metricLabel_()}`)+sep+c("運営部詳細",`🏢 運営部詳細：${st}`);
+  if(m==="店舗事業部会議") return `<span class="crumb cur">🏪 店舗事業部会議：${esc(st)}</span>`;
+  if(m==="仕入分析") return `<span class="crumb cur">📦 仕入分析</span>`;
+  return `<span class="crumb cur">⚙️ データ管理</span>`;
+}
+function modeIcon(m){ return m.startsWith("商品部")?"🛒":m.startsWith("運営部")?"🏢":m==="仕入分析"?"📦":m==="店舗事業部会議"?"🏪":m==="データ管理"?"⚙️":"•"; }
+function backToGate(){ S.entered=false; S.asg=null; if(S.mode==="データ管理")S.mode="商品部全体"; renderGate(); }
+function setMode(m){ if(m===S.mode) return; nav_({mode:m},{why:"段の地図"}); }
 function openStoreView_(){ try{ window.open(storeUrl_(),"_blank","noopener"); }catch(e){} }
 function needDept_(m){ return m==="商品部詳細"||m==="商品部全体"||m==="仕入分析"||m==="運営部詳細"; }
 function printHq_(){ const t=$("printTitle"); if(!t){ window.print(); return; } const store=(STORE_MODES.includes(S.mode)&&S.storeTab&&S.storeTab!=="__total__")?S.stores.find(x=>x.slug===S.storeTab):null; const parts=[esc(S.area)]; if(needDept_(S.mode))parts.push(esc(S.dept)); if(STORE_MODES.includes(S.mode))parts.push(store?esc(store.short):"エリア合計"); t.innerHTML=`<div class="ptitle">ヒッスル｜${esc(S.mode)} ${parts.join("／")}</div><div class="psub">${esc(snapLabelNow())} ／ 印刷日時 ${esc(nowStamp_())}</div>`; window.print(); }
 
-/* 選択バー（エリア/年月/データ期間/部門）＋スコープチップ＋本文 */
+/* 選択バー（エリア/年月/データ期間/部門）＋押し方のひとこと＋本文 */
 async function refreshView(){
-  const v=$("view");
-  if(S.mode==="データ管理"){ renderDataManage(); return; }
+  const seq=NAV.seq, v=$("view");
+  if(S.mode==="データ管理"){ await renderDataManage(); land_(seq); return; }
   const areaSel=`<select onchange="onArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
   const ymSel=`<select onchange="onYm(this.value)">`+S.meta.year_months.map(y=>`<option value="${esc(y)}" ${y===S.ym?'selected':''}>${esc(y.slice(0,4))}年${Number(y.slice(4))}月</option>`).join("")+`</select>`;
-  const needDept=(S.mode==="商品部詳細"||S.mode==="商品部全体"||S.mode==="仕入分析"||S.mode==="運営部詳細");
-  const deptSel=needDept?`<span class="lb">部門</span><select onchange="onDept(this.value)">`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`:"";
+  const deptSel=needDept_(S.mode)?`<span class="lb">部門</span><select onchange="onDept(this.value)">`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`:"";
   v.innerHTML=`<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="snapSel" onchange="onSnap(this.value)"></select>${deptSel}<button class="btn" style="margin-left:auto" onclick="printHq_()" title="表示中のモード（この画面）を印刷します">🖨 印刷</button></div>`+
-    `<div id="storetabs"></div><div id="scope"></div><div id="body"><div class="note">読み込み中\u2026</div></div>`;
-  await loadSnaps();
-  await loadStores();
-  drawStoreTabs();
-  drawScope();
-  await drawBody();
+    `<div id="storetabs"></div><div id="scope"></div><div id="body"><div class="note">読み込み中…</div></div>`;
+  await loadSnaps(); if(seq!==NAV.seq) return;
+  await loadStores(); if(seq!==NAV.seq) return;
+  drawStoreTabs(); drawScope(); drawNav_();
+  if(TREE.includes(S.mode)) renderAppTreeSubs_();
+  await drawBody(seq); if(seq!==NAV.seq) return;
+  land_(seq);
+}
+/* 段の地図の小さな字（店の名前）は、店の一覧を読んだあとで書き直す */
+function renderAppTreeSubs_(){
+  document.querySelectorAll(".tree .lvbtn").forEach(b=>{
+    const m=b.dataset.mode, s=b.querySelector(".lvs"); if(!s) return;
+    if(m==="商品部詳細") s.textContent=`${storeShortOf_(S.storeTab)}・${S.dept}・A・PD`;
+    if(m==="運営部詳細") s.textContent=`${storeShortOf_(S.storeTab)}・全部門・A・PD`;
+  });
 }
 async function loadSnaps(){
-  try{ const s=await API.snapshots(S.area,S.ym); S.snaps=s.snapshots||[]; S.snap=s.default||(S.snaps[0]&&S.snaps[0].snapshot)||"";
+  try{ const s=await API.snapshots(S.area,S.ym); S.snaps=s.snapshots||[];
+    if(!S.snaps.some(o=>o.snapshot===S.snap)) S.snap=s.default||(S.snaps[0]&&S.snaps[0].snapshot)||"";   // 戻るで元の期間を保つ。無ければ最新
     $("snapSel").innerHTML=S.snaps.map(o=>`<option value="${esc(o.snapshot)}">${esc(o.label)}</option>`).join(""); if(S.snap)$("snapSel").value=S.snap;
-  }catch(e){ S.snaps=[]; S.snap=""; $("snapSel").innerHTML="<option>\u2014</option>"; }
+  }catch(e){ S.snaps=[]; S.snap=""; $("snapSel").innerHTML="<option>—</option>"; }
+}
+/* 押し方のひとこと（押してみれば分かる、に頼らない）・速報の注意・凡例 */
+function howto_(){
+  const a=S.asg||{}, m=S.mode;
+  const canShohin=a.role==="lead"||(a.role==="buyer"&&a.dept===S.dept);
+  const mine=a.role!=="viewer"&&a.area===S.area;
+  let t=[];
+  if(m==="商品部全体"){
+    t.push(`<span><b>店の行</b>（または ◆合計）を押す → その店の明細と A・PD（商品部詳細）</span>`);
+    t.push(`<span><b>列の見出し</b>（売上・粗利…）を押す → 部門×店でその指標（運営部全体）</span>`);
+    if(mine&&canShohin) t.push(`<span>✎ ${esc(S.dept)}の A・PD は、店を押した先の表の下に書けます</span>`);
+  }else if(m==="運営部全体"){
+    t.push(`<span><b>店の見出し</b>（またはマス）を押す → その店の全部門の明細と運営部の A・PD（運営部詳細）</span>`);
+    t.push(`<span>左に青い線の行＝いまの部門（${esc(S.dept)}）。マスを押すと、その行の部門に替わります</span>`);
+    const a2=S.asg||{};
+    if(a2.area===S.area&&(a2.role==="lead"||a2.role==="unei")) t.push(`<span>✎ 運営部の A・PD は、店を押した先の表の下に書けます</span>`);
+  }else if(m==="商品部詳細"){
+    t.push(`<span>上の<b>店のタブ</b>で、店を替えられます</span>`);
+    t.push(`<a href="#" data-jump="cpanel">✎ 商品部の A・PD（${esc(S.dept)}）へ ↓</a>`);
+  }else if(m==="運営部詳細"){
+    t.push(`<span>上の<b>店のタブ</b>で、店を替えられます</span>`);
+    t.push(`<span><b>部門の行</b>を押す → 下の運営部の A・PD がその部門に替わる</span>`);
+    t.push(`<a href="#" data-jump="cpanel">✎ 運営部の A・PD（${esc(S.dept)}）へ ↓</a>`);
+  }
+  return t.length?`<div class="howto">${t.join("")}</div>`:"";
 }
 function drawScope(){
   const sel=S.snaps.find(s=>s.snapshot===S.snap);
-  let h=`<div class="chips"><span>${modeIcon(S.mode)}</span><span class="chip a">${esc(S.area)}</span>`;
-  if(S.mode==="商品部詳細"||S.mode==="商品部全体"||S.mode==="仕入分析") h+=`<span class="chip d">${esc(S.dept)}</span>`;
-  if(STORE_MODES.includes(S.mode)){ const so=S.storeTab!=="__total__"?S.stores.find(x=>x.slug===S.storeTab):null; h+=`<span class="chip s">${so?esc(so.short):"エリア合計"}</span>`; }
-  h+=`<span class="chip" style="background:#f1f5f9;color:#475569;font-weight:400">${sel?esc(sel.label):"\u2014"}</span></div>`;
-  if(sel&&sel.file_type==="05-4") h+=`<div class="sokuho"><span>\u26A0</span><span><b>月途中の速報値（${esc((sel.label||"").replace("\uD83D\uDCCA","").trim())}）を表示中です。</b> 月末確定（\uD83D\uDCCC）取込前は棚卸未実施部門で粗利が高めに出ます。</span></div>`;
+  let h=howto_();
+  if(sel&&sel.file_type==="05-4") h+=`<div class="sokuho"><span>⚠</span><span><b>月途中の速報値（${esc((sel.label||"").replace("📊","").trim())}）を表示中です。</b> 月末確定（📌）取込前は棚卸未実施部門で粗利が高めに出ます。</span></div>`;
   if(S.mode!=="仕入分析"&&S.mode!=="店舗事業部会議"&&S.mode!=="運営部全体") h+=legend();
   if(S.mode==="商品部詳細"&&S.asg&&S.asg.role!=="viewer")
-    h+=`<div style="margin:8px 0"><button class="btn" onclick="bulkOpenSheet(this)">\uD83D\uDCD7 会議用まとめ（${esc(S.dept)}\u00D7${esc(S.area)} 全店を1ファイル）</button> <span id="bulkMsg" class="lb"></span></div>`;
+    h+=`<div style="margin:8px 0"><button class="btn" onclick="bulkOpenSheet(this)">📗 会議用まとめ（${esc(S.dept)}×${esc(S.area)} 全店を1ファイル）</button> <span id="bulkMsg" class="lb"></span></div>`;
   $("scope").innerHTML=h;
 }
-async function drawBody(){
-  const b=$("body"); b.innerHTML=`<div class="note">読み込み中\u2026</div>`;
+async function drawBody(seq){
+  const b=$("body"); b.innerHTML=`<div class="note">読み込み中…</div>`;
   try{
     const st=STORE_MODES.includes(S.mode)?S.storeTab:"__total__";
     const so=st!=="__total__"?S.stores.find(x=>x.slug===st):null;
+    let html="";
     if(S.mode==="商品部詳細"){
-      if(st==="__total__") b.innerHTML=renderSection(await API.detail(S.area,S.ym,S.snap,S.dept));
-      else b.innerHTML=await storeDetailHtml(st,so,S.dept);
+      html=st==="__total__"?renderSection(await API.detail(S.area,S.ym,S.snap,S.dept)):await storeDetailHtml(st,so,S.dept);
     }
-    else if(S.mode==="商品部全体") b.innerHTML=renderRollup(await API.byStore(S.area,S.ym,S.snap,S.dept),"店舗",r=>r.label||r.store);
+    else if(S.mode==="商品部全体"){
+      const d=await API.byStore(S.area,S.ym,S.snap,S.dept);
+      html=renderRollup(d,"店舗",r=>r.label||r.store,{
+        rowGo:r=>({go:"shohin",a:r.store_full||"",k:"r:"+(r.store_full||r.store),title:`押すと、${r.label||r.store}の${S.dept}の明細と A・PD（商品部詳細）`}),
+        totalGo:{go:"shohin",a:"",k:"r:__total__",title:`押すと、エリア合計の${S.dept}の明細と A・PD（商品部詳細）`},
+        headGo:c=>({go:"metric",a:c.key,k:"h:"+c.key,title:`押すと、この指標（${c.label}）を、部門・カテゴリ×店で並べます（運営部全体）`})
+      });
+    }
     else if(S.mode==="運営部詳細"){
-      if(st==="__total__") b.innerHTML=renderRollup(await API.byDept(S.area,S.ym,S.snap),"部門",r=>r.label||r.dept);
-      else b.innerHTML=await storeDetailHtml(st,so,null);
+      if(st==="__total__") html=renderRollup(await API.byDept(S.area,S.ym,S.snap),"部門",r=>r.label||r.dept,{
+        rowGo:r=>({go:"cdept",a:r.dept,k:"d:"+r.dept,title:`押すと、下の運営部の A・PD を ${r.dept} に替えます`}),
+        rowCls:r=>r.dept===S.dept?" curdept":""});
+      else html=await storeDetailHtml(st,so,null);
     }
-    else if(S.mode==="運営部全体"){ b.innerHTML=renderUneibu(await API.uneibu(S.area,S.ym,S.snap)); drawUneibu(_uneibu.columns[0].key); }
+    else if(S.mode==="運営部全体") html=renderUneibu(await API.uneibu(S.area,S.ym,S.snap));
     else if(S.mode==="店舗事業部会議"){
-      if(st==="__total__") b.innerHTML=renderJigyo(await API.jigyo(S.area,S.ym,S.snap));
-      else b.innerHTML=renderJigyo(await API.jigyoStore(S.area,S.ym,S.snap,st));
+      html=st==="__total__"?renderJigyo(await API.jigyo(S.area,S.ym,S.snap)):renderJigyo(await API.jigyoStore(S.area,S.ym,S.snap,st));
     }
-    else if(S.mode==="仕入分析") b.innerHTML=renderShiire(await API.shiire(S.area,S.ym,S.snap,S.dept));
+    else if(S.mode==="仕入分析") html=renderShiire(await API.shiire(S.area,S.ym,S.snap,S.dept));
+    if(seq!=null&&seq!==NAV.seq) return;   // 待っている間に、別の所が押された（前の結果で上書きしない）
+    b.innerHTML=html;
+    if(S.mode==="運営部全体") drawUneibu(S.metric);
     // コメント（G2）: 商品部詳細/運営部詳細（エリア合計・店舗タブとも表示。編集可否は canEditSec が判定）
     if(S.mode==="商品部詳細"||S.mode==="運営部詳細"){
-      b.innerHTML+=`<div id="cpanel" style="margin-top:14px"><div class="note">コメント読み込み中\u2026</div></div>`;
-      renderComments();
+      b.insertAdjacentHTML("beforeend",`<div id="cpanel" style="margin-top:14px"><div class="note">コメント読み込み中…</div></div>`);
+      renderComments(seq);
     }
   }catch(e){
+    if(seq!=null&&seq!==NAV.seq) return;
     const m=String(e&&e.message||e);
     b.innerHTML=m.includes("ファイルなし")||m.includes("未収載")
-      ? `<div class="note">この条件の実績データがありません。<br>実績があるのは主に <b>北関東・首都圏</b>（2026年4〜6月）。<b>東北（北東北・宮城・山形）は実績が未更新の期間があります</b>（予算は全エリア登録済み）。</div>`
+      ? `<div class="note">この条件の実績データがありません。<br>実績があるのは主に <b>北関東・首都圏</b>。<b>東北（北東北・宮城・山形）は実績が未更新の期間があります</b>（予算は全エリア登録済み）。</div>`
       : `<div class="err">データを取得できません：${esc(m)}</div>`;
   }
 }
-function onArea(v){ S.area=v; refreshView(); }
-function onYm(v){ S.ym=v; refreshView(); }
-async function onSnap(v){ S.snap=v; await loadStores(); drawStoreTabs(); drawScope(); drawBody(); }
-function onDept(v){ S.dept=v; drawScope(); drawBody(); }
+function onArea(v){ nav_({area:v,snap:"",storeTab:"__total__"},{why:"エリア"}); }
+function onYm(v){ nav_({ym:v,snap:""},{why:"年月"}); }
+function onSnap(v){ nav_({snap:v},{why:"データ期間"}); }
+function onDept(v){ nav_({dept:v},{why:"部門"}); }
 
-// 店舗タブ（前回開発機の店舗タブ再現：エリア合計＋各店舗）。商品部詳細/運営部詳細/店舗事業部会議で表示。
+// 店舗タブ（エリア合計＋各店舗）。商品部詳細/運営部詳細/店舗事業部会議で表示。第2便では「横に移る」の道（店を替える）。
 const STORE_MODES=["商品部詳細","運営部詳細","店舗事業部会議"];
 async function loadStores(){
-  if(!STORE_MODES.includes(S.mode)){ S.stores=[]; return; }
+  if(!(TREE.includes(S.mode)||STORE_MODES.includes(S.mode))){ S.stores=[]; return; }
   try{ const r=await API.stores(S.area,S.ym,S.snap); S.stores=r.stores||[]; }catch(e){ S.stores=[]; }
   if(S.storeTab!=="__total__" && !S.stores.some(s=>s.slug===S.storeTab)) S.storeTab="__total__";
 }
 function drawStoreTabs(){
   const el=$("storetabs"); if(!el) return;
   if(!STORE_MODES.includes(S.mode)||!S.stores.length){ el.innerHTML=""; return; }
-  el.innerHTML=`<div class="tabs2"><span class="lb" style="align-self:center;margin-right:4px">店舗</span>`+
-    `<button class="${S.storeTab==='__total__'?'on':''}" onclick="onStore('__total__')">エリア合計</button>`+
-    S.stores.map(s=>`<button class="${S.storeTab===s.slug?'on':''}" onclick="onStore('${esc(s.slug)}')">${esc(s.short)}</button>`).join("")+`</div>`;
+  el.innerHTML=`<div class="tabs2"><span class="lb" style="align-self:center;margin-right:4px">店を替える</span>`+
+    `<button class="${S.storeTab==='__total__'?'on':''}" data-k="t:__total__" onclick="onStore('__total__')">エリア合計</button>`+
+    S.stores.map(s=>`<button class="${S.storeTab===s.slug?'on':''}" data-k="t:${esc(s.slug)}" onclick="onStore('${esc(s.slug)}')">${esc(s.short)}</button>`).join("")+`</div>`;
 }
-function onStore(slug){ S.storeTab=slug; drawStoreTabs(); drawScope(); drawBody(); }
+function onStore(slug){ if(slug===S.storeTab) return; nav_({storeTab:slug},{from:"t:"+slug,why:"店のタブ"}); }
 function storeNote(s){
   return `<div class="note"><b>${esc(s?s.short:"この店舗")}</b> の個別カテゴリ明細は、現在の配信データ（outbox）に未生成です（HQに店舗軸の明細生成を依頼中）。<br>店舗横断の比較は <b>商品部全体（行=店舗）</b>、店舗別の受払は <b>店舗事業部会議</b> でご確認いただけます。</div>`;
 }
@@ -863,7 +1198,7 @@ async function storeDetailHtml(slug,so,dept){
       API.detailStore(S.area,S.ym,S.snap,d,slug).catch(e=>{ if(isNoFile(e)) return null; throw e; })));
     const got=parts.filter(Boolean);
     if(!got.length) return storeNote(so);
-    return renderSection({...got[0], rows:got.flatMap(p=>p.rows||[]), dept_totals:got.flatMap(p=>p.dept_totals||[]), grand_total:null});
+    return renderSection({...got[0], rows:got.flatMap(p=>p.rows||[]), dept_totals:got.flatMap(p=>p.dept_totals||[]), grand_total:null},{deptGo:true});
   }catch(e){
     if(isNoFile(e)) return storeNote(so);
     return `<div class="err">データを取得できません：${esc(String(e&&e.message||e))}</div>`;
@@ -1005,11 +1340,12 @@ function prevKey_(){ return {ym:PREVW.ym,snap8:PREVW.snap8,area:S.area,store:cKe
 /* 済は課題（行）に1つ。前週PDがある週は「元のPD行」へ、無い週は当週のA行へ立てる。 */
 function rowResolveTarget_(i){ return (CM.PREV||[]).length?{sec:"PREV",it:CM.PREV[i]}:{sec:secA(),it:CM[secA()][i]}; }
 
-async function renderComments(){
+async function renderComments(seq){
   const el=$("cpanel"); if(!el) return;
   if(!S.snap){ el.innerHTML=""; return; }
   try{ const k=cKey();
     const r=await apdForScope_(k.area,k.ym,k.snap8,k.store,k.dept,0,secPD());
+    if(seq!=null&&seq!==NAV.seq) return;   // 待っている間に別の所が押された（前の画面のコメントで上書きしない）
     CM=Object.assign({A:[],PD:[],UA:[],UPD:[]},r.cm); CM.PREV=r.pv.items;
     PREVW={snap8:r.pv.snap8,ym:r.pv.ym,label:r.pv.label,stale:r.pv.stale};
     MEV={on:!!r.me,label:r.me};
@@ -1031,8 +1367,10 @@ function drawComments(){
   const scope=`${S.area} / ${S.dept}${so?" / "+so.short:" / エリア合計"}`;
   const sel=S.snaps.find(x=>x.snapshot===S.snap);
   const anyEdit=secs.some(s=>canEditSec(s.k));
-  let h=`<div class="cmcard"><div class="cmhead"><b>PDCA アクション（${who}）</b><span class="lb">${esc(scope)}・${esc(sel?sel.label:"")}${IS_GAS?"":"（ローカル＝保存はこの端末のみ）"}</span><span class="lb" id="cmsave"></span>`+
-    (S.sheetUrl?`<a href="${esc(safeUrl_(S.sheetUrl))}" target="_blank" rel="noopener" class="btn" style="margin-left:auto;text-decoration:none;padding:3px 10px;font-size:12px">📄 スプレッドシートで開く</a>`:"")+`</div>`;
+  const whoTag=anyEdit?`<span class="cmwho can">✎ あなたが書ける欄</span>`:`<span class="cmwho cant">閲覧のみ</span>`;
+  let h=`<div class="cmcard"><div class="cmhead"><b>PDCA アクション（${who}）</b>${whoTag}<span class="lb">${esc(scope)}・${esc(sel?sel.label:"")}${IS_GAS?"":"（ローカル＝保存はこの端末のみ）"}</span><span class="lb" id="cmsave"></span>`+
+    `<a href="#" data-jump="body" class="lb" style="margin-left:auto">↑ 表へ</a>`+
+    (S.sheetUrl?`<a href="${esc(safeUrl_(S.sheetUrl))}" target="_blank" rel="noopener" class="btn" style="margin-left:8px;text-decoration:none;padding:3px 10px;font-size:12px">📄 スプレッドシートで開く</a>`:"")+`</div>`;
   h+=`<table class="cmt"><thead><tr><th style="width:26px">#</th>`;
   secs.forEach(s=>{
     const lab=(s.k===A&&CM.PREV.length)?`${esc(s.label)}<span class="lb" style="font-weight:400">（前週PD ${esc(PREVW.label)}）</span>`:esc(s.label);
@@ -1056,8 +1394,8 @@ function drawComments(){
 function cmWhyReadonly_(){
   const a=S.asg; if(!a) return "";
   if(a.area!==S.area) return `担当エリア（${a.area}）の外なので、見るだけです。`;
-  if(S.mode==="商品部詳細"&&a.role==="unei") return "運営部の A・PD は「運営部詳細」に書きます（上のタブで切り替えられます）。";
-  if(S.mode==="運営部詳細"&&a.role==="buyer") return "商品部の A・PD は「商品部詳細」に書きます（上のタブで切り替えられます）。";
+  if(S.mode==="商品部詳細"&&a.role==="unei") return "運営部の A・PD は「運営部詳細」に書きます（上の段の地図で移れます）。";
+  if(S.mode==="運営部詳細"&&a.role==="buyer") return "商品部の A・PD は「商品部詳細」に書きます（上の段の地図で移れます）。";
   if(roleNeedsDept_(a.role)&&a.dept!==S.dept) return `担当部門（${a.dept}）の外なので、見るだけです。`;
   return "";
 }
@@ -1736,15 +2074,6 @@ async function vRenderBody(){
 }
 
 /* \u2500\u2500 スプレッドシート即時生成（GAS即時生成方式） \u2500\u2500 */
-function viewerSheetSpec(){
-  const a=aslug(S.area), d=dslug(S.dept), sp=s8(S.snap), store=S.stores.find(x=>x.slug===S.storeTab);
-  return { fileName:`PDCA_${S.area}_${S.dept}_${store?store.short:""}_${S.ym}_${sp}`, tabs:[
-    { name:`自店舗（${store?store.short:""}）`, title:`${S.area}／${store?store.short:""}／${S.dept}`, subtitle:snapLabelNow(),
-      path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}__${store?store.slug:""}.json`, key:{ym:S.ym,snap8:sp,area:S.area,store:store?store.full:"",dept:S.dept} },
-    { name:`エリア合計（${S.area}）`, title:`${S.area} エリア合計／${S.dept}`, subtitle:snapLabelNow(),
-      path:`c/shohin_detail__${a}__${d}__${S.ym}__${sp}.json`, key:{ym:S.ym,snap8:sp,area:S.area,store:"",dept:S.dept} }
-  ]};
-}
 function bulkSheetSpec(area,dept){
   const a=aslug(area), d=dslug(dept), sp=s8(S.snap);
   const tabs=[{ name:"エリア合計", title:`${area} エリア合計／${dept}`, subtitle:snapLabelNow(),
@@ -1762,7 +2091,6 @@ async function openSheet(spec,btn,msgEl){
   }catch(e){ if(msgEl) msgEl.innerHTML=`<span class="err">生成に失敗: ${esc(String(e&&e.message||e))}</span>`; }
   finally{ if(btn){ btn.disabled=false; btn.textContent=restore; } }
 }
-function vOpenSheet(btn){ openSheet(viewerSheetSpec(),btn,$("vSheetMsg")); }
 async function bulkOpenSheet(btn){
   if(!S.stores.length){ try{const r=await API.stores(S.area,S.ym,S.snap);S.stores=r.stores||[];}catch(e){} }
   openSheet(bulkSheetSpec(S.area,S.dept),btn,$("bulkMsg"));
