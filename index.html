@@ -256,6 +256,10 @@
   #navtoast{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--hdrH,46px) + 56px);background:#0f172a;color:#fff;font-size:12.5px;padding:6px 14px;border-radius:999px;opacity:0;transition:opacity .25s;z-index:120;pointer-events:none;white-space:nowrap;}
   .cmwho{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:700;}
   .cmwho.can{background:#dcfce7;color:#166534;} .cmwho.cant{background:#e2e8f0;color:#334155;}
+  /* 全部門（計）（2026-10-16b）: カテゴリはたたんでおき、釦で出す。A・PD は部門ごとなので、部門を選ぶ近道を出す */
+  table.c.foldcats tr.catrow{display:none;}
+  .allnote{display:flex;flex-wrap:wrap;align-items:center;gap:6px;border:1px dashed #94a3b8;border-radius:10px;background:#f8fafc;padding:10px 12px;font-size:13px;color:#334155;}
+  .allnote .btn{padding:4px 10px;font-size:12.5px;}
   @media (max-width:760px){
     .tree{grid-template-columns:1fr 44px 1fr;padding:6px;}
     .lvbtn{font-size:12.5px;padding:3px 7px;flex-direction:column;align-items:flex-start;gap:0;white-space:normal;}
@@ -272,7 +276,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-16a</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-16b</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -387,11 +391,12 @@ const FB={area:{"北東北":"kitatohoku","北関東":"kitakanto","宮城":"miyag
 const aslug=a=>SLUG.area[a]||FB.area[a]||a, dslug=d=>SLUG.dept[d]||FB.dept[d]||d, s8=s=>(s||"").slice(0,8);
 /* 第2便: 読んだ表は、このページを開いている間だけ覚える（5分）。戻る・同じ店を開き直すときに、GAS へ取りに行かない＝すぐ出る。
    取込状況（status.json）は追いかけて読み直すので覚えない。失敗したものは覚えない（次に押したとき取り直す）。 */
-const JCACHE=new Map(), JCACHE_TTL=5*60*1000, JCACHE_MAX=80;
+// 覚える数は 200 まで（全部門の店の明細は1店で6つ読む＝17店で約100）。あふれたら、いちばん長く使っていないものから捨てる
+const JCACHE=new Map(), JCACHE_TTL=5*60*1000, JCACHE_MAX=200;
 function cached_(key,fn){
   if(/status\.json$/.test(key)) return fn();
   const now=Date.now(), hit=JCACHE.get(key);
-  if(hit&&now-hit.t<JCACHE_TTL) return hit.p;
+  if(hit&&now-hit.t<JCACHE_TTL){ JCACHE.delete(key); JCACHE.set(key,hit); return hit.p; }   // 使ったものを後ろへ（捨てる順を、使っていない順に）
   const p=fn(); JCACHE.set(key,{t:now,p});
   p.catch(()=>{ if(JCACHE.get(key)&&JCACHE.get(key).p===p) JCACHE.delete(key); });
   if(JCACHE.size>JCACHE_MAX) JCACHE.delete(JCACHE.keys().next().value);
@@ -523,10 +528,16 @@ function legend(){
 }
 
 /* カテゴリ縦積み表（shohin_detail）: \u25C6全体合計\u2192\u25B6部門小計\u2192カテゴリ行 */
-/* opts.deptGo（第2便・運営部詳細の店）: 部門の小計の行を押すと、下の運営部の A・PD がその部門に替わる */
+/* opts.deptGo（第2便・運営部詳細の店）: 部門の小計の行を押すと、下の運営部の A・PD がその部門に替わる
+   opts.deptGo==="sdept"（全部門・商品部詳細）: 部門の小計の行を押すと、その部門の明細と A・PD へ下りる
+   opts.fold（全部門）: カテゴリの行をはじめたたむ（表の上の釦で出す） */
 function renderSection(d,opts){
   const o=opts||{}, cols=d.columns;
-  let h=`<div class="tbl-wrap"><table class="c"><thead><tr>`+
+  const dg=dept=>!o.deptGo?null:(o.deptGo==="sdept"
+    ? {go:"sdept",a:dept,k:"d:"+dept,title:`押すと、${dept}の明細と A・PD（商品部詳細）`}
+    : {go:"cdept",a:dept,k:"d:"+dept,title:`押すと、下の運営部の A・PD を ${dept} に替えます`});
+  let h=(o.fold?`<div style="margin:0 0 6px"><button class="btn" data-fold>▸ カテゴリも出す</button> <span class="lb">部門の行を押すと、その部門の明細と A・PD へ</span></div>`:"")+
+    `<div class="tbl-wrap"><table class="c${o.fold?" foldcats":""}"><thead><tr>`+
     `<th class="h" style="left:0">部門</th><th class="h" style="left:56px">カテゴリ</th>`+
     cols.map(c=>`<th>${esc(c.label)}<span class="u">${c.type==="amount"?"千円":"%"}</span></th>`).join("")+`</tr></thead><tbody>`;
   /* 部門絞込データの grand_total は部門合計の重複（ラベルだけ「全部門合計」）のため表示しない */
@@ -537,13 +548,12 @@ function renderSection(d,opts){
   const noYoy=splitNoYoyRows(d.rows,r=>(r.cells||{}).sales_month||null), noted=new Set();
   let prevDept=null;
   d.rows.forEach(r=>{
-    if(r.dept!==prevDept && dtMap[r.dept]){ h+=totalRow(dtMap[r.dept],cols,false,2,
-      o.deptGo?{go:"cdept",a:r.dept,k:"d:"+r.dept,title:`押すと、下の運営部の A・PD を ${r.dept} に替えます`}:null,
+    if(r.dept!==prevDept && dtMap[r.dept]){ h+=totalRow(dtMap[r.dept],cols,false,2,dg(r.dept),
       (r.dept===S.dept&&o.deptGo)?" curdept":""); }
     prevDept=r.dept;
     const ny=noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
     const ep=estPrior(d.ym,r.category);
-    h+=`<tr class="datarow"><td class="h" style="left:0"></td><td class="h catcol" style="left:56px">${esc(r.category)}`;
+    h+=`<tr class="datarow${o.fold?" catrow":""}"><td class="h" style="left:0"></td><td class="h catcol" style="left:56px">${esc(r.category)}`;
     if(r.alerts&&r.alerts.loss_alert) h+=`<br><span class="badge bd-loss">\u26A0差損${(r.alerts.loss_rate||0).toFixed(1)}%</span>`;
     if(r.alerts&&r.alerts.inv_cost_zero) h+=`<br><span class="badge bd-inv">\u26A0棚卸原価ゼロ</span>`;
     h+=`</td>`;
@@ -560,6 +570,58 @@ function totalRow(t,cols,dark,hspan,g,cls){
     cols.map(c=>`<td>${cellHtml(t.cells[c.key],c,dark)}</td>`).join("")+`</tr>`;
 }
 /* 集計表（by_store 行=店舗 / by_dept 行=部門）: \u25C6合計\u2192行 */
+/* ── 全部門（計）（2026-10-16b・PO「全部門計もわかるように」）──
+   部門の選ぶ欄の「全部門（計）」。数は、部門ごとの数（届いている表の数）を足し、率は足した額から出し直す（前年・予算も同じ）。
+   率の分母は売上（粗利率＝粗利÷売上・値引率＝値引÷売上・廃棄率＝廃棄÷売上。届いている表の率と同じ出し方。分母が 0 なら 0）。
+   A・PD は部門ごとの欄なので、全部門の画面では書かない（部門を選ぶ近道を出す）。 */
+const ALL_DEPT="__all__";
+const isAll_=d=>d===ALL_DEPT;
+const deptLabel_=d=>isAll_(d)?"全部門":d;
+const RATE_OF={gross_profit_rate_month:["gross_profit_month","sales_month"],discount_rate:["discount_amount","sales_month"],discard_rate:["discard_amount","sales_month"]};
+function sumCells_(list,cols){
+  const F=["current","yoy","budget"], out={};
+  const keys=new Set(cols.filter(c=>c.type!=="rate").map(c=>c.key)); Object.values(RATE_OF).forEach(p=>p.forEach(k=>keys.add(k)));
+  keys.forEach(k=>{ const o={type:"amount"}; let any=false;
+    F.forEach(f=>{ let s=null; list.forEach(cs=>{ const v=((cs||{})[k]||{})[f]; if(v!=null) s=(s||0)+v; }); if(s!=null){ o[f]=s; any=true; } });
+    out[k]=any?o:null; });
+  cols.filter(c=>c.type==="rate").forEach(c=>{ const p=RATE_OF[c.key], o={type:"rate"}; let any=false;
+    if(p) F.forEach(f=>{ const n=(out[p[0]]||{})[f], d=(out[p[1]]||{})[f]; if(n!=null&&d!=null){ o[f]=d?n/d*100:0; any=true; } });
+    out[c.key]=any?o:null; });
+  return out;
+}
+/* 6部門の表をそろえて読む（無い部門は飛ばす）。手元ではサンプルへ落とさない（足し算に別のデータを混ぜない） */
+const allPath_={
+  byStore:(d)=>`c/by_store__${aslug(S.area)}__${dslug(d)}__${S.ym}__${s8(S.snap)}.json`,
+  detail:(d,slug)=>`c/shohin_detail__${aslug(S.area)}__${dslug(d)}__${S.ym}__${s8(S.snap)}${slug?"__"+slug:""}.json`
+};
+function loadAllDepts_(pathOf){ return Promise.all(S.meta.departments.map(d=>loadJsonStrict(pathOf(d)).catch(e=>{ if(isNoFile(e)) return null; throw e; }))); }
+/* 商品部全体 × 全部門: 行＝店（＋◆全店舗合計）・列＝いまと同じ指標 */
+async function allByStore_(){
+  const parts=(await loadAllDepts_(allPath_.byStore)).filter(Boolean);
+  if(!parts.length) throw new Error("未収載: 全部門の店の表");
+  const cols=parts[0].columns, by={}, order=[];
+  parts.forEach(p=>(p.rows||[]).forEach(r=>{ const k=r.store_full||r.store; if(!by[k]){ by[k]={store:r.store,store_full:r.store_full,label:r.label,list:[]}; order.push(k); } by[k].list.push(r.cells); }));
+  const rank=k=>{ const i=(S.stores||[]).findIndex(s=>s.full===k); return i<0?9999:i; };
+  order.sort((a,b)=>rank(a)-rank(b));
+  return {dept:"全部門",columns:cols,ym:parts[0].ym,
+    rows:order.map(k=>({store:by[k].store,store_full:by[k].store_full,label:by[k].label,cells:sumCells_(by[k].list,cols)})),
+    grand_total:{label:"◆ 全店舗合計（全部門）",cells:sumCells_(parts.map(p=>(p.grand_total||{}).cells),cols)}};
+}
+/* 商品部詳細 × 全部門: 行＝部門（その下のカテゴリはたたむ）＋◆全部門合計。店（slug）かエリア合計（slug 無し） */
+async function allDetail_(slug){
+  const parts=(await loadAllDepts_(d=>allPath_.detail(d,slug))).filter(Boolean);
+  if(!parts.length) throw new Error("未収載: 全部門の明細");
+  const cols=parts[0].columns, dts=parts.flatMap(p=>p.dept_totals||[]);
+  return {...parts[0], rows:parts.flatMap(p=>p.rows||[]), dept_totals:dts,
+    grand_total:{label:"◆ 全部門合計",cells:sumCells_(dts.map(t=>t.cells),cols)}};
+}
+/* 全部門の画面で A・PD の欄の代わりに出す一言と、部門を選ぶ近道（押すとその部門の欄へ） */
+function allDeptNote_(){
+  const who=S.mode==="運営部詳細"?"運営部":"商品部";
+  return `<div class="allnote"><span>✎ ${who}の A・PD は部門ごとです。部門を選ぶと、ここに出ます（書ける担当は、そのまま書けます）：</span>`+
+    S.meta.departments.map(d=>`<button class="btn" data-go="cdept" data-a="${esc(d)}" data-k="n:${esc(d)}">${esc(d)}</button>`).join("")+`</div>`;
+}
+
 /* 押して下りる所の印（第2便）。data-go＝行き先の種類・data-a/b＝引数・data-k＝戻ったときに光らせる目印 */
 function goAttr_(g){ return g?` data-go="${esc(g.go)}" data-a="${esc(g.a||"")}" data-b="${esc(g.b||"")}" data-k="${esc(g.k||"")}" title="${esc(g.title||"")}"`:""; }
 function goLabel_(t,g){ return g?`<span class="gl">${esc(t)}</span><span class="gch" aria-hidden="true">›</span>`:esc(t); }
@@ -602,6 +664,16 @@ function drawUneibu(mkey){
   const noted=new Set();
   /* マスを押す＝その店の運営部詳細を、その行の部門で開く（部門の行・カテゴリの行とも）。合計の行は部門を変えない */
   const cell=(full,dept,inner,k)=>`<td class="gocell" data-go="unei" data-a="${esc(full)}" data-b="${esc(dept||"")}" data-k="${esc(k)}">${inner}</td>`;
+  /* 全部門計（2026-10-16b）: いちばん上に。6部門の行の足し算（率は足した額から）＝商品部全体の全部門と同じ数。
+     届いた表の下の合計の行は出さない（回によっては ＳＭ外・経費 など6部門の外の行を含むため。その行は表には残し、下に一言） */
+  const deptRows=d.rows.filter(r=>r.type==="dept"&&S.meta.departments.includes(r.dept));
+  const outside=[...new Set(d.rows.filter(r=>r.type==="dept"&&!S.meta.departments.includes(r.dept)).map(r=>r.dept))];
+  if(deptRows.length){
+    const gAll=sumCells_(deptRows.map(r=>r.grand),d.columns);
+    h+=`<tr class="total${isAll_(S.dept)?" curdept":""}" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門計</td>${cell("","",cellHtml(gAll[mkey],col,true),"c:__total__|all")}`+
+      st.map(s=>{ const c=sumCells_(deptRows.map(r=>(r.stores||{})[s.short]),d.columns); return cell(s.full,"",cellHtml(c[mkey],col,true),"c:"+s.full+"|all"); }).join("")+`</tr>`;
+  } else if(d.grand_total){ const gt=d.grand_total;   // 部門の行が無い表は、届いた合計の行をそのまま
+    h+=`<tr class="total" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門計</td>${cell("","",cellHtml((gt.grand||{})[mkey],col,true),"c:__total__|all")}`+st.map(s=>cell(s.full,"",cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true),"c:"+s.full+"|all")).join("")+`</tr>`; }
   d.rows.forEach((r,ri)=>{
     const k=(r.dept||"")+"|"+r.category, isCat=r.type!=="dept";
     const ny=set=>{ const v=isCat&&set.has(k); if(v) noted.add(r.category); return v; };
@@ -610,9 +682,8 @@ function drawUneibu(mkey){
     h+=cell("",r.dept,cellHtml((r.grand||{})[mkey],col,false,ny(nyGrand),isCat&&estPrior(d.ym,r.category)),"c:__total__|"+ri);
     h+=st.map(s=>cell(s.full,r.dept,cellHtml((r.stores&&r.stores[s.short]||{})[mkey],col,false,ny(nyStore[s.short]),isCat&&estPrior(d.ym,r.category)),"c:"+s.full+"|"+ri)).join("")+`</tr>`;
   });
-  const gt=d.grand_total;
-  if(gt){ h+=`<tr class="total"><td class="h" style="left:0">${esc(gt.label||"◆ 合計")}</td>${cell("","",cellHtml((gt.grand||{})[mkey],col,true),"c:__total__|gt")}`+st.map(s=>cell(s.full,"",cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true),"c:"+s.full+"|gt")).join("")+`</tr>`; }
-  $("uTbl").innerHTML=h+`</tbody></table></div>`+splitNote(noted)+estNote(d.ym);
+  const outNote=(deptRows.length&&outside.length)?`<div class="splitnote">全部門計は6部門（${esc(S.meta.departments.join("・"))}）の計です。${esc(outside.join("・"))} の行は入れていません（店舗事業部会議の合計には入っています）。</div>`:"";
+  $("uTbl").innerHTML=h+`</tbody></table></div>`+outNote+splitNote(noted)+estNote(d.ym);
 }
 /* 事業部会議（18列2段＋前年比較3列） */
 function cmpCell(cur,prev,isRate,hib,noYoy,estP){
@@ -803,6 +874,7 @@ function renderGate(){
   // 前回の担当は、入口を最初に出したときの1回だけ当てる（押して選び直した担当・エリア・部門を、描き直しのたびに上書きしない。2026-10-15 担当の札が切り替わらない不具合）
   const p=S._prefDone?{}:applyPref_();
   S._prefDone=true;
+  if(isAll_(S.dept)) S.dept=(S.meta.departments.includes(loadPref_().dept)?loadPref_().dept:"");   // 全部門は入口の担当部門ではない（前回の担当部門に戻す）
   const restored=!!(p.role||p.area||p.dept);
   const roleCards=ROLES.map(r=>`<button class="role ${S.role===r.k?'on':''}" onclick="setRole('${r.k}')"><div class="rt">${r.icon} ${r.label}</div><div class="rd">${r.desc}</div></button>`).join("");
   const areaSel=`<select id="gArea" onchange="S.area=this.value"><option value="">担当エリアを選択</option>`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
@@ -834,6 +906,7 @@ function enter(){
   savePref_({role:S.role,area:S.area,dept:S.dept});   // 次回の入室で復元
   // 第2便: 入ると、担当で決めた段から始まる（運営部の担当＝運営部全体・ほか＝商品部全体）。店はエリア合計・指標は売上・期間は最新
   S.mode=START_BY_ROLE[S.role]||"商品部全体"; S.storeTab="__total__"; S.metric="sales_month"; S.snap="";
+  if(S.role==="lead") S.dept=ALL_DEPT;   // 責任者は、はじめから全部門（計）（PO 2026-10-16）。ほかの担当は担当部門から
   S.entered=true; navInit_(); show_({why:"入室"});
 }
 
@@ -847,7 +920,7 @@ const START_BY_ROLE={buyer:"商品部全体",lead:"商品部全体",viewer:"商�
 const METRICS=[{key:"sales_month",label:"売上"},{key:"gross_profit_month",label:"粗利"},{key:"gross_profit_rate_month",label:"粗利率"},
   {key:"discount_amount",label:"値引き"},{key:"discount_rate",label:"値引率"},{key:"discard_amount",label:"廃棄額"},{key:"discard_rate",label:"廃棄率"}];
 const LV_TIP={
-  "商品部全体":"店ごとに、選んだ部門の数字を並べます（はじめの画面）",
+  "商品部全体":"店ごとに、選んだ部門（または全部門の計）の数字を並べます（はじめの画面）",
   "商品部詳細":"店（またはエリア合計）× 部門の、カテゴリの明細と、商品部の A・PD",
   "運営部全体":"部門・カテゴリ × 店で、1つの指標を並べます",
   "運営部詳細":"店（またはエリア合計）の全部門の明細と、運営部の A・PD"
@@ -860,8 +933,8 @@ function viewState_(){ return {mode:S.mode,area:S.area,ym:S.ym,snap:S.snap,dept:
 function describe_(v){
   if(!v) return "";
   const st=storeShortOf_(v.storeTab);
-  if(v.mode==="商品部全体") return `商品部全体（${v.dept}）`;
-  if(v.mode==="商品部詳細") return `商品部詳細（${st}・${v.dept}）`;
+  if(v.mode==="商品部全体") return `商品部全体（${deptLabel_(v.dept)}）`;
+  if(v.mode==="商品部詳細") return `商品部詳細（${st}・${deptLabel_(v.dept)}）`;
   if(v.mode==="運営部全体") return `運営部全体（${metricLabel_(v.metric)}）`;
   if(v.mode==="運営部詳細") return `運営部詳細（${st}）`;
   if(v.mode==="店舗事業部会議") return `店舗事業部会議（${st}）`;
@@ -917,6 +990,14 @@ document.addEventListener("click",e=>{
   else if(go==="metric") nav_({mode:"運営部全体",metric:a},{from:k,why:"指標の見出し"});
   else if(go==="umetric"){ if(a!==S.metric) nav_({metric:a},{from:k,why:"指標のタブ"}); }
   else if(go==="cdept"){ if(a!==S.dept) nav_({dept:a},{from:k,why:"部門の行",land:"comments"}); else { const el=$("cpanel"); if(el) glideTo_(el.getBoundingClientRect().top+window.scrollY-stickyH_()-8,()=>flash_(el)); } }
+  else if(go==="sdept"){ if(a!==S.dept) nav_({dept:a},{from:k,why:"部門の行"}); }
+});
+/* 全部門の明細: カテゴリを出す・たたむ（見方は変えないので、戻るには積まない） */
+document.addEventListener("click",e=>{
+  const b=e.target.closest&&e.target.closest("[data-fold]"); if(!b) return;
+  const t=b.parentNode&&b.parentNode.nextElementSibling&&b.parentNode.nextElementSibling.querySelector("table.c"); if(!t) return;
+  const folded=t.classList.toggle("foldcats");
+  b.textContent=folded?"▸ カテゴリも出す":"▾ カテゴリをたたむ";
 });
 
 /* 移動は滑らせて、着いた所を光らせる（0.28〜0.65秒・動きを減らす設定では即座に） */
@@ -965,7 +1046,7 @@ function land_(seq){
   if(o.why==="入室"){ revealDept_(); return; }   // 入ったときは動かさない（担当の部門の行だけ、表の中で見せる）
   if(o.land==="comments"){
     const el=$("cpanel"); if(el) glideTo_(el.getBoundingClientRect().top+window.scrollY-stickyH_()-8,()=>flash_(el));
-    navToast_("→ 運営部の A・PD（"+S.dept+"）");
+    navToast_("→ "+(S.mode==="運営部詳細"?"運営部":"商品部")+"の A・PD（"+deptLabel_(S.dept)+"）");
     return;
   }
   const v=$("view"); if(!v) return;
@@ -995,8 +1076,8 @@ function renderApp(){
     `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
   // 段の地図（4つのモードを、押してつながる形で）。押せば直接その段へ（明細の段は、いまの店かエリア合計）
   const lvSub={
-    "商品部全体":`行＝店・${S.dept}`,
-    "商品部詳細":`${storeShortOf_(S.storeTab)}・${S.dept}・A・PD`,
+    "商品部全体":`行＝店・${deptLabel_(S.dept)}`,
+    "商品部詳細":`${storeShortOf_(S.storeTab)}・${isAll_(S.dept)?"全部門（計）":S.dept+"・A・PD"}`,
     "運営部全体":`部門×店・${metricLabel_()}`,
     "運営部詳細":`${storeShortOf_(S.storeTab)}・全部門・A・PD`
   };
@@ -1033,7 +1114,7 @@ function drawNav_(){
   const sel=S.snaps.find(x=>x.snapshot===S.snap);
   const snapTxt=sel?String(sel.label||"").replace(/\(.*?\)/,"").replace(/\s+/g," ").trim():"";
   const showDept=!["店舗事業部会議","データ管理"].includes(S.mode);
-  const ctx=S.mode==="データ管理"?"":`<span class="ctx">${esc(S.area)}${showDept?"・"+esc(S.dept):""}${snapTxt?"・"+esc(snapTxt):""}</span>`;
+  const ctx=S.mode==="データ管理"?"":`<span class="ctx">${esc(S.area)}${showDept?"・"+esc(deptLabel_(S.dept)):""}${snapTxt?"・"+esc(snapTxt):""}</span>`;
   el.innerHTML=`<button class="btn back" id="navBack" onclick="goBack_()" ${d>0?"":"disabled"} title="${esc(tip)}">← ひとつ前に戻る</button>`+
     `<div class="crumbs" aria-label="いま見ている所">${ctx}${crumbs_()}</div>`;
 }
@@ -1055,7 +1136,7 @@ function backToGate(){ S.entered=false; S.asg=null; if(S.mode==="データ管理
 function setMode(m){ if(m===S.mode) return; nav_({mode:m},{why:"段の地図"}); }
 function openStoreView_(){ try{ window.open(storeUrl_(),"_blank","noopener"); }catch(e){} }
 function needDept_(m){ return m==="商品部詳細"||m==="商品部全体"||m==="仕入分析"||m==="運営部詳細"; }
-function printHq_(){ const t=$("printTitle"); if(!t){ window.print(); return; } const store=(STORE_MODES.includes(S.mode)&&S.storeTab&&S.storeTab!=="__total__")?S.stores.find(x=>x.slug===S.storeTab):null; const parts=[esc(S.area)]; if(needDept_(S.mode))parts.push(esc(S.dept)); if(STORE_MODES.includes(S.mode))parts.push(store?esc(store.short):"エリア合計"); t.innerHTML=`<div class="ptitle">ヒッスル｜${esc(S.mode)} ${parts.join("／")}</div><div class="psub">${esc(snapLabelNow())} ／ 印刷日時 ${esc(nowStamp_())}</div>`; window.print(); }
+function printHq_(){ const t=$("printTitle"); if(!t){ window.print(); return; } const store=(STORE_MODES.includes(S.mode)&&S.storeTab&&S.storeTab!=="__total__")?S.stores.find(x=>x.slug===S.storeTab):null; const parts=[esc(S.area)]; if(needDept_(S.mode))parts.push(esc(deptLabel_(S.dept))); if(STORE_MODES.includes(S.mode))parts.push(store?esc(store.short):"エリア合計"); t.innerHTML=`<div class="ptitle">ヒッスル｜${esc(S.mode)} ${parts.join("／")}</div><div class="psub">${esc(snapLabelNow())} ／ 印刷日時 ${esc(nowStamp_())}</div>`; window.print(); }
 
 /* 選択バー（エリア/年月/データ期間/部門）＋押し方のひとこと＋本文 */
 async function refreshView(){
@@ -1063,7 +1144,11 @@ async function refreshView(){
   if(S.mode==="データ管理"){ await renderDataManage(); land_(seq); return; }
   const areaSel=`<select onchange="onArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
   const ymSel=`<select onchange="onYm(this.value)">`+S.meta.year_months.map(y=>`<option value="${esc(y)}" ${y===S.ym?'selected':''}>${esc(y.slice(0,4))}年${Number(y.slice(4))}月</option>`).join("")+`</select>`;
-  const deptSel=needDept_(S.mode)?`<span class="lb">部門</span><select onchange="onDept(this.value)">`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`:"";
+  // 部門: いちばん上に「全部門（計）」（商品部全体・商品部詳細・運営部詳細）。仕入分析は部門ごとだけ
+  const allOpt=S.mode==="仕入分析"
+    ? (isAll_(S.dept)?`<option value="" selected disabled>部門を選択</option>`:"")
+    : `<option value="${ALL_DEPT}" ${isAll_(S.dept)?'selected':''}>全部門（計）</option>`;
+  const deptSel=needDept_(S.mode)?`<span class="lb">部門</span><select onchange="onDept(this.value)">`+allOpt+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`:"";
   v.innerHTML=`<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="snapSel" onchange="onSnap(this.value)"></select>${deptSel}<button class="btn" style="margin-left:auto" onclick="printHq_()" title="表示中のモード（この画面）を印刷します">🖨 印刷</button></div>`+
     `<div id="storetabs"></div><div id="scope"></div><div id="body"><div class="note">読み込み中…</div></div>`;
   await loadSnaps(); if(seq!==NAV.seq) return;
@@ -1077,7 +1162,7 @@ async function refreshView(){
 function renderAppTreeSubs_(){
   document.querySelectorAll(".tree .lvbtn").forEach(b=>{
     const m=b.dataset.mode, s=b.querySelector(".lvs"); if(!s) return;
-    if(m==="商品部詳細") s.textContent=`${storeShortOf_(S.storeTab)}・${S.dept}・A・PD`;
+    if(m==="商品部詳細") s.textContent=`${storeShortOf_(S.storeTab)}・${isAll_(S.dept)?"全部門（計）":S.dept+"・A・PD"}`;
     if(m==="運営部詳細") s.textContent=`${storeShortOf_(S.storeTab)}・全部門・A・PD`;
   });
 }
@@ -1093,22 +1178,30 @@ function howto_(){
   const canShohin=a.role==="lead"||(a.role==="buyer"&&a.dept===S.dept);
   const mine=a.role!=="viewer"&&a.area===S.area;
   let t=[];
-  if(m==="商品部全体"){
+  if(m==="商品部全体"&&isAll_(S.dept)){
+    t.push(`<span><b>全部門（計）</b>＝6部門の足し算（率は足した額から）</span>`);
+    t.push(`<span><b>店の行</b>（または ◆合計）を押す → その店の部門ごとの計（商品部詳細）</span>`);
+    t.push(`<span><b>列の見出し</b>を押す → 部門×店でその指標（運営部全体）</span>`);
+  }else if(m==="商品部全体"){
     t.push(`<span><b>店の行</b>（または ◆合計）を押す → その店の明細と A・PD（商品部詳細）</span>`);
     t.push(`<span><b>列の見出し</b>（売上・粗利…）を押す → 部門×店でその指標（運営部全体）</span>`);
     if(mine&&canShohin) t.push(`<span>✎ ${esc(S.dept)}の A・PD は、店を押した先の表の下に書けます</span>`);
   }else if(m==="運営部全体"){
     t.push(`<span><b>店の見出し</b>（またはマス）を押す → その店の全部門の明細と運営部の A・PD（運営部詳細）</span>`);
-    t.push(`<span>左に青い線の行＝いまの部門（${esc(S.dept)}）。マスを押すと、その行の部門に替わります</span>`);
+    t.push(isAll_(S.dept)?`<span>いちばん上の行＝全部門計。マスを押すと、その行の部門で開きます</span>`
+      :`<span>左に青い線の行＝いまの部門（${esc(S.dept)}）。マスを押すと、その行の部門に替わります</span>`);
     const a2=S.asg||{};
     if(a2.area===S.area&&(a2.role==="lead"||a2.role==="unei")) t.push(`<span>✎ 運営部の A・PD は、店を押した先の表の下に書けます</span>`);
+  }else if(m==="商品部詳細"&&isAll_(S.dept)){
+    t.push(`<span>上の<b>店のタブ</b>で、店を替えられます</span>`);
+    t.push(`<span><b>部門の行</b>を押す → その部門の明細と A・PD（全部門の画面では A・PD を書きません）</span>`);
   }else if(m==="商品部詳細"){
     t.push(`<span>上の<b>店のタブ</b>で、店を替えられます</span>`);
     t.push(`<a href="#" data-jump="cpanel">✎ 商品部の A・PD（${esc(S.dept)}）へ ↓</a>`);
   }else if(m==="運営部詳細"){
     t.push(`<span>上の<b>店のタブ</b>で、店を替えられます</span>`);
     t.push(`<span><b>部門の行</b>を押す → 下の運営部の A・PD がその部門に替わる</span>`);
-    t.push(`<a href="#" data-jump="cpanel">✎ 運営部の A・PD（${esc(S.dept)}）へ ↓</a>`);
+    t.push(`<a href="#" data-jump="cpanel">✎ 運営部の A・PD（${esc(deptLabel_(S.dept))}）へ ↓</a>`);
   }
   return t.length?`<div class="howto">${t.join("")}</div>`:"";
 }
@@ -1117,7 +1210,7 @@ function drawScope(){
   let h=howto_();
   if(sel&&sel.file_type==="05-4") h+=`<div class="sokuho"><span>⚠</span><span><b>月途中の速報値（${esc((sel.label||"").replace("📊","").trim())}）を表示中です。</b> 月末確定（📌）取込前は棚卸未実施部門で粗利が高めに出ます。</span></div>`;
   if(S.mode!=="仕入分析"&&S.mode!=="店舗事業部会議"&&S.mode!=="運営部全体") h+=legend();
-  if(S.mode==="商品部詳細"&&S.asg&&S.asg.role!=="viewer")
+  if(S.mode==="商品部詳細"&&S.asg&&S.asg.role!=="viewer"&&!isAll_(S.dept))
     h+=`<div style="margin:8px 0"><button class="btn" onclick="bulkOpenSheet(this)">📗 会議用まとめ（${esc(S.dept)}×${esc(S.area)} 全店を1ファイル）</button> <span id="bulkMsg" class="lb"></span></div>`;
   $("scope").innerHTML=h;
 }
@@ -1127,8 +1220,18 @@ async function drawBody(seq){
     const st=STORE_MODES.includes(S.mode)?S.storeTab:"__total__";
     const so=st!=="__total__"?S.stores.find(x=>x.slug===st):null;
     let html="";
-    if(S.mode==="商品部詳細"){
+    if(S.mode==="商品部詳細"&&isAll_(S.dept)){
+      html=renderSection(await allDetail_(st==="__total__"?"":st),{deptGo:"sdept",fold:true});
+    }
+    else if(S.mode==="商品部詳細"){
       html=st==="__total__"?renderSection(await API.detail(S.area,S.ym,S.snap,S.dept)):await storeDetailHtml(st,so,S.dept);
+    }
+    else if(S.mode==="商品部全体"&&isAll_(S.dept)){
+      html=renderRollup(await allByStore_(),"店舗",r=>r.label||r.store,{
+        rowGo:r=>({go:"shohin",a:r.store_full||"",k:"r:"+(r.store_full||r.store),title:`押すと、${r.label||r.store}の部門ごとの計（商品部詳細）`}),
+        totalGo:{go:"shohin",a:"",k:"r:__total__",title:"押すと、エリア合計の部門ごとの計（商品部詳細）"},
+        headGo:c=>({go:"metric",a:c.key,k:"h:"+c.key,title:`押すと、この指標（${c.label}）を、部門・カテゴリ×店で並べます（運営部全体）`})
+      });
     }
     else if(S.mode==="商品部全体"){
       const d=await API.byStore(S.area,S.ym,S.snap,S.dept);
@@ -1148,12 +1251,17 @@ async function drawBody(seq){
     else if(S.mode==="店舗事業部会議"){
       html=st==="__total__"?renderJigyo(await API.jigyo(S.area,S.ym,S.snap)):renderJigyo(await API.jigyoStore(S.area,S.ym,S.snap,st));
     }
+    else if(S.mode==="仕入分析"&&isAll_(S.dept)) html=`<div class="allnote"><span>仕入分析は部門ごとです。部門を選んでください：</span>`+
+      S.meta.departments.map(d=>`<button class="btn" data-go="sdept" data-a="${esc(d)}" data-k="n:${esc(d)}">${esc(d)}</button>`).join("")+`</div>`;
     else if(S.mode==="仕入分析") html=renderShiire(await API.shiire(S.area,S.ym,S.snap,S.dept));
     if(seq!=null&&seq!==NAV.seq) return;   // 待っている間に、別の所が押された（前の結果で上書きしない）
     b.innerHTML=html;
     if(S.mode==="運営部全体") drawUneibu(S.metric);
     // コメント（G2）: 商品部詳細/運営部詳細（エリア合計・店舗タブとも表示。編集可否は canEditSec が判定）
-    if(S.mode==="商品部詳細"||S.mode==="運営部詳細"){
+    if((S.mode==="商品部詳細"||S.mode==="運営部詳細")&&isAll_(S.dept)){
+      b.insertAdjacentHTML("beforeend",`<div id="cpanel" style="margin-top:14px">${allDeptNote_()}</div>`);   // 全部門では A・PD を読まない・書かない
+    }
+    else if(S.mode==="商品部詳細"||S.mode==="運営部詳細"){
       b.insertAdjacentHTML("beforeend",`<div id="cpanel" style="margin-top:14px"><div class="note">コメント読み込み中…</div></div>`);
       renderComments(seq);
     }
@@ -1260,7 +1368,7 @@ function mockApi(fn,args){
 /* 権限（入室担当 asg × いまの画面）。どこに書けるかは入口で選んだ担当で決める（PO 2026-10-14）。
    サーバーは「本部ドメインか」を確かめる（店舗ドメインは書けない）。 */
 function roleCanWriteHere_(){
-  const a=S.asg; if(!a||a.role==="viewer"||!S.snap) return false;
+  const a=S.asg; if(!a||a.role==="viewer"||!S.snap||isAll_(S.dept)) return false;   // 全部門（計）の欄は無い
   if(a.area!==S.area) return false;
   if(S.mode==="商品部詳細") return a.role==="lead"||(a.role==="buyer"&&a.dept===S.dept);
   if(S.mode==="運営部詳細") return a.role==="lead"||(a.role==="unei"&&a.dept===S.dept);
