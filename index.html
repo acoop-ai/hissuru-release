@@ -395,7 +395,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-20b</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-20d</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -2750,13 +2750,14 @@ function wkCount_(area,qid){
   const a=(WK.meta.areas||[]).find(x=>x.area===area); if(!a||!a.hit_counts) return null;
   const i=wkWi_(), pm=wkPeriodMonth_(), got=wkAreaHasMonth_(area,pm);
   if(qid&&!got&&wkQPer_(qid)==="m") return null;
+  if(qid&&wkQPer_(qid)==="w"&&wkAreaHasWeek_(area,i)===false) return null;   // その週の受払がまだ（0 と言わない）
   return Object.entries(a.hit_counts).filter(([q])=>!qid||q===qid).reduce((t,[,v])=>t+((v.w||[])[i]||0)+((got&&pm&&v.m&&v.m[pm])||0),0);
 }
 function wkFindBox_(){
   const n=wkCount_(S.area,null), all=(WK.meta.areas||[]).reduce((t,a)=>t+(wkCount_(a.area,null)||0),0);
   return `<button class="findbox ${S.view==="find"?"on":""}"${wkGo_(Object.assign({view:"find",qopen:""},TREE.includes(S.mode)?{}:{mode:"商品部全体"}),"","気になる所")} title="問いを選ぶと、当たった所（エリア → 店 → 部門 → カテゴリ）が一目で出ます">`+
     `<span class="ft">🔎 気になる所を探す${n!=null?`<span class="nb">${n}</span>`:""}</span>`+
-    `<span class="fs">${esc(wkWeekLabel_())}・${esc(S.area)}${n!=null?`（全エリアで ${all}）`:""}</span><span class="fs">棚卸・差損・数値の欠け・急な値引き など8つの問い</span></button>`;
+    `<span class="fs">${esc(wkWeekLabel_())}・${esc(S.area)}${n!=null?`（全エリアで ${all}）`:""}</span><span class="fs">棚卸原価の抜け・差損・受払の欠け・値引きの急増 など8つの問い</span></button>`;
 }
 
 /* ── 週間の画面（選ぶ帯 → 店のタブ → 本文） ── */
@@ -2824,6 +2825,13 @@ function wkStoreTabs_(){
 function wkLastWeek_(s){ if(!s) return -1; for(let j=s.s.length-1;j>=0;j--) if(s.s[j]!=null) return j; return -1; }
 function wkFirstWeek_(s){ if(!s) return -1; for(let j=0;j<s.s.length;j++) if(s.s[j]!=null) return j; return -1; }
 function wkAreaWeekHas_(i){ const s=wkSer_(WK_AREA,WK_ALL); return !!s&&s.s[i]!=null; }
+/* エリア area に、週 i の数字があるか。いまのエリアはエリアのファイルで、ほかのエリアは meta の first_week〜last_week で分かる
+   （last_week＝作る側が持つ「数字がある最後の週」・2026-10-20 第2回）。last_week の無い meta では、ほかのエリアは分からない（null） */
+function wkAreaHasWeek_(area,i){
+  if(WK.A&&WK.A.area===area) return wkAreaWeekHas_(i);
+  const a=(WK.meta.areas||[]).find(x=>x.area===area);
+  return a&&Number.isInteger(a.last_week)?(i>=(a.first_week||0)&&i<=a.last_week):null;
+}
 function wkNoDataHtml_(st,dept,i){
   const W=WK.meta.weeks, am=wkAreaMeta_(), sm=st!==WK_AREA&&am?am.stores.find(x=>x.slug===st):null;
   if(sm&&sm.end&&sm.end<W[i].start) return `<div class="note">この店・部門のこの週の数字はありません（閉店した店は、その週で表示を終えています。最後の回 ${wkMd_(sm.end)}）。</div>`;
@@ -3145,14 +3153,14 @@ function wkUneibuHtml_(){
 function wkQs_(){
   const T=(WK.meta.rules||{}).th||{}, man=v=>v>=10000?(v/10000)+"万円":v+"円";
   return [
-    {id:"inv_week",short:"週の棚卸",per:"w",title:"週の棚卸が入っていないところは？",rule:`生鮮4部門の、選んだ週の回。売上の9割以上を占めるカテゴリに棚卸原価が入っていなければ当たり（「一部」は 0 のカテゴリの名前を出す）。<b>月の最初の回は数えない</b>（どの店も入っていないため）。委託・テナント・資材・仕出し・駅弁と、売上の無い・わずかなカテゴリは外す。`},
-    {id:"inv_month",short:"月末の棚卸",per:"m",title:"月末の棚卸が入っていないところは？",rule:`月末確定で、売上 ${man(T.inv_month_sales)}以上のカテゴリの棚卸原価が 0（委託・テナント・資材・仕出し・駅弁は外す）。何か月続いたかも出す。`},
-    {id:"inv_odd",short:"棚卸の異常",per:"wm",title:"棚卸が異常なところは？",rule:`<b>週</b>＝月の途中の棚卸の回までの粗利率が、直近の確定の率から ±${T.inv_odd_week_pt}pt 以上（生鮮）。<b>月末</b>＝確定の粗利率が、その店×部門のふだん（前3か月の中央値）から ±${T.inv_odd_month_pt}pt 以上、または在庫日数がふだんの ${T.inv_days_ratio}倍以上・半分以下。`},
-    {id:"loss",short:"差損",per:"m",title:"差損が出ているところは？",rule:`日配・グロッサリー（売価で在庫を持つ部門）の月末の実地棚卸で、差損÷帳簿が ${T.loss_rate}%以上 かつ ${man(T.loss_yen)}以上。差益（帳簿より多い）も同じ線で別に数える。`},
-    {id:"missing",short:"数値の欠け",per:"w",title:"数値が入っていないところは？",rule:`<b>欠け</b>（行・回が無い）＝受払表の回が無い週（按分）・回に店が無い・前の回にあったカテゴリの行が無い。<b>0・少なすぎ</b>（行はある）＝売上が 0（前4週の平均 ${man(T.zero_base)}以上）・売上が前4週の平均の半分未満・廃棄が 0（前4週の平均 ${man(T.discard_base)}以上）。欠けと 0 は混ぜない。`},
-    {id:"jump",short:"値引き・廃棄",per:"w",title:"値引き・廃棄が急に増えたところは？",rule:`7日そろった週で、前4週の平均と比べて、値引率 +${T.jump_dr_pt}pt 以上 かつ +${man(T.jump_d_yen)}以上、または 廃棄率 +${T.jump_wr_pt}pt 以上 かつ +${man(T.jump_w_yen)}以上（店×部門）。`},
-    {id:"neg",short:"マイナス",per:"w",title:"マイナスが出ているところは？",rule:`店×カテゴリの週で、売上か値引きが ${WK_MINUS}${man(T.neg_yen)}以下（付け替え・訂正・値引きの戻し入れ）。`},
-    {id:"gpneg",short:"粗利マイナス",per:"m",title:"粗利がマイナスのところは？",rule:`月末確定で、売上 ${man(T.gpneg_sales)}以上のカテゴリの粗利がマイナス（資材は外す）。`}];
+    {id:"inv_week",short:"週の棚卸原価なし（店・部門）",per:"w",title:"生鮮の、週の棚卸原価が入っていない店・部門は？",rule:`生鮮4部門の、選んだ週の回。売上の9割以上を占めるカテゴリに棚卸原価が入っていなければ当たり（「一部」は 0 のカテゴリの名前を出す）。<b>月の最初の回は数えない</b>（どの店も入っていないため）。委託・テナント・資材・仕出し・駅弁と、売上の無い・わずかなカテゴリは外す。`},
+    {id:"inv_month",short:"月末の棚卸原価 0（カテゴリ）",per:"m",title:"月末確定で、棚卸原価が 0 のカテゴリは？",rule:`月末確定で、売上 ${man(T.inv_month_sales)}以上のカテゴリの棚卸原価が 0（委託・テナント・資材・仕出し・駅弁は外す）。何か月続いたかも出す。`},
+    {id:"inv_odd",short:"粗利率・在庫日数がふだんと違う（店・部門）",per:"wm",title:"棚卸の回の粗利率・在庫日数が、ふだんと大きく違う店・部門は？",rule:`<b>週</b>＝月の途中の棚卸の回までの粗利率が、直近の確定の率から ±${T.inv_odd_week_pt}pt 以上（生鮮）。<b>月末</b>＝確定の粗利率が、その店×部門のふだん（前3か月の中央値）から ±${T.inv_odd_month_pt}pt 以上、または在庫日数がふだんの ${T.inv_days_ratio}倍以上・半分以下。`},
+    {id:"loss",short:"差損・差益（日配・グロのカテゴリ）",per:"m",title:"日配・グロッサリーの月末の実地棚卸で、差損・差益が大きいカテゴリは？",rule:`日配・グロッサリー（売価で在庫を持つ部門）の月末の実地棚卸で、差損÷帳簿が ${T.loss_rate}%以上 かつ ${man(T.loss_yen)}以上。差益（帳簿より多い）も同じ線で別に数える。`},
+    {id:"missing",short:"受払の欠け（店・部門）",per:"w",title:"受払表の数字（回・カテゴリの行・売上・廃棄）が欠けていそうな店・部門は？",rule:`<b>欠け</b>（行・回が無い）＝受払表の回が無い週（按分）・回に店が無い・前の回にあったカテゴリの行が無い。<b>0・少なすぎ</b>（行はある）＝売上が 0（前4週の平均 ${man(T.zero_base)}以上）・売上が前4週の平均の半分未満・廃棄が 0（前4週の平均 ${man(T.discard_base)}以上）。欠けと 0 は混ぜない。`},
+    {id:"jump",short:"値引き・廃棄の急増（店・部門）",per:"w",title:"値引き・廃棄が、前4週より急に増えた店・部門は？",rule:`7日そろった週で、前4週の平均と比べて、値引率 +${T.jump_dr_pt}pt 以上 かつ +${man(T.jump_d_yen)}以上、または 廃棄率 +${T.jump_wr_pt}pt 以上 かつ +${man(T.jump_w_yen)}以上（店×部門）。`},
+    {id:"neg",short:"売上・値引きのマイナス（カテゴリ）",per:"w",title:"週の売上・値引きが、マイナスのカテゴリは？",rule:`店×カテゴリの週で、売上か値引きが ${WK_MINUS}${man(T.neg_yen)}以下（付け替え・訂正・値引きの戻し入れ）。`},
+    {id:"gpneg",short:"粗利のマイナス（カテゴリ）",per:"m",title:"月末確定の粗利が、マイナスのカテゴリは？",rule:`月末確定で、売上 ${man(T.gpneg_sales)}以上のカテゴリの粗利がマイナス（資材は外す）。`}];
 }
 function wkQ_(){ const qs=wkQs_(); return qs.find(x=>x.id===S.q)||qs[0]; }
 /* いまのエリアの、選んだ期間の当たり（qid＝問い。null なら全部） */
@@ -3190,7 +3198,7 @@ function wkFindHtml_(){
     next:"数字がある週を選んで見る（上の知らせの釦）。受払が上がると、週の表の作り直しで自動で数えます。",
     why:"受払の無い週を「当たり 0」と出すと、「異常ではなかった」と取り違えるため。"}:wkAi_(q,hits);
   const pills=(WK.meta.areas||[]).map(a=>{ const c=a.area!==S.area?wkCount_(a.area,q.id):yet?null:hits.length;
-    const ay=a.area===S.area?!!yet:(q.per==="m"&&!wkAreaHasMonth_(a.area,pm));   // そのエリアでは、この期間をまだ数えられない
+    const ay=a.area===S.area?!!yet:q.per==="m"?!wkAreaHasMonth_(a.area,pm):(q.per==="w"&&wkAreaHasWeek_(a.area,i)===false);   // そのエリアでは、この期間をまだ数えられない
     const tip=ay?(q.per==="m"?`${wkYm_(pm)}の月末確定がまだ届いていません`:"この週の受払がまだ上がっていません"):"";
     return `<button class="pill ${a.area===S.area?"on":""}"${a.area===S.area?"":wkGo_({area:a.area,qopen:"",storeTab:"__total__"},"","エリア","wkc:qpanel")}${ay?` title="${esc(tip)}"`:""}>${esc(a.area)} ${ay?"<b>まだ</b>":`<b>${c==null?"—":c}</b> か所`}</button>`; }).join("");
   return (wNo?wkNoDataHtml_(WK_AREA,WK_ALL,i):"")+`<div class="q-grid">${cards}</div>`+
@@ -3252,7 +3260,8 @@ function wkAi_(q,hits){
   //  証拠の無いエリアは、受払・月末確定がまだかもしれないので言わない（2026-10-20: 本番の週の表で、受払が4月までのエリアを「異常ではなかった」と出していた）
   const wi0=wkWi_(), pm0=wkPeriodMonth_(), hv=a=>Object.values(a.hit_counts||{});
   const upM=a=>!!pm0&&(Array.isArray(a.months)?a.months.includes(pm0):hv(a).some(v=>((v.m||{})[pm0]||0)>0));
-  const upW=a=>q.per==="m"?upM(a):(hv(a).some(v=>((v.w||[])[wi0]||0)>0)||(q.per==="wm"&&upM(a)));
+  const upWk=a=>{ const k=wkAreaHasWeek_(a.area,wi0); return k!==null?k:hv(a).some(v=>((v.w||[])[wi0]||0)>0); };   // last_week があれば事実・無ければ当たりの有無
+  const upW=a=>q.per==="m"?upM(a):(upWk(a)||(q.per==="wm"&&upM(a)));
   const others=(WK.meta.areas||[]).filter(a=>a.area!==S.area&&wkCount_(a.area,q.id)===0&&upW(a)).map(a=>a.area);
   const fixN=hits.filter(x=>String(x.src||"").includes("人が補った")).length;
   const tail=(others.length?`${others.join("・")}は当たり 0（この期間は、この決まりでは異常ではなかった）。`:"")+(fixN?`当たりのうち ${fixN} か所は、9/8 の抜けを人が補った受払表の週（元の表で確かめてから判断）。`:"");
