@@ -19,17 +19,19 @@
   *{box-sizing:border-box;}
   body{margin:0;font-family:"Segoe UI","Hiragino Sans","Yu Gothic UI",sans-serif;color:var(--fg);background:#fff;}
   header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;}
-  header .logo{background:#0f172a;color:#fff;font-weight:700;font-size:12px;border-radius:6px;padding:5px 7px;}
-  header h1{font-size:15px;margin:0;} header .sub{font-size:11px;color:var(--muted);}
-  header .user{margin-left:auto;font-size:11px;color:var(--muted);}
+  /* 上の帯の字（2026-10-26 PO「余白に余裕があるので、もっと文字フォントを大きく」）: 帯の字はおおむね +2px（いちばん小さい 10〜11px は 12〜13px へ）。
+     表の数字のマス（.cell）の字は変えない。表の左の見出しの列（部門・カテゴリ）は 12px → 14px（table.c の th.h・td.h） */
+  header .logo{background:#0f172a;color:#fff;font-weight:700;font-size:14px;border-radius:6px;padding:6px 8px;}
+  header h1{font-size:19px;margin:0;} header .sub{font-size:13px;color:var(--muted);}
+  header .user{margin-left:auto;font-size:13px;color:var(--muted);}
   .page{transition:background-color .3s;min-height:calc(100vh - 55px);}
   main{max-width:1400px;margin:0 auto;padding:20px 16px 40px;}
-  h2.title{font-size:20px;font-weight:600;margin:0;} .subtitle{font-size:13px;color:var(--muted);margin:2px 0 0;}
+  h2.title{font-size:20px;font-weight:600;margin:0;} .subtitle{font-size:14px;color:var(--muted);margin:2px 0 0;}
   .btn{border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;padding:6px 12px;color:#334155;}
   .btn.primary{background:#0284c7;border-color:#0284c7;color:#fff;font-weight:600;}
   .btn:disabled{opacity:.5;cursor:not-allowed;}
-  select{font-size:13px;padding:5px 7px;border:1px solid var(--border);border-radius:6px;background:#fff;}
-  label.lb{font-size:11px;color:var(--muted);}
+  select{font-size:15px;padding:5px 7px;border:1px solid var(--border);border-radius:6px;background:#fff;}
+  label.lb{font-size:13px;color:var(--muted);}
 
   /* 入室ゲート */
   .gate-wrap{display:flex;min-height:70vh;align-items:center;justify-content:center;padding:16px;}
@@ -47,17 +49,20 @@
   .warn{color:var(--amber);font-size:12px;text-align:center;} .hint{color:var(--muted);font-size:12px;text-align:center;}
 
   /* 入室後バー */
-  .asgbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:13px;}
+  .asgbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:15px;}
+  .asgbar .btn{font-size:14px;}
   .asgbar .role-badge{border-radius:6px;padding:2px 8px;font-weight:600;}
   .rb-buyer{background:var(--sky100);color:var(--sky800);} .rb-admin{background:#fef3c7;color:#92400e;} .rb-viewer{background:#f1f5f9;color:#475569;} .rb-unei{background:#dcfce7;color:#166534;}
 
   /* モードタブ */
   .modes{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:18px 0 0;}
-  .modes button{border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;padding:6px 11px;color:#334155;}
+  .modes button{border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:15px;padding:6px 11px;color:#334155;}
   .modes button.on{background:#0284c7;border-color:#0284c7;color:#fff;font-weight:600;}
   /* 管理者用（データ管理）は閲覧系タブと明確に別物と分かるよう、右端へ隔離＋琥珀色の枠 */
-  .modes .admin-sep{margin-left:auto;display:flex;align-items:center;gap:6px;padding-left:14px;border-left:2px dashed #e2e8f0;}
-  .modes .admin-sep .lbl{font-size:10px;color:#b45309;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+  /* 管理者用の2つは縦に積む（店舗事業部会議・仕入分析の列と同じ形・2026-10-26 字を大きくしても 1366 の幅で段の地図と同じ1行に入る） */
+  .modes .admin-sep{margin-left:auto;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:4px;padding-left:10px;border-left:2px dashed #e2e8f0;}
+  .modes .admin-sep button{padding:4px 11px;text-align:left;}
+  .modes .admin-sep .lbl{font-size:12px;color:#b45309;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
   .modes button.admin{border:1px solid #f59e0b;background:#fffbeb;color:#92400e;font-weight:700;}
   .modes button.admin:hover{background:#fef3c7;}
   .modes button.admin.on{background:#b45309;border-color:#b45309;color:#fff;}
@@ -65,15 +70,15 @@
   /* 選択バー・タブ */
   .selbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0;}
   .tabs2{display:flex;flex-wrap:wrap;gap:3px;margin:10px 0;}
-  .tabs2 button{border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:12px;padding:4px 9px;color:#475569;}
+  .tabs2 button{border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:14px;padding:4px 6px;color:#475569;}   /* 字は 12→14px・左右の余白は 9→6px（北関東の18店が 1366 の幅で1行に入る） */
   .tabs2 button.on{background:#0369a1;border-color:#0369a1;color:#fff;font-weight:600;}
-  .chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px;margin:10px 0;}
+  .chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:16px;margin:10px 0;}
   .chip{border-radius:6px;padding:2px 8px;font-weight:700;}
   .chip.a{background:var(--sky100);color:var(--sky800);} .chip.d{background:var(--emer100);color:var(--emer800);} .chip.s{background:var(--violet100);color:var(--violet800);}
-  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--muted);margin:8px 0;align-items:center;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin:8px 0;align-items:center;}
   .legend .sw{display:inline-block;width:9px;height:9px;border-radius:2px;vertical-align:middle;margin-right:3px;}
   .splitnote{font-size:12px;color:var(--muted);margin:6px 0 0;}
-  .sokuho{display:flex;gap:8px;border-left:4px solid #f59e0b;background:#fffbeb;color:#78350f;padding:10px 14px;border-radius:8px;font-size:13px;margin:8px 0;}
+  .sokuho{display:flex;gap:8px;border-left:4px solid #f59e0b;background:#fffbeb;color:#78350f;padding:10px 14px;border-radius:8px;font-size:15px;margin:8px 0;}
   .note{font-size:13px;color:var(--muted);background:#fff;border:1px dashed var(--border);border-radius:10px;padding:14px;}
   .err{color:var(--bad);font-size:13px;padding:12px;}
   /* 注記（青）と警告（黄）。従来 .gnote は #guide 内にしか定義がなくガイド外で無装飾だったため、共通定義を置く */
@@ -84,9 +89,16 @@
   .tbl-wrap{max-height:70vh;overflow:auto;border:1px solid var(--border);border-radius:10px;background:#fff;}
   table.c{width:100%;border-collapse:collapse;font-size:12px;}
   table.c thead th{position:sticky;top:0;z-index:20;background:var(--bg-muted);color:var(--muted);font-weight:600;padding:6px 10px;text-align:right;border-left:1px solid var(--border);white-space:nowrap;}
-  table.c thead th.h{text-align:left;left:0;z-index:30;} table.c thead th .u{font-size:10px;font-weight:400;color:#94a3b8;margin-left:2px;}
+  table.c thead th.h{text-align:left;left:0;z-index:30;font-size:14px;} table.c thead th .u{font-size:10px;font-weight:400;color:#94a3b8;margin-left:2px;}
   table.c td{border-left:1px solid var(--border);border-top:1px solid var(--border);padding:2px 10px;vertical-align:top;text-align:right;}
-  table.c td.h{text-align:left;font-weight:600;position:sticky;left:0;background:#fff;z-index:10;white-space:nowrap;}
+  table.c td.h{text-align:left;font-weight:600;position:sticky;left:0;background:#fff;z-index:10;white-space:nowrap;font-size:14px;}
+  /* 見出しの列が2つ（部門・カテゴリ）の表: 2つ目の列の貼り付く位置＝1つ目の列の幅（字が大きくなり、部門の行の名前が1つ目の列に入るので、測って合わせる・fixHcols_） */
+  table.c thead th.h2,table.c td.h2{left:var(--hc1,56px);}
+  /* 委託の、月末確定の前の粗利（今年の値の印・2026-10-26）: 計(推定)・前(推定) と同じ大きさの「(推定)」を、今年の値の左に */
+  table.c .curest{font-weight:400;font-size:11px;white-space:nowrap;}   /* 「(推定)」の途中で折り返さない（細い列では数の上の行に） */
+  table.c .cev{white-space:nowrap;}   /* 店舗事業部会議の細い列: 「(推定)」と数を1行に */
+  #uTbl table.c .curest{display:block;}   /* 運営部全体（店の列が細い）: 「(推定)」はいつも数の上の行に（数が長い所だけ折り返して、同じ行の「前」の高さがずれないように） */
+  #sokCurEst{display:block;} #sokCurEst:empty{display:none;}   /* 速報の帯の、委託の一文は2行目に（文の途中で折り返さない） */
   tr.total td{background:var(--total-dark);color:#fff;font-weight:700;border-top:2px solid #0f172a;}
   tr.total td.h{background:var(--total-dark);color:#fff;}
   tr.subtotal td{background:var(--subtotal);font-weight:600;} tr.subtotal td.h{background:var(--subtotal);}
@@ -148,7 +160,7 @@
   #busyOverlay .bttl{font-weight:700;font-size:14px;margin-top:10px;color:#0f172a;}
   #busyOverlay .bsub{font-size:12px;color:var(--muted);margin-top:4px;}
   /* ご利用ガイド（ヘッダー右上から開く） */
-  header .ghelp{margin-left:10px;padding:4px 10px;font-size:12px;white-space:nowrap;border-color:var(--sky700);color:var(--sky800);background:var(--sky50);font-weight:600;}
+  header .ghelp{margin-left:10px;padding:4px 10px;font-size:14px;white-space:nowrap;border-color:var(--sky700);color:var(--sky800);background:var(--sky50);font-weight:600;}
   header .ghelp:hover{background:var(--sky100);}
   #guide{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;}
   #guide .gcard{background:#fff;border-radius:14px;width:100%;max-width:880px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.28);}
@@ -207,28 +219,30 @@
   /* ── 第2便: 押して掘り下げる（2026-10-16） ── */
   /* 段の地図（4つのモードを、押してつながる形で並べる。押せば直接その段へ） */
   .modes{align-items:stretch;}
-  .tree{display:grid;grid-template-columns:auto 74px auto;grid-template-rows:auto 18px auto;align-items:center;padding:5px 10px;border:1px solid var(--border);border-radius:10px;background:#fff;}
-  .lvbtn{display:flex;align-items:baseline;gap:6px;white-space:nowrap;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;padding:3px 10px;color:#334155;text-align:left;min-height:30px;line-height:1.25;}
+  /* 2026-10-26 字を大きくしても、段の地図・店舗事業部会議・🔎・管理者用が1行に入るように: 矢印の列 74→56px・枠と札の左右の余白を少し詰める
+     （いちばん長い組み合わせ＝商品部の担当×グロッサリー×エリア合計を、ふだんのブラウザの幅〔1366 から縦のバーの 17px を引いた 1349〕で測った） */
+  .tree{display:grid;grid-template-columns:auto 56px auto;grid-template-rows:auto 18px auto;align-items:center;padding:5px 8px;border:1px solid var(--border);border-radius:10px;background:#fff;}
+  .lvbtn{display:flex;align-items:baseline;gap:6px;white-space:nowrap;border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:15px;padding:3px 8px;color:#334155;text-align:left;min-height:32px;line-height:1.25;}
   .lvbtn:hover{background:#f0f9ff;border-color:#7dd3fc;}
   .lvbtn.on{background:#0284c7;border-color:#0284c7;color:#fff;font-weight:600;}
-  .lvbtn .lvs{display:inline-block;font-size:11.5px;color:#475569;font-weight:400;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lvbtn .lvs{display:inline-block;font-size:13px;color:#475569;font-weight:400;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .lvbtn.on .lvs{color:#e0f2fe;}
-  .lvarr{font-size:11px;color:#475569;text-align:center;white-space:nowrap;line-height:1.2;}
-  .lvarr b{display:block;font-size:14px;color:#0369a1;font-weight:700;}
-  .lvdown{font-size:11px;color:#475569;padding-left:18px;white-space:nowrap;}
+  .lvarr{font-size:12.5px;color:#475569;text-align:center;white-space:nowrap;line-height:1.2;}
+  .lvarr b{display:block;font-size:16px;color:#0369a1;font-weight:700;}
+  .lvdown{font-size:12.5px;color:#475569;padding-left:18px;white-space:nowrap;}
   .lvdown b{color:#0369a1;}
   .othermodes{display:flex;flex-direction:column;justify-content:center;gap:6px;}
-  .modes .othermodes button{text-align:left;}
+  .modes .othermodes button{text-align:left;padding-left:9px;padding-right:9px;}
   /* いま見ている所（パンくず）と「ひとつ前に戻る」。上に貼り付けて、いつも見えるように */
   .navbar{position:sticky;top:var(--hdrH,46px);z-index:35;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.97);border:1px solid var(--border);border-radius:10px;padding:6px 10px;margin:10px 0 0;box-shadow:0 2px 6px rgba(15,23,42,.06);}
-  .navbar .back{white-space:nowrap;font-weight:600;}
+  .navbar .back{white-space:nowrap;font-weight:600;font-size:15px;}
   .navbar .back:not(:disabled){border-color:#0284c7;color:#075985;}
-  .crumbs{display:flex;align-items:center;gap:2px 4px;flex-wrap:wrap;font-size:13px;min-width:0;}
-  .crumb{border:none;background:none;color:var(--sky700);cursor:pointer;padding:3px 5px;min-height:28px;border-radius:5px;text-decoration:underline;text-underline-offset:3px;font-size:13px;font-family:inherit;}
+  .crumbs{display:flex;align-items:center;gap:2px 4px;flex-wrap:wrap;font-size:15px;min-width:0;}
+  .crumb{border:none;background:none;color:var(--sky700);cursor:pointer;padding:3px 5px;min-height:28px;border-radius:5px;text-decoration:underline;text-underline-offset:3px;font-size:15px;font-family:inherit;}
   .crumb:hover{background:var(--sky50);}
   .crumb.cur{color:var(--fg);font-weight:700;text-decoration:none;cursor:default;background:none;}
   .crumbs .sep{color:#64748b;}
-  .crumbs .ctx{font-size:12px;color:#334155;background:#f1f5f9;border-radius:6px;padding:2px 7px;margin-right:4px;white-space:nowrap;}
+  .crumbs .ctx{font-size:14px;color:#334155;background:#f1f5f9;border-radius:6px;padding:2px 7px;margin-right:4px;white-space:nowrap;}
   /* 押して下りられる所（行・列の見出し・マス） */
   table.c tr.go{cursor:pointer;}
   table.c tr.go:hover td{background:#e0f2fe;}
@@ -242,7 +256,7 @@
   table.c td.gocell{cursor:pointer;}
   table.c td.gocell:hover{outline:2px solid #38bdf8;outline-offset:-2px;}
   tr.curdept td.h{box-shadow:inset 4px 0 0 #0284c7;}
-  .howto{display:flex;flex-wrap:wrap;align-items:center;gap:4px 18px;font-size:12.5px;color:#0c4a6e;background:var(--sky50);border:1px solid var(--sky100);border-radius:8px;padding:6px 10px;margin:8px 0;}
+  .howto{display:flex;flex-wrap:wrap;align-items:center;gap:4px 18px;font-size:14.5px;color:#0c4a6e;background:var(--sky50);border:1px solid var(--sky100);border-radius:8px;padding:6px 10px;margin:8px 0;}
   .howto b{color:#075985;}
   .howto a{color:#0369a1;font-weight:700;}
   .mtabs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:0 0 8px;}
@@ -289,7 +303,7 @@
   .allnote .btn{padding:4px 10px;font-size:12.5px;}
   @media (max-width:760px){
     .tree{grid-template-columns:1fr 44px 1fr;padding:6px;}
-    .lvbtn{font-size:12.5px;padding:3px 7px;flex-direction:column;align-items:flex-start;gap:0;white-space:normal;}
+    .lvbtn{font-size:14px;padding:3px 7px;flex-direction:column;align-items:flex-start;gap:0;white-space:normal;}
     .lvbtn .lvs{max-width:125px;}
     .lvarr span{display:none;}
     .othermodes{flex-direction:row;flex-wrap:wrap;}
@@ -302,15 +316,17 @@
   .selright{margin-left:auto;display:flex;align-items:center;gap:8px;}
   .wkseg{display:inline-flex;border:1px solid #0284c7;border-radius:9px;overflow:hidden;}
 
-  .wkseg button{border:0;background:#fff;color:#0369a1;font-size:13px;font-weight:600;padding:1px 12px;cursor:pointer;font-family:inherit;line-height:1.15;}   /* 印刷の釦（高さ 33px）より低く＝あとから足しても帯の高さが変わらない */
+  .wkseg button{border:0;background:#fff;color:#0369a1;font-size:15px;font-weight:600;padding:1px 12px;cursor:pointer;font-family:inherit;line-height:1.1;}   /* 印刷の釦（高さ 35px）より低く＝あとから足しても帯の高さが変わらない */
 
   .wkseg button+button{border-left:1px solid #0284c7;} .wkseg button.on{background:#0284c7;color:#fff;}
-  .wkseg small{display:block;font-size:10.5px;font-weight:400;}
+  .wkseg small{display:block;font-size:12px;font-weight:400;}
+  .selbar .btn{font-size:15px;}
+  #scope .btn{font-size:14px;}
   .othermodes button:disabled{opacity:.45;cursor:not-allowed;}
   .modes .findbox{display:flex;flex-direction:column;justify-content:center;gap:3px;border:2px solid #f59e0b;border-radius:10px;background:#fffbeb;padding:6px 12px;cursor:pointer;min-width:190px;text-align:left;font-family:inherit;color:#78350f;font-weight:400;}
   .modes .findbox:hover{background:#fef3c7;} .modes .findbox.on{background:#b45309;border-color:#b45309;color:#fff;}
-  .modes .findbox .ft{font-size:14px;font-weight:700;} .modes .findbox .fs{font-size:11.5px;}
-  .modes .findbox .nb{display:inline-block;background:#b45309;color:#fff;border-radius:999px;padding:0 7px;font-size:11.5px;font-weight:700;margin-left:4px;}
+  .modes .findbox .ft{font-size:16px;font-weight:700;} .modes .findbox .fs{font-size:13px;}
+  .modes .findbox .nb{display:inline-block;background:#b45309;color:#fff;border-radius:999px;padding:0 7px;font-size:13px;font-weight:700;margin-left:4px;}
   .modes .findbox.on .nb{background:#fff;color:#b45309;}
 
   .wk .wk-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:10px 0 12px;}
@@ -338,7 +354,7 @@
   .wk .wkchart svg{display:block;width:100%;} .wk .wkchart text{font-family:inherit;}
   #wktip{position:fixed;z-index:60;pointer-events:none;background:#0f172a;color:#fff;border-radius:8px;padding:9px 11px;font-size:12px;line-height:1.6;max-width:380px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none;}
   #wktip b{font-size:13px;} #wktip .m{color:#cbd5e1;} #wktip hr{border:0;border-top:1px solid #334155;margin:5px 0;}
-  .wk table.c td{padding:5px 9px;white-space:nowrap;font-variant-numeric:tabular-nums;vertical-align:middle;}
+  .wk table.c td{padding:5px 8px;white-space:nowrap;font-variant-numeric:tabular-nums;vertical-align:middle;}   /* 左右 9→8px（左の見出しの列の字を大きくしても、運営部全体の 19 列が 1366 の幅に入る） */
   .wk table.c thead th .u{display:block;}
   .wk table.c thead th.sel{background:#dbeafe;color:#1e3a8a;}
   .wk table.c td.sel{background:#eff6ff;font-weight:700;}
@@ -395,7 +411,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-20d</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-26b</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -521,7 +537,8 @@ function cached_(key,fn){
   if(JCACHE.size>JCACHE_MAX) JCACHE.delete(JCACHE.keys().next().value);
   return p;
 }
-function loadJson(prod,sample){ return cached_("L|"+prod+"|"+sample,()=>loadJson0_(prod,sample)); }
+/* 読んだ表は、覚える前に いつも出さない中分類（愛知の分類・hideCats_）を抜く＝どのモードにも出ない */
+function loadJson(prod,sample){ return cached_("L|"+prod+"|"+sample,()=>loadJson0_(prod,sample).then(hideCats_)); }
 async function loadJson0_(prod,sample){
   window.__gasN=(window.__gasN||0)+1;   // サーバーへの往復の数（覚えた表は数えない）
   if(IS_GAS) return JSON.parse(await gsCall("getJson",prod));
@@ -532,7 +549,7 @@ async function loadJson0_(prod,sample){
 }
 /* サンプルへ落とさない厳格版。「無ければ別のファイルへ」という分岐に使う
    （サンプルに救済されると欠損に気づけず、誤ったデータを表示してしまうため）。 */
-function loadJsonStrict(prod){ return cached_("S|"+prod,()=>loadJsonStrict0_(prod)); }
+function loadJsonStrict(prod){ return cached_("S|"+prod,()=>loadJsonStrict0_(prod).then(hideCats_)); }
 async function loadJsonStrict0_(prod){
   window.__gasN=(window.__gasN||0)+1;
   if(IS_GAS) return JSON.parse(await gsCall("getJson",prod));
@@ -614,11 +631,12 @@ const EST_TAG="(推定)";
 const estMarked_=cellMaps=>cellMaps.some(m=>Object.values(m||{}).some(c=>!!c&&(c.budget_est===true||c.yoy_est===true)));
 /* 1マスの印 {b: 計(推定), y: 前(推定)}。marked＝その表に印がある・old＝いまの決まりでの前(推定) */
 const estOf_=(cell,marked,old)=>marked?{b:!!cell&&cell.budget_est===true,y:!!cell&&cell.yoy_est===true}:{b:false,y:!!old};
-/* tbl＝描いた表の HTML（注記の前まで）。この月の注記（推定の月そのもの）は、(推定) の有る無しに関係なく出す */
+/* tbl＝描いた表の HTML（注記の前まで）。この月の注記（推定の月そのもの）は、(推定) の有る無しに関係なく出す。
+   見るのは「計(推定)」「前(推定)」だけ（今年の値の (推定)＝委託の粗利は、curEstNote_ が別の注記を出す） */
 function estNote(ym,marked,tbl){
   const e=estMonths(), lab=y=>`${String(y).slice(0,4)}年${Number(String(y).slice(4))}月`;
   const cur=e.has(ym)?`<div class="splitnote">この月（${lab(ym)}）の数字は、POS の単品で新分類へ振り分け直した推定です（売上・値引はほぼ実績、粗利などは推定）。</div>`:"";
-  if(!tbl.includes(EST_TAG)) return cur;
+  if(!(tbl.includes("計"+EST_TAG)||tbl.includes("前"+EST_TAG))) return cur;
   if(marked) return cur+`<div class="splitnote">（推定）は推定値です。旧分類で作った予算・前年の受払表を、新分類で中身が動いた中分類へ POS の単品の売上の割合で分けたもの。部門の計は元のままです。</div>`;
   if(cur) return cur;
   if(e.has(priorYm(ym))) return `<div class="splitnote">前年（${lab(priorYm(ym))}）は、POS の単品で新分類へ振り分け直した推定です（売上・値引はほぼ実績、粗利などは推定）。「前(推定)」は新分類で分かれた中分類です。</div>`;
@@ -628,6 +646,96 @@ function splitNote(cats){
   if(!cats.size) return "";
   return `<div class="splitnote">前年比が「—」の中分類（${esc([...cats].join("・"))}）は、新分類で分かれたものです。前年は分かれていないため比べられません。部門計の前年比で比べてください。</div>`;
 }
+/* ── 委託の、月末確定の前の粗利（2026-10-26）──
+   HQ の outbox 生成が、速報（05-4）の回の委託の中分類（生産者・テナント・生花）の粗利を「売上 × その店の直近3か月の月末確定の粗利率」で出し、
+   そのマスに cur_est: true を付ける（cells.gross_profit_month・gross_profit_rate_month。無ければキーが無い）。画面は印だけを見る（出し直しも判定もしない）。
+   印は、今年の値の左に「(推定)」（計(推定)・前(推定) と同じ大きさ。今年の値の行に置くので、計・前の印と見分けられる）。
+   店舗事業部会議の表には cells が無いので、中分類の行に cur_est: true があれば、粗利高・粗利率の今年の値の印として読む。
+   注記と速報の帯の一文は、表に (推定) が描かれたときだけ（印の無い outbox では、いままでと同じ画面） */
+const CUR_EST_KEYS=["gross_profit_month","gross_profit_rate_month"];
+const curEstMark_=c=>(c&&c.cur_est===true)?`<span class="curest">${EST_TAG}</span> `:"";   // 後ろの空き＝細い列では、ここで数の上の行に分かれる
+const CUR_EST_NOTE="(推定) の付いた粗利は、月末確定の前の委託（生産者・テナント・生花）の粗利を、その店の直近3か月の月末確定の粗利率で出したものです。";
+function curEstNote_(tbl){ return String(tbl||"").includes('class="curest"')?`<div class="splitnote curestnote">${esc(CUR_EST_NOTE)}</div>`:""; }
+/* 速報の帯の一文（表を描いたあと・同じ流れの中で書く＝表が動かない）: 委託の粗利に (推定) が出ている表だけ */
+function sokCurEst_(){
+  const s=$("sokCurEst"); if(!s) return;
+  s.textContent=document.querySelector("#body .curest")?"委託（生産者・テナント・生花）の粗利は、高めに出ないよう (推定) で出しています（表の下の注記）。":"";
+}
+
+/* ── すべて 0 の中分類の行は出さない（PO の決定 A・2026-10-26）──
+   今年・計画・前年が、その行のどのマスも 0（か空）の中分類（例: 農産の 生産者１０％）。値が入った月は自動で出る。
+   見るのは行のマス全部（表に出していない指標も）＝指標を替えても行の数は変わらない。部門の行・合計の行は隠さない。
+   隠した行は、表の下に名前を出す（行の数を読み違えない。会議用まとめ〔GAS が outbox から作る・この決まりは入っていない〕と比べても分かる） */
+const ZERO_F=["current","yoy","budget"];
+const zeroV_=v=>v==null||v===0;
+function zeroCells_(cs){ return Object.values(cs||{}).every(c=>c==null||(typeof c==="object"?ZERO_F.every(f=>zeroV_(c[f])):zeroV_(c))); }
+function zeroNote_(hid){
+  if(!hid.length) return "";
+  const by=new Map(); hid.forEach(([d,c])=>{ if(!by.has(d)) by.set(d,[]); by.get(d).push(c); });
+  const list=[...by].map(([d,cs])=>(d?d+"：":"")+cs.join("・")).join("／");
+  return `<div class="splitnote zeronote">今年・計画・前年がすべて 0 の中分類（${hid.length}）は、表に出していません（${esc(list)}）。値が入ると出ます。</div>`;
+}
+/* ── いつも出さない中分類（PO 2026-10-26「別な地域の混ざっている愛知の2つの分類は非表示にして下さい」）──
+   農産の あいち生産者（新分類のコード 16）・あいち生産者１０％（コード 17）。値が 0 でなくても、どのモードでも出さない。決まりはここだけ（HIDE_CATS）。
+   当て方: outbox の行は中分類のコードを持たない（部門と名前だけ）ので、部門と名前を NFKC でそろえて当てる（「あいち生産者10%」など全角・半角のゆれも当たる）。
+   抜く所: 表を読んだところ（loadJson・loadJsonStrict の hideCats_）＝どの表・件数・印刷・🔎 の問いにも、はじめから無い。
+     c の表と店舗事業部会議は rows から・週の表は cats と hits から。部門の計・合計の行は、作る側の数のまま（中に含まれる）。
+   値が入っていたら（データの誤り）: 行は出さず、d._hidCats に残して、表の下に1行（部門の計と、見える行の和が合わないことが分かるように）。
+     0 なら何も出さない（「すべて 0 の中分類」の注記にも名前を出さない＝読んだ時点で行が無い）。
+   🔎 の当たりの数のうち meta の hit_counts（作る側が数える）は、読んだエリアの分だけ、抜いた当たりを引く（wkHidHits_） */
+const HIDE_CATS=[{dept:"農産",cat:"あいち生産者",code:16},{dept:"農産",cat:"あいち生産者１０％",code:17}];
+const nfk_=s=>String(s==null?"":s).normalize("NFKC").replace(/\s+/g,"");
+const HIDE_DEPT=new Map(HIDE_CATS.map(h=>[nfk_(h.cat),nfk_(h.dept)])), HIDE_NAME=new Map(HIDE_CATS.map(h=>[nfk_(h.cat),h.cat]));   // 注記には決まりの名前で出す（ゆれた名前でなく）
+/* 部門が分からない行（部門を持たない形）は、名前だけで当てる */
+function isHiddenCat_(dept,cat){ const k=nfk_(cat); if(!HIDE_DEPT.has(k)) return false; const d=nfk_(dept); return !d||d===HIDE_DEPT.get(k); }
+/* 抜いた行の値: c の表（cells）・運営部全体（grand＝合計・stores＝店）・店舗事業部会議（values・yoy）。any＝どこかに 0 でない値 */
+function hidSum_(r){
+  const cs=r.cells||r.grand||null;
+  if(cs) return {s:((cs.sales_month||{}).current)||0, g:((cs.gross_profit_month||{}).current)||0,
+    any:!zeroCells_(cs)||!Object.values(r.stores||{}).every(zeroCells_)};
+  const v=r.values||{};
+  return {s:v.sales_month||0, g:v.gross_profit_month||0, any:!(zeroCells_(r.values)&&zeroCells_(r.yoy))};
+}
+function hideCats_(d){
+  if(!d||typeof d!=="object") return d;
+  const hid=[];
+  if(Array.isArray(d.rows)) d.rows=d.rows.filter(r=>{
+    if(!r||r.category==null||!isHiddenCat_(r.dept,r.category)) return true;
+    const x=hidSum_(r); if(x.any) hid.push(Object.assign({dept:r.dept||"",cat:HIDE_NAME.get(nfk_(r.category))},x)); return false; });
+  if(d.cats&&typeof d.cats==="object") Object.keys(d.cats).forEach(k=>{
+    const p=k.indexOf("|"), dp=p<0?"":k.slice(0,p), ct=p<0?k:k.slice(p+1); if(!isHiddenCat_(dp,ct)) return;
+    const s=d.cats[k]; if(s&&Array.isArray(s.s)&&s.s.some(v=>v)) hid.push({dept:dp,cat:HIDE_NAME.get(nfk_(ct)),wk:s,any:true});
+    delete d.cats[k]; });
+  if(Array.isArray(d.hits)){ const out=[]; d.hits=d.hits.filter(h=>{ const x=!!h&&h.c!=null&&isHiddenCat_(h.d,h.c); if(x) out.push(h); return !x; }); if(out.length) d._hidHits=out; }
+  if(hid.length) d._hidCats=hid;
+  return d;
+}
+const hidK_=v=>{ const x=Math.round((v||0)/1000); return x===0?"1千円未満":x.toLocaleString()+"千円"; };
+/* 表の下の1行。list＝d._hidCats（値の入った行だけ）。wk＝週の表のときの {cols}（表に出した週） */
+function hidNote_(list,wk){
+  const L=(list||[]).filter(x=>x&&x.any); if(!L.length) return "";
+  const names=[...new Set(L.map(x=>x.cat))].join("・");
+  let v;
+  if(wk){ const s=L.reduce((t,x)=>t+wk.cols.reduce((u,j)=>u+((x.wk&&x.wk.s[j])||0),0),0); if(!s) return ""; v=`表の${wk.cols.length}週で売上 ${hidK_(s)}`; }
+  else { const s=L.reduce((t,x)=>t+(x.s||0),0), g=L.reduce((t,x)=>t+(x.g||0),0);
+    v=[s?`今年の売上 ${hidK_(s)}`:"", g?`粗利 ${hidK_(g)}`:""].filter(Boolean).join("・")||"計画・前年などの値"; }
+  return `<div class="splitnote hidnote">愛知の分類（${esc(names)}）に ${esc(v)} が入っています（表には出していません）。部門の計には入っているので、見える行を足しても部門の計と合いません。</div>`;
+}
+/* ── 合計の行（2026-10-26 PO「部門の行に合計と書く」）──
+   見出しの列が2つ（部門・カテゴリ）の表: 部門の行・全体の合計の行も、カテゴリの欄に「合計」（空けない）。部門の欄は名前（「◆ 全部門合計」→「◆ 全部門」）。
+   見出しの列が1つで、部門の行と中分類の行が混ざる表（運営部全体・店舗事業部会議・週の表のカテゴリ別）: 部門の行の名前に「合計」を足す（▶ 農産 合計） */
+const SUM_WORD="合計";
+function totalLabels_(label){
+  const s=String(label==null?"":label).trim(), m=s.match(/^(.*?)\s*合計$/);
+  return [(m&&m[1].replace(/[◆▶■\s]/g,""))?m[1].trim():s, SUM_WORD];
+}
+const withSum_=label=>{ const s=String(label==null?"":label).trim(); return /計$/.test(s)?s:s+" "+SUM_WORD; };
+/* 見出しの列が2つの表: 2つ目の列（カテゴリ）が貼り付く位置を、1つ目の列（部門）の幅に合わせる（表を描くたび・幅が変わるたび） */
+function fixHcols_(){
+  document.querySelectorAll("table.c.hc2").forEach(t=>{ const th=t.querySelector("thead th.h"); if(!th) return; const w=Math.round(th.getBoundingClientRect().width); if(w>0) t.style.setProperty("--hc1",w+"px"); });
+}
+if(typeof MutationObserver!=="undefined"&&document.body) new MutationObserver(fixHcols_).observe(document.body,{childList:true,subtree:true});
+window.addEventListener("resize",fixHcols_);
 
 /* 縦積みセル（金額=計/実績/前/計比/前比、率=実績/前/前差/計差） */
 /* セルは全列とも「計 → 実績 → 前年 → 計画差 → 前年差」の5段固定。
@@ -644,8 +752,8 @@ function cellHtml(cell,col,dark,noYoy,est){
   let h=`<div class="cell">`;
   // ①計画
   h+= hasB ? `<div class="bud">計${e.b?EST_TAG:""} ${fmt(bud)}</div>` : `<div class="bud">&nbsp;</div>`;
-  // ②実績（この行が全列で揃う）
-  h+=`<div class="act">${fmt(cur)}</div>`;
+  // ②実績（この行が全列で揃う）。委託の月末確定の前の粗利は、作る側が付けた印（cur_est）だけを見て「(推定)」（curEstMark_）
+  h+=`<div class="act">${curEstMark_(cell)}${fmt(cur)}</div>`;
   // ③前年（新分類で分かれた中分類は前年と比べられないので「—」）
   h+=`<div class="prev">前${e.y?EST_TAG:""} ${noYoy?"—":fmt(yoy)}</div>`;
   // ④計画との差（上）
@@ -676,8 +784,8 @@ function renderSection(d,opts){
     ? {go:"sdept",a:dept,k:"d:"+dept,title:`押すと、${dept}の明細と A・PD（商品部詳細）`}
     : {go:"cdept",a:dept,k:"d:"+dept,title:`押すと、下の運営部の A・PD を ${dept} に替えます`});
   let h=(o.fold?`<div style="margin:0 0 6px"><button class="btn" data-fold>▸ カテゴリも出す</button> <span class="lb">部門の行を押すと、その部門の明細と A・PD へ</span></div>`:"")+
-    `<div class="tbl-wrap"><table class="c${o.fold?" foldcats":""}"><thead><tr>`+
-    `<th class="h" style="left:0">部門</th><th class="h" style="left:56px">カテゴリ</th>`+
+    `<div class="tbl-wrap"><table class="c hc2${o.fold?" foldcats":""}"><thead><tr>`+
+    `<th class="h" style="left:0">部門</th><th class="h h2">カテゴリ</th>`+
     cols.map(c=>`<th>${esc(c.label)}<span class="u">${c.type==="amount"?"千円":"%"}</span></th>`).join("")+`</tr></thead><tbody>`;
   /* 部門絞込データの grand_total は部門合計の重複（ラベルだけ「全部門合計」）のため表示しない */
   const dup=d.grand_total&&(d.dept_totals||[]).length===1&&
@@ -686,14 +794,15 @@ function renderSection(d,opts){
   const dtMap={}; (d.dept_totals||[]).forEach(t=>dtMap[t.dept]=t);
   const noYoy=splitNoYoyRows(d.rows,r=>(r.cells||{}).sales_month||null), noted=new Set();
   const marked=estMarked_(d.rows.map(r=>r.cells));
-  let prevDept=null;
+  let prevDept=null; const hid=[];
   d.rows.forEach(r=>{
     if(r.dept!==prevDept && dtMap[r.dept]){ h+=totalRow(dtMap[r.dept],cols,false,2,dg(r.dept),
       (r.dept===S.dept&&o.deptGo)?" curdept":""); }
     prevDept=r.dept;
+    if(zeroCells_(r.cells)){ hid.push([r.dept||"",r.category]); return; }   // すべて 0 の中分類は出さない（部門の行は上で出している）
     const ny=noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
     const ep=estPrior(d.ym,r.category);
-    h+=`<tr class="datarow${o.fold?" catrow":""}"><td class="h" style="left:0"></td><td class="h catcol" style="left:56px">${esc(r.category)}`;
+    h+=`<tr class="datarow${o.fold?" catrow":""}"><td class="h" style="left:0"></td><td class="h h2 catcol">${esc(r.category)}`;
     if(r.alerts&&r.alerts.loss_alert) h+=`<br><span class="badge bd-loss">\u26A0差損${(r.alerts.loss_rate||0).toFixed(1)}%</span>`;
     if(r.alerts&&r.alerts.inv_cost_zero) h+=`<br><span class="badge bd-inv">\u26A0棚卸原価ゼロ</span>`;
     h+=`</td>`;
@@ -704,10 +813,12 @@ function renderSection(d,opts){
     h+=`</tr>`;
   });
   h+=`</tbody></table></div>`;
-  return h+splitNote(noted)+estNote(d.ym,marked,h);
+  return h+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats);
 }
+/* 部門の行・全体の合計の行（見出しの列2つの表）: 部門の欄に名前、カテゴリの欄に「合計」 */
 function totalRow(t,cols,dark,hspan,g,cls){
-  return `<tr class="${dark?"total":"subtotal"}${g?" go":""}${cls||""}"${goAttr_(g)}><td class="h" colspan="${hspan}" style="left:0">${goLabel_(t.label,g)}</td>`+
+  const [name,sum]=totalLabels_(t.label);
+  return `<tr class="${dark?"total":"subtotal"}${g?" go":""}${cls||""}"${goAttr_(g)}><td class="h" style="left:0">${goLabel_(name,g)}</td><td class="h h2">${esc(sum)}</td>`+
     cols.map(c=>`<td>${cellHtml(t.cells[c.key],c,dark)}</td>`).join("")+`</tr>`;
 }
 /* 集計表（by_store 行=店舗 / by_dept 行=部門）: \u25C6合計\u2192行 */
@@ -753,7 +864,7 @@ async function allDetail_(slug){
   const parts=(await loadAllDepts_(d=>allPath_.detail(d,slug))).filter(Boolean);
   if(!parts.length) throw new Error("未収載: 全部門の明細");
   const cols=parts[0].columns, dts=parts.flatMap(p=>p.dept_totals||[]);
-  return {...parts[0], rows:parts.flatMap(p=>p.rows||[]), dept_totals:dts,
+  return {...parts[0], rows:parts.flatMap(p=>p.rows||[]), dept_totals:dts, _hidCats:parts.flatMap(p=>p._hidCats||[]),   // 抜いた愛知の分類の値（hideCats_）も部門ぶん合わせる
     grand_total:{label:"◆ 全部門合計",cells:sumCells_(dts.map(t=>t.cells),cols)}};
 }
 /* 全部門の画面で A・PD の欄の代わりに出す一言と、部門を選ぶ近道（押すとその部門の欄へ） */
@@ -812,30 +923,32 @@ function drawUneibu(mkey){
   const outside=[...new Set(d.rows.filter(r=>r.type==="dept"&&!S.meta.departments.includes(r.dept)).map(r=>r.dept))];
   if(deptRows.length){
     const gAll=sumCells_(deptRows.map(r=>r.grand),d.columns);
-    h+=`<tr class="total${isAll_(S.dept)?" curdept":""}" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門計</td>${cell("","",cellHtml(gAll[mkey],col,true),"c:__total__|all")}`+
+    h+=`<tr class="total${isAll_(S.dept)?" curdept":""}" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門合計</td>${cell("","",cellHtml(gAll[mkey],col,true),"c:__total__|all")}`+
       st.map(s=>{ const c=sumCells_(deptRows.map(r=>(r.stores||{})[s.short]),d.columns); return cell(s.full,"",cellHtml(c[mkey],col,true),"c:"+s.full+"|all"); }).join("")+`</tr>`;
   } else if(d.grand_total){ const gt=d.grand_total;   // 部門の行が無い表は、届いた合計の行をそのまま
-    h+=`<tr class="total" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門計</td>${cell("","",cellHtml((gt.grand||{})[mkey],col,true),"c:__total__|all")}`+st.map(s=>cell(s.full,"",cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true),"c:"+s.full+"|all")).join("")+`</tr>`; }
-  d.rows.forEach((r,ri)=>{
+    h+=`<tr class="total" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門合計</td>${cell("","",cellHtml((gt.grand||{})[mkey],col,true),"c:__total__|all")}`+st.map(s=>cell(s.full,"",cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true),"c:"+s.full+"|all")).join("")+`</tr>`; }
+  const hid=[];
+  d.rows.forEach((r,ri)=>{   // ri（押した所の印に使う）は、隠した行を飛ばしても元の行の番号のまま＝指標を替えても同じ
     const k=(r.dept||"")+"|"+r.category, isCat=r.type!=="dept";
+    if(isCat&&zeroCells_(r.grand)&&Object.values(r.stores||{}).every(zeroCells_)){ hid.push([r.dept||"",r.category]); return; }   // すべて 0 の中分類（合計・どの店も・どの指標も）
     const ny=set=>{ const v=isCat&&set.has(k); if(v) noted.add(r.category); return v; };
     const est=c=>isCat?estOf_(c,marked,estPrior(d.ym,r.category)):null;   // 部門の行は印を読まない
     const cur=(r.dept===S.dept)?" curdept":"";
     const gc=(r.grand||{})[mkey];
-    h+=`<tr class="${r.type==="dept"?"subtotal":"datarow"}${cur}"${r.type==="dept"?` data-k="d:${esc(r.dept)}"`:""}><td class="h" style="left:0">${esc(r.label)}</td>`;
+    h+=`<tr class="${r.type==="dept"?"subtotal":"datarow"}${cur}"${r.type==="dept"?` data-k="d:${esc(r.dept)}"`:""}><td class="h" style="left:0">${esc(isCat?r.label:withSum_(r.label))}</td>`;
     h+=cell("",r.dept,cellHtml(gc,col,false,ny(nyGrand),est(gc)),"c:__total__|"+ri);
     h+=st.map(s=>{ const sc=(r.stores&&r.stores[s.short]||{})[mkey]; return cell(s.full,r.dept,cellHtml(sc,col,false,ny(nyStore[s.short]),est(sc)),"c:"+s.full+"|"+ri); }).join("")+`</tr>`;
   });
-  const outNote=(deptRows.length&&outside.length)?`<div class="splitnote">全部門計は6部門（${esc(S.meta.departments.join("・"))}）の計です。${esc(outside.join("・"))} の行は入れていません（店舗事業部会議の合計には入っています）。</div>`:"";
+  const outNote=(deptRows.length&&outside.length)?`<div class="splitnote">全部門合計は6部門（${esc(S.meta.departments.join("・"))}）の合計です。${esc(outside.join("・"))} の行は入れていません（店舗事業部会議の合計には入っています）。</div>`:"";
   h+=`</tbody></table></div>`;
-  $("uTbl").innerHTML=h+outNote+splitNote(noted)+estNote(d.ym,marked,h);
+  $("uTbl").innerHTML=h+outNote+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats);
 }
 /* 事業部会議（18列2段＋前年比較3列） */
-function cmpCell(cur,prev,isRate,hib,noYoy,estP){
+function cmpCell(cur,prev,isRate,hib,noYoy,estP,curMark){
   if(cur==null) return `<div class="cell n">\u2014</div>`;
   if(noYoy) prev=null;  // 新分類で分かれた中分類は前年と比べない
   const cls=prev!=null?judge(hib,cur-prev):"n";
-  let h=`<div class="cell"><div class="act ${cls}">${isRate?pct(cur):kyen(cur)}</div>`;
+  let h=`<div class="cell"><div class="act ${cls}">${curMark||""}${isRate?pct(cur):kyen(cur)}</div>`;
   if(prev!=null){ const c=isRate?ppt(cur-prev):ratio(cur,prev); h+=`<div class="prev">前${estP?EST_TAG:""} ${isRate?pct(prev):kyen(prev)}（${c}）</div>`; }
   else if(noYoy) h+=`<div class="prev">前 \u2014</div>`;
   return h+`</div>`;
@@ -852,11 +965,16 @@ function renderJigyo(d){
   const row=(r,cls)=>{ const v=r.values||{},y=r.yoy||{};
     const ny=r.type==="category"&&noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
     const ep=r.type==="category"&&(marked?r.yoy_est===true:estPrior(d.ym,r.category));
-    return `<tr class="${cls}"><td class="h" style="left:0">${esc(r.label)}</td>`+cols.map(c=>`<td>${fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep)}</td>`).join("")+`</tr>`; };
-  d.rows.forEach(r=>h+=row(r,r.type==="dept"?"subtotal":"datarow"));
+    const mk=key=>(r.type==="category"&&r.cur_est===true&&CUR_EST_KEYS.includes(key))?curEstMark_({cur_est:true}):"";   // 委託の速報の粗利（行の印）
+    return `<tr class="${cls}"><td class="h" style="left:0">${esc(r.type==="dept"?withSum_(r.label):r.label)}</td>`+cols.map(c=>`<td>${v[c.key]!=null&&mk(c.key)?`<span class="cev">${mk(c.key)}${fv(c,v[c.key])}</span>`:fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep,mk(c.key))}</td>`).join("")+`</tr>`; };
+  const hid=[];
+  d.rows.forEach(r=>{
+    if(r.type==="category"&&zeroCells_(r.values)&&zeroCells_(r.yoy)){ hid.push([r.dept||"",r.category||r.label]); return; }   // すべて 0 の中分類（今年のどの列も・前年も）
+    h+=row(r,r.type==="dept"?"subtotal":"datarow");
+  });
   if(d.grand) h+=row({label:d.grand.label||"\u25C6 合計",values:d.grand.values,yoy:d.grand.yoy},"total");
   h+=`</tbody></table></div>`;
-  return h+splitNote(noted)+estNote(d.ym,marked,h);
+  return h+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats);
 }
 /* 仕入分析（目標粗利率・在庫日数\u2192計算・\u00B110%色） */
 const BDAYS=25; let _shiire=null;
@@ -1245,7 +1363,7 @@ function renderApp(){
   const asg=`<div class="asgbar"><span class="lb">担当：</span><span class="role-badge ${rb}">${roleLabel}</span>`+
     (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(roleNeedsDept_(a.role)?`<span class="chip d">${esc(a.dept)}</span>`:"")+
     `<span class="lb" style="margin-left:6px">${esc(writeHint_())}</span>`+
-    `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="backToGate()">担当を変更</button></div>`;
+    `<button class="btn" style="margin-left:auto;padding:4px 10px" onclick="backToGate()">担当を変更</button></div>`;
   // 段の地図（4つのモードを、押してつながる形で）。押せば直接その段へ（明細の段は、いまの店かエリア合計）
   const lvSub={
     "商品部全体":`行＝店・${deptLabel_(S.dept)}`,
@@ -1369,7 +1487,7 @@ function howto_(){
     if(mine&&canShohin) t.push(`<span>✎ ${esc(S.dept)}の A・PD は、店を押した先の表の下に書けます</span>`);
   }else if(m==="運営部全体"){
     t.push(`<span><b>店の見出し</b>（またはマス）を押す → その店の全部門の明細と運営部の A・PD（運営部詳細）</span>`);
-    t.push(isAll_(S.dept)?`<span>いちばん上の行＝全部門計。マスを押すと、その行の部門で開きます</span>`
+    t.push(isAll_(S.dept)?`<span>いちばん上の行＝全部門合計。マスを押すと、その行の部門で開きます</span>`
       :`<span>左に青い線の行＝いまの部門（${esc(S.dept)}）。マスを押すと、その行の部門に替わります</span>`);
     const a2=S.asg||{};
     if(a2.area===S.area&&(a2.role==="lead"||a2.role==="unei")) t.push(`<span>✎ 運営部の A・PD は、店を押した先の表の下に書けます</span>`);
@@ -1389,7 +1507,8 @@ function howto_(){
 function drawScope(){
   const sel=S.snaps.find(s=>s.snapshot===S.snap);
   let h=howto_();
-  if(sel&&sel.file_type==="05-4") h+=`<div class="sokuho"><span>⚠</span><span><b>月途中の速報値（${esc((sel.label||"").replace("📊","").trim())}）を表示中です。</b> 月末確定（📌）取込前は棚卸未実施部門で粗利が高めに出ます。</span></div>`;
+  // 委託の粗利に (推定) が出ている表では、帯の終わりに一文（sokCurEst_・表を描いたあと）。棚卸未実施の部門の分は、いままでどおり高めに出る
+  if(sel&&sel.file_type==="05-4") h+=`<div class="sokuho"><span>⚠</span><span><b>月途中の速報値（${esc((sel.label||"").replace("📊","").trim())}）を表示中です。</b> 月末確定（📌）取込前は棚卸未実施部門で粗利が高めに出ます。<span id="sokCurEst"></span></span></div>`;
   if(S.mode!=="仕入分析"&&S.mode!=="店舗事業部会議"&&S.mode!=="運営部全体") h+=legend();
   if(S.mode==="商品部詳細"&&S.asg&&S.asg.role!=="viewer"&&!isAll_(S.dept))
     h+=`<div style="margin:8px 0"><button class="btn" onclick="bulkOpenSheet(this)">📗 会議用まとめ（${esc(S.dept)}×${esc(S.area)} 全店を1ファイル）</button> <span id="bulkMsg" class="lb"></span></div>`;
@@ -1438,6 +1557,7 @@ async function drawBody(seq){
     if(seq!=null&&seq!==NAV.seq) return;   // 待っている間に、別の所が押された（前の結果で上書きしない）
     b.innerHTML=html;
     if(S.mode==="運営部全体") drawUneibu(S.metric);
+    sokCurEst_();
     // コメント（G2）: 商品部詳細/運営部詳細（エリア合計・店舗タブとも表示。編集可否は canEditSec が判定）
     if((S.mode==="商品部詳細"||S.mode==="運営部詳細")&&isAll_(S.dept)){
       b.insertAdjacentHTML("beforeend",`<div id="cpanel" style="margin-top:14px">${allDeptNote_()}</div>`);   // 全部門では A・PD を読まない・書かない
@@ -1487,7 +1607,7 @@ async function storeDetailHtml(slug,so,dept){
       API.detailStore(S.area,S.ym,S.snap,d,slug).catch(e=>{ if(isNoFile(e)) return null; throw e; })));
     const got=parts.filter(Boolean);
     if(!got.length) return storeNote(so);
-    return renderSection({...got[0], rows:got.flatMap(p=>p.rows||[]), dept_totals:got.flatMap(p=>p.dept_totals||[]), grand_total:null},{deptGo:true});
+    return renderSection({...got[0], rows:got.flatMap(p=>p.rows||[]), dept_totals:got.flatMap(p=>p.dept_totals||[]), _hidCats:got.flatMap(p=>p._hidCats||[]), grand_total:null},{deptGo:true});
   }catch(e){
     if(isNoFile(e)) return storeNote(so);
     return `<div class="err">データを取得できません：${esc(String(e&&e.message||e))}</div>`;
@@ -2513,7 +2633,7 @@ async function renderViewerApp(){
   $("app").innerHTML=
     `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2></div>`+
     `<div class="asgbar"><span class="chip a">${esc(S.area)}</span><span class="chip s">${esc(vScopeLabel_())}</span><span class="chip d">${esc(S.dept)}</span>`+
-    `<button class="btn" style="margin-left:auto;padding:4px 10px;font-size:12px" onclick="vBackToGate()">選び直す</button></div>`+
+    `<button class="btn" style="margin-left:auto;padding:4px 10px" onclick="vBackToGate()">選び直す</button></div>`+
     `<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">店舗</span>${storeSel}<span class="lb">部門</span>${deptSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="vSnap" onchange="vChangeSnap(this.value)"></select>`+
     `<span id="vSheetBox" style="margin-left:auto"></span></div>`+
     `<div id="printTitle"></div>`+
@@ -2751,13 +2871,17 @@ function wkCount_(area,qid){
   const i=wkWi_(), pm=wkPeriodMonth_(), got=wkAreaHasMonth_(area,pm);
   if(qid&&!got&&wkQPer_(qid)==="m") return null;
   if(qid&&wkQPer_(qid)==="w"&&wkAreaHasWeek_(area,i)===false) return null;   // その週の受払がまだ（0 と言わない）
-  return Object.entries(a.hit_counts).filter(([q])=>!qid||q===qid).reduce((t,[,v])=>t+((v.w||[])[i]||0)+((got&&pm&&v.m&&v.m[pm])||0),0);
+  const hid=wkHidHits_(area).filter(h=>(!qid||h.q===qid)&&((h.w!=null&&h.w===i)||(got&&pm&&h.ym===pm))).length;   // 抜いた愛知の分類の当たり
+  return Math.max(0,Object.entries(a.hit_counts).filter(([q])=>!qid||q===qid).reduce((t,[,v])=>t+((v.w||[])[i]||0)+((got&&pm&&v.m&&v.m[pm])||0),0)-hid);
 }
+/* 読んだエリアのファイルから抜いた当たり（hideCats_・愛知の分類）。meta の hit_counts は作る側が数えた数なので、ここで引く。
+   読んでいないエリアの分は分からない（作る側で外すのが元から直す道） */
+function wkHidHits_(area){ return (WK.A&&WK.A.area===area&&WK.A._hidHits)||[]; }
 function wkFindBox_(){
   const n=wkCount_(S.area,null), all=(WK.meta.areas||[]).reduce((t,a)=>t+(wkCount_(a.area,null)||0),0);
   return `<button class="findbox ${S.view==="find"?"on":""}"${wkGo_(Object.assign({view:"find",qopen:""},TREE.includes(S.mode)?{}:{mode:"商品部全体"}),"","気になる所")} title="問いを選ぶと、当たった所（エリア → 店 → 部門 → カテゴリ）が一目で出ます">`+
     `<span class="ft">🔎 気になる所を探す${n!=null?`<span class="nb">${n}</span>`:""}</span>`+
-    `<span class="fs">${esc(wkWeekLabel_())}・${esc(S.area)}${n!=null?`（全エリアで ${all}）`:""}</span><span class="fs">棚卸原価の抜け・差損・受払の欠け・値引きの急増 など8つの問い</span></button>`;
+    `<span class="fs">${esc(wkWeekLabel_())}・${esc(S.area)}${n!=null?`（全エリアで ${all}）`:""}</span><span class="fs">棚卸原価の抜け・差損・受払の欠け・<br>値引きの急増 など8つの問い</span></button>`;   // 2026-10-26: 字を大きくしても段の札が1行に入るよう、説明は2行に
 }
 
 /* ── 週間の画面（選ぶ帯 → 店のタブ → 本文） ── */
@@ -2861,7 +2985,7 @@ function wkKpiHtml_(st,dept){
   const t2=`<div class="wk-kpi"><div class="h">今週の粗利 ${wkGcTag_(s.gc[i])}</div><div class="v">${wkK_(s.g[i])}<small>千円</small></div>`+
     `<div class="rows"><span class="k">粗利率</span><span class="x">${wkFp_(gr)}</span><span class="k">前4週の粗利率</span><span class="x">${wkFp_(g4)}</span>`+
     `<span class="k">差</span><span class="x ${gr!=null&&g4!=null?(gr>=g4?"up":"dn"):""}">${gr!=null&&g4!=null?wkFpt_(gr-g4):"—"}</span></div>`+
-    `<div class="foot">${esc(wkGcLabel_(s.gc[i]))}${s.gc[i]==="P"&&s.shc&&s.shc[i]!=null?`。棚卸で確かめた売上の割合 ${s.shc[i]}%`:""}。委託・テナントの分は、在庫を持たないので、いつも率で当てる。</div></div>`;
+    `<div class="foot">${esc(wkGcLabel_(s.gc[i]))}${s.gc[i]==="P"&&s.shc&&s.shc[i]!=null?`。棚卸で確かめた売上の割合 ${s.shc[i]}%`:""}。委託・テナントの分は、在庫を持たないので、いつも率（その店の過去の月末確定の粗利率）で当てる。</div></div>`;
   const rt=(lab,m,amt)=>{ const v=wkMv_(s,i,m), a=wkPrev4_(s,i,m), d=(v!=null&&a!=null)?v-a:null;
     return `<div class="wk-kpi"><div class="h">${lab}</div><div class="v">${wkFp_(v,2)}</div>`+
       `<div class="rows"><span class="k">前4週の平均</span><span class="x">${wkFp_(a,2)}</span><span class="k">差</span><span class="x ${d==null?"":(d<=0?"up":"dn")}">${wkFpt_(d,2)}</span></div>`+
@@ -3101,11 +3225,13 @@ function wkRows_(){
   if(S.mode==="商品部全体") return {title:"店舗別（"+(dept===WK_ALL?"全部門（計）":dept)+"）",rows:[{label:"◆ エリア合計",s:wkSer_(WK_AREA,dept),total:true}]
     .concat(am.stores.map(st=>({label:st.name+(st.end?`（〜${wkMd_(st.end)}）`:""),s:wkSer_(st.slug,dept),go:{mode:"商品部詳細",storeTab:st.slug},k:"r:"+st.slug,slug:st.slug,dept}))).filter(r=>r.s)};
   const st=wkStoreKey_();
-  if(S.mode==="運営部詳細"||dept===WK_ALL) return {title:"部門別（"+wkStoreName_(st)+"）",rows:[{label:"◆ 全部門（計）",s:wkSer_(st,WK_ALL),total:true}]
+  if(S.mode==="運営部詳細"||dept===WK_ALL) return {title:"部門別（"+wkStoreName_(st)+"）",rows:[{label:"◆ 全部門合計",s:wkSer_(st,WK_ALL),total:true}]
     .concat(S.meta.departments.map(d=>({label:d,s:wkSer_(st,d),go:{mode:"商品部詳細",dept:d},k:"d:"+d,slug:st,dept:d}))).filter(r=>r.s)};
-  const cats=(st===WK_AREA?WK.A.cats:(WK.C&&WK.C.cats))||{};
+  const src=(st===WK_AREA?WK.A:WK.C)||{}, cats=src.cats||{};
   const rows=Object.keys(cats).filter(k=>k.startsWith(dept+"|")).map(k=>({label:k.split("|")[1],s:cats[k]})).filter(r=>r.s.s.some(v=>v&&Math.abs(v)>=1000));
-  return {title:"カテゴリ別（"+wkStoreName_(st)+"・"+dept+"）",rows:[{label:"▶ "+dept+" 計",s:wkSer_(st,dept),sub:true}].concat(rows)};
+  return {title:"カテゴリ別（"+wkStoreName_(st)+"・"+dept+"）",rows:[{label:withSum_("▶ "+dept),s:wkSer_(st,dept),sub:true}].concat(rows),
+    hid:(src._hidCats||[]).filter(x=>x.dept===dept)};   // 抜いた愛知の分類（hideCats_）で、週の売上の入っているもの
+
 }
 function wkTableHtml_(){
   const m=S.wtmetric, i=wkWi_(), unit=wkIsRate_(m)?"%":"千円", W=WK.meta.weeks;
@@ -3124,7 +3250,7 @@ function wkTableHtml_(){
       `<td class="cmp">${a==null?"—":wkIsRate_(m)?a.toFixed(2):wkK_(a)}</td><td class="cmp">${rr==null?"—":wkIsRate_(m)?wkFpt_(rr,2):rr.toFixed(1)}</td><td class="cmp">${py==null?"—":py.toFixed(1)}</td>`+
       `<td class="cmp">${r.slug?wkChip_(hitsHere,r.slug,r.dept):""}</td></tr>`; }).join("");
   const mb=`<div class="metricbar"><span class="lb">表の数字：</span>`+["s","g","gpr","d","dr","w","wr"].map(x=>`<button class="${m===x?"on":""}"${m===x?"":wkGo_({wtmetric:x},"","表の数字","wkc:table")}>${WK_MLABEL[x]}</button>`).join("")+`</div>`;
-  return `<div class="wk-card" data-k="wkc:table"><h3>週の表</h3><div class="cap">選んだ週まで8週。<i>斜体</i>＋「推」は按分した推定、「暫」は粗利の暫定。行を押すと、1段下へ。値引き・売上のマイナス（${WK_MINUS}）は戻し入れ・付け替えで、実際の動きです。</div>`+mb+`<div class="tbl-wrap"><table class="c"><thead>${head}</thead><tbody>${body}</tbody></table></div></div>`;
+  return `<div class="wk-card" data-k="wkc:table"><h3>週の表</h3><div class="cap">選んだ週まで8週。<i>斜体</i>＋「推」は按分した推定、「暫」は粗利の暫定。行を押すと、1段下へ。値引き・売上のマイナス（${WK_MINUS}）は戻し入れ・付け替えで、実際の動きです。</div>`+mb+`<div class="tbl-wrap"><table class="c"><thead>${head}</thead><tbody>${body}</tbody></table></div>`+hidNote_(R.hid,{cols})+`</div>`;
 }
 /* 週の表の「気になる所 n件 ›」: その行（店×部門・エリアなら部門）の、この週の当たり。押すと、当たりのいちばん多い問いで 🔎 を開く
    （店×部門なら、そのマスの中身まで開く。全部門・エリアの行は、問いの表の店の行・問いの所へ着く） */
@@ -3142,7 +3268,7 @@ function wkUneibuHtml_(){
     `<div class="metricbar"><span class="lb">指標：</span>`+["s","g","gpr","dr","wr"].map(x=>`<button class="${m===x?"on":""}"${m===x?"":wkGo_({wtmetric:x},"","指標","wkc:uneibu")}>${WK_MLABEL[x]}</button>`).join("")+`</div>`+
     `<div class="tbl-wrap"><table class="c"><thead><tr><th class="h">部門<span class="u">${wkIsRate_(m)?"%":"千円"}</span></th><th>合計</th>`+am.stores.map(s=>`<th class="go"${wkGo_({mode:"運営部詳細",storeTab:s.slug},"h:"+s.slug,"店")}>${esc(s.name)}<span class="gch">›</span></th>`).join("")+`</tr></thead><tbody>`;
   [WK_ALL].concat(S.meta.departments).forEach(d=>{
-    h+=`<tr class="${d===WK_ALL?"total":""}" data-k="d:${esc(d)}"><td class="h">${d===WK_ALL?"◆ 全部門計":esc(d)}</td>`;
+    h+=`<tr class="${d===WK_ALL?"total":""}" data-k="d:${esc(d)}"><td class="h">${d===WK_ALL?"◆ 全部門合計":esc(d)}</td>`;
     [WK_AREA].concat(am.stores.map(s=>s.slug)).forEach(sl=>{ const s=wkSer_(sl,d), v=wkMv_(s,i,m), gE=(m==="g"||m==="gpr")&&s&&(s.gc[i]==="E"||s.gc[i]==="P"), go=sl!==WK_AREA&&d!==WK_ALL;
       h+=`<td class="${go?"gocell":""} ${gE?"gE":""}"${go?wkGo_({mode:"商品部詳細",storeTab:sl,dept:d},"c:"+sl+"|"+d,"マス"):""}>${v==null?"—":wkIsRate_(m)?(v<0?WK_MINUS:"")+Math.abs(v).toFixed(2):wkK_(v)}</td>`; });
     h+=`</tr>`; });
@@ -3177,8 +3303,9 @@ function wkSpark_(q){
   const a=(WK.meta.areas||[]).find(x=>x.area===S.area), hc=a&&a.hit_counts&&a.hit_counts[q.id];
   let vals, cur;
   // 月の問いの棒: そのエリアで月末確定が届いた月ごと（当たり 0 の月も 0 の棒）。months の無い 10/16 版の meta は、当たりのある月だけ
-  if(q.per==="m"){ const ms=(a&&Array.isArray(a.months)?a.months:Object.keys((hc&&hc.m)||{})).slice().sort(); vals=ms.map(m=>(hc&&hc.m&&hc.m[m])||0); cur=ms.indexOf(wkPeriodMonth_()); }
-  else { vals=(hc&&hc.w)||(WK.A.hits||[]).reduce((arr,h)=>{ if(h.q===q.id&&h.w!=null) arr[h.w]++; return arr; },new Array(wkN_()).fill(0)); cur=wkWi_(); }
+  const hh=wkHidHits_(S.area).filter(h=>h.q===q.id);   // 抜いた愛知の分類の当たりは、meta の数から引く
+  if(q.per==="m"){ const ms=(a&&Array.isArray(a.months)?a.months:Object.keys((hc&&hc.m)||{})).slice().sort(); vals=ms.map(m=>Math.max(0,((hc&&hc.m&&hc.m[m])||0)-hh.filter(h=>h.ym===m).length)); cur=ms.indexOf(wkPeriodMonth_()); }
+  else { vals=(hc&&hc.w)?hc.w.map((v,j)=>Math.max(0,(v||0)-hh.filter(h=>h.w===j).length)):(WK.A.hits||[]).reduce((arr,h)=>{ if(h.q===q.id&&h.w!=null) arr[h.w]++; return arr; },new Array(wkN_()).fill(0)); cur=wkWi_(); }
   if(!vals.length) return "";
   const mx=Math.max(...vals,1), w=150, h=24, bw=w/vals.length;
   return `<svg width="${w}" height="${h}" aria-hidden="true">`+vals.map((v,j)=>`<rect x="${j*bw+0.5}" y="${h-1-v/mx*(h-2)}" width="${Math.max(1,bw-1)}" height="${v/mx*(h-2)+1}" fill="${j===cur?"#b45309":"#fcd34d"}"/>`).join("")+`</svg>`;
@@ -3304,7 +3431,7 @@ function wkTermsHtml_(){
     `<div><dt>週の粗利（確定）</dt><dd>受払の式（売上 −〔週の始めの在庫＋仕入 − 週の終わりの在庫〕）。月初の在庫は前の月末の実地棚卸。棚卸の入った回までは、月初からの粗利が確定する。</dd></div>`+
     `<div><dt>確定（まとめて）</dt><dd>回と回の間に棚卸が無い週は、棚卸の入った回までの合計（確定）を、売上の割合で週に割り振る。月末確定が届いた月も同じ。月の合計は月末確定の粗利と合う。</dd></div>`+
     `<div><dt>暫定</dt><dd>最後の棚卸の回より後の週。カテゴリの直近の確定の粗利率 × その週の売上。棚卸が入るか、月末確定が届くと替わる。</dd></div>`+
-    `<div><dt>委託・テナント</dt><dd>生産者・テナント・生花など。在庫を持たず、売上に対して率が決まっている。週ではいつも率で当てる（仕入原価は月末にまとめて入る）。</dd></div>`+
+    `<div><dt>委託・テナント</dt><dd>生産者・テナント・生花など。在庫を持たず、売上に対して率が決まっている（仕入原価は月末にまとめて入る）。週ではいつも率で当てる＝月末確定が届くまでは、その店の過去の月末確定の粗利率 × 売上（「暫」）。累計の画面で委託の粗利に付く「(推定)」と同じ考え方。</dd></div>`+
     `<div><dt>棚卸が入っている</dt><dd>その回に、売上の9割以上を占めるカテゴリの棚卸原価が 0 でない。売上の無いカテゴリは外し、月の売上10万円未満のカテゴリは見ない。店の一覧は持たず、データで決まる。</dd></div>`+
     `<div><dt>差損・差益</dt><dd>帳簿 − 実施。正＝差損（帳簿より少ない）・負＝差益。日配・グロッサリー（売価で在庫を持つ部門）だけにある。</dd></div>`+
     `<div><dt>前4週の平均・4週の移動平均・前年同週</dt><dd>前4週の平均＝選んだ週の前の4週（今週と同じ範囲の店×カテゴリ）。4週の移動平均＝今週を含む4週。前年同週＝364日前の週（前年の月末確定を日数で割った推定）。</dd></div>`+
