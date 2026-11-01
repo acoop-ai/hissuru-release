@@ -406,12 +406,67 @@
   @media (max-width:1100px){ .wk .wk-kpis{grid-template-columns:repeat(3,minmax(0,1fr));} .wk .q-grid{grid-template-columns:repeat(2,minmax(0,1fr));} .wk .terms{grid-template-columns:1fr;} }
   @media (max-width:620px){ .wk .wk-kpis{grid-template-columns:1fr 1fr;} .wk .q-grid{grid-template-columns:1fr;} }
   @media print{ .wkseg,.findbox,.wk .metricbar,#wktip{display:none !important;} }
+  /* ── 中分類を選んだ合計・受払の数（2026-11-01）──
+     選ぶ欄（部門の右）・絞り込み中の印は同じ琥珀色で3か所（選ぶ欄の札・上の帯・合計の行の名前）・合計に入れていない行は薄く */
+  .catwrap{position:relative;display:inline-flex;align-items:center;gap:6px;}
+  .catbtn{font-size:15px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;color:#0f172a;font-family:inherit;max-width:430px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:34px;}
+  .catbtn:hover{border-color:#94a3b8;}
+  .catbtn.on{background:#fffbeb;border:2px solid #d97706;color:#92400e;font-weight:700;padding:4px 9px;}
+  .catprog{font-size:13px;color:#92400e;white-space:nowrap;}
+  .catprog:empty{display:none;}
+  .catprog .spin{margin-right:4px;}
+  .catpop{position:absolute;top:calc(100% + 4px);left:0;z-index:60;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,.18);padding:10px 12px;width:min(460px,92vw);font-size:14px;color:#0f172a;}
+  .catpop[hidden]{display:none;}
+  .catpop .cphead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:6px;}
+  .catpop .cphead b{font-size:15px;}
+  .catpop .cphelp{font-size:12.5px;color:#334155;}
+  .catpop .cpdepts{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px;}
+  .catpop .cpdepts button{border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:13px;padding:3px 9px;color:#334155;font-family:inherit;min-height:28px;}
+  .catpop .cpdepts button.on{background:#0369a1;border-color:#0369a1;color:#fff;font-weight:600;}
+  .catpop .cpdepts button .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#d97706;margin-left:5px;vertical-align:1px;}
+  .catpop .cpbar{display:flex;align-items:center;gap:10px;margin:0 0 6px;}
+  .catpop .cpbar .btn{padding:4px 12px;font-size:13px;}
+  .catpop .cpsum{font-size:12.5px;color:#334155;}
+  .catpop .cpsum.on{color:#92400e;font-weight:700;}
+  .cplist{max-height:50vh;overflow:auto;border:1px solid var(--border);border-radius:8px;outline:none;user-select:none;-webkit-user-select:none;}
+  .cplist:focus-visible{box-shadow:0 0 0 2px #7dd3fc;}
+  .cpo{display:flex;align-items:center;gap:8px;padding:5px 10px;min-height:34px;cursor:pointer;border-top:1px solid #f1f5f9;}
+  .cpo:first-child{border-top:none;}
+  .cpo.on{background:#dbeafe;font-weight:600;color:#0f172a;}
+  .cpo:not(.on){color:#64748b;}
+  .cpo:not(.on) .nm{text-decoration:line-through;text-decoration-color:#cbd5e1;}
+  .cpo .xt{font-size:11.5px;color:#92400e;background:#fef3c7;border-radius:4px;padding:0 5px;font-weight:600;}
+  .cpo .am{margin-left:auto;font-variant-numeric:tabular-nums;color:#475569;font-weight:400;font-size:13px;}
+  .cpo.fc{outline:2px solid #0284c7;outline-offset:-2px;}
+  .catpop .cpfoot{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:#475569;}
+  .catpop .cpfoot .btn{margin-left:auto;padding:4px 12px;font-size:13px;white-space:nowrap;}
+  .catpop .cpwarn{font-size:12.5px;color:#92400e;margin-top:6px;}
+  .catpop .cpwarn:empty{display:none;}
+  table.c tr.catx td{opacity:.45;}
+  table.c tr.catx:hover td{opacity:.7;}
+  .badge.bd-catx{background:#fef3c7;color:#92400e;font-weight:700;}
+  .catmk{display:block;color:#b45309;font-weight:700;font-size:12px;white-space:normal;}   /* 列の幅で折り返す（見出しの列を広げない） */
+  tr.total .catmk{color:#fcd34d;}
+  table.c th .catmk{font-size:11.5px;}
+  .catxnote{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;border-left:4px solid #d97706;background:#fffbeb;color:#78350f;border-radius:8px;padding:7px 12px;font-size:13px;margin:8px 0 0;}
+  .catxnote .btn{padding:3px 10px;font-size:12.5px;}
+  .catxwarn{border-left:4px solid #d97706;background:#fffbeb;color:#78350f;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:700;margin:0 0 10px;}
+  .catxwarn .lb{font-weight:400;font-size:12.5px;margin-left:8px;color:#92400e;}
+  .crumbs .cxband{color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:5px;padding:0 6px;margin-left:2px;font-weight:700;}
+  .ukeseg{display:inline-flex;align-items:stretch;gap:0;margin:0 0 8px;border:1px solid #0284c7;border-radius:9px;overflow:hidden;}
+  .ukeseg .lb{align-self:center;padding:0 10px;font-size:13px;color:#334155;background:#f8fafc;border-right:1px solid #0284c7;}
+  .ukeseg button{border:0;background:#fff;color:#0369a1;font-size:15px;font-weight:600;padding:3px 14px;cursor:pointer;font-family:inherit;line-height:1.15;text-align:left;}
+  .ukeseg button+button{border-left:1px solid #0284c7;}
+  .ukeseg button.on{background:#0284c7;color:#fff;}
+  .ukeseg small{display:block;font-size:12px;font-weight:400;}
+  #tblBox.stale{opacity:.45;transition:opacity .15s;pointer-events:none;}
+  @media print{ .catpop,.catprog,.ukeseg,.catreset,.bulkhint{display:none !important;} table.c tr.catx td{opacity:.5;} }
 </style>
 </head>
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-10-26b</span></h1></div>
+  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-11-01a</span></h1></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -790,19 +845,23 @@ function renderSection(d,opts){
   /* 部門絞込データの grand_total は部門合計の重複（ラベルだけ「全部門合計」）のため表示しない */
   const dup=d.grand_total&&(d.dept_totals||[]).length===1&&
     (d.grand_total.cells.sales_month||{}).current===(d.dept_totals[0].cells.sales_month||{}).current;
-  if(d.grand_total&&!dup) h+=totalRow(d.grand_total,cols,true,2);
+  // 中分類を選んだ合計（本部用の入口だけ・o.catx）。部門ごとに、その部門の設定で部門の行を出し直す。何も絞らない部門は、いままでと同じ字
+  const cx=o.catx?catxSection_(d):null;
+  if(d.grand_total&&!dup) h+=totalRow(d.grand_total,cols,true,2,null,"",cx&&cx.any?cx.grand:null);
   const dtMap={}; (d.dept_totals||[]).forEach(t=>dtMap[t.dept]=t);
   const noYoy=splitNoYoyRows(d.rows,r=>(r.cells||{}).sales_month||null), noted=new Set();
   const marked=estMarked_(d.rows.map(r=>r.cells));
   let prevDept=null; const hid=[];
   d.rows.forEach(r=>{
     if(r.dept!==prevDept && dtMap[r.dept]){ h+=totalRow(dtMap[r.dept],cols,false,2,dg(r.dept),
-      (r.dept===S.dept&&o.deptGo)?" curdept":""); }
+      (r.dept===S.dept&&o.deptGo)?" curdept":"",cx?cx.by[r.dept]:null); }
     prevDept=r.dept;
     if(zeroCells_(r.cells)){ hid.push([r.dept||"",r.category]); return; }   // すべて 0 の中分類は出さない（部門の行は上で出している）
     const ny=noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
     const ep=estPrior(d.ym,r.category);
-    h+=`<tr class="datarow${o.fold?" catrow":""}"><td class="h" style="left:0"></td><td class="h h2 catcol">${esc(r.category)}`;
+    const xo=!!(cx&&cx.by[r.dept]&&cx.by[r.dept].ex.has(r.category));   // 合計に入れていない中分類（薄く・名前の下に一言）
+    h+=`<tr class="datarow${o.fold?" catrow":""}${xo?" catx":""}"><td class="h" style="left:0"></td><td class="h h2 catcol">${esc(r.category)}`;
+    if(xo) h+=`<br><span class="badge bd-catx">合計に入れていない</span>`;
     if(r.alerts&&r.alerts.loss_alert) h+=`<br><span class="badge bd-loss">\u26A0差損${(r.alerts.loss_rate||0).toFixed(1)}%</span>`;
     if(r.alerts&&r.alerts.inv_cost_zero) h+=`<br><span class="badge bd-inv">\u26A0棚卸原価ゼロ</span>`;
     h+=`</td>`;
@@ -813,13 +872,14 @@ function renderSection(d,opts){
     h+=`</tr>`;
   });
   h+=`</tbody></table></div>`;
-  return h+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats);
+  return h+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats)+(cx?cx.note:"");
 }
-/* 部門の行・全体の合計の行（見出しの列2つの表）: 部門の欄に名前、カテゴリの欄に「合計」 */
-function totalRow(t,cols,dark,hspan,g,cls){
-  const [name,sum]=totalLabels_(t.label);
-  return `<tr class="${dark?"total":"subtotal"}${g?" go":""}${cls||""}"${goAttr_(g)}><td class="h" style="left:0">${goLabel_(name,g)}</td><td class="h h2">${esc(sum)}</td>`+
-    cols.map(c=>`<td>${cellHtml(t.cells[c.key],c,dark)}</td>`).join("")+`</tr>`;
+/* 部門の行・全体の合計の行（見出しの列2つの表）: 部門の欄に名前、カテゴリの欄に「合計」。
+   x（中分類を選んだ合計・catxSection_）: 出し直した数 x.cells・名前の下に（ベーカリーを除く）・前年と比べられない組を片方だけ入れたときは前年比「—」 */
+function totalRow(t,cols,dark,hspan,g,cls,x){
+  const [name,sum]=totalLabels_(t.label), cs=x?x.cells:t.cells;
+  return `<tr class="${dark?"total":"subtotal"}${g?" go":""}${cls||""}"${goAttr_(g)}><td class="h" style="left:0">${goLabel_(name,g)}</td><td class="h h2">${esc(sum)}${x?catxMk_(x.label):""}</td>`+
+    cols.map(c=>`<td>${cellHtml(cs[c.key],c,dark,!!(x&&x.noYoy))}</td>`).join("")+`</tr>`;
 }
 /* 集計表（by_store 行=店舗 / by_dept 行=部門）: \u25C6合計\u2192行 */
 /* ── 全部門（計）（2026-10-16b・PO「全部門計もわかるように」）──
@@ -849,15 +909,22 @@ const allPath_={
 function loadAllDepts_(pathOf){ return Promise.all(S.meta.departments.map(d=>loadJsonStrict(pathOf(d)).catch(e=>{ if(isNoFile(e)) return null; throw e; }))); }
 /* 商品部全体 × 全部門: 行＝店（＋◆全店舗合計）・列＝いまと同じ指標 */
 async function allByStore_(){
-  const parts=(await loadAllDepts_(allPath_.byStore)).filter(Boolean);
+  const raw=await loadAllDepts_(allPath_.byStore);
+  let parts=raw.map((p,i)=>p?Object.assign({},p,{dept:p.dept||S.meta.departments[i]}):null).filter(Boolean);
   if(!parts.length) throw new Error("未収載: 全部門の店の表");
-  const cols=parts[0].columns, by={}, order=[];
-  parts.forEach(p=>(p.rows||[]).forEach(r=>{ const k=r.store_full||r.store; if(!by[k]){ by[k]={store:r.store,store_full:r.store_full,label:r.label,list:[]}; order.push(k); } by[k].list.push(r.cells); }));
+  // 中分類を選んだ合計: 絞り込み中の部門は、その部門の設定で店の行を出し直してから足す（部門ごとに順に・読んだ表は覚える）
+  const cxs={}, notes=[];
+  for(let i=0;i<parts.length;i++){ const dp=parts[i].dept; if(catxOf_(dp).length){ parts[i]=await catxByStore_(parts[i],dp); const x=parts[i]._cx; if(x){ notes.push(x.note); if(x.label) cxs[dp]=x; } } }
+  const cols=parts[0].columns, by={}, order=[], nul=Object.fromEntries(cols.map(c=>[c.key,null]));
+  parts.forEach(p=>(p.rows||[]).forEach(r=>{ const k=r.store_full||r.store; if(!by[k]){ by[k]={store:r.store,store_full:r.store_full,label:r.label,list:[],ny:false,miss:false}; order.push(k); } by[k].list.push(r.cells); if(r._noYoy) by[k].ny=true; if(r._miss) by[k].miss=true; }));
   const rank=k=>{ const i=(S.stores||[]).findIndex(s=>s.full===k); return i<0?9999:i; };
   order.sort((a,b)=>rank(a)-rank(b));
+  const cx=Object.keys(cxs);
   return {dept:"全部門",columns:cols,ym:parts[0].ym,
-    rows:order.map(k=>({store:by[k].store,store_full:by[k].store_full,label:by[k].label,cells:sumCells_(by[k].list,cols)})),
-    grand_total:{label:"◆ 全店舗合計（全部門）",cells:sumCells_(parts.map(p=>(p.grand_total||{}).cells),cols)}};
+    rows:order.map(k=>({store:by[k].store,store_full:by[k].store_full,label:by[k].label,cells:by[k].miss?nul:sumCells_(by[k].list,cols),_noYoy:by[k].ny})),
+    grand_total:{label:"◆ 全店舗合計（全部門）",cells:parts.some(p=>p._miss)?nul:sumCells_(parts.map(p=>(p.grand_total||{}).cells),cols),
+      _noYoy:parts.some(p=>p.grand_total&&p.grand_total._noYoy),_mk:cx.length?catxMulti_(Object.fromEntries(cx.map(d=>[d,{label:cxs[d].label}]))):""},
+    _cx:notes.length?{note:notes.join("")}:null};
 }
 /* 商品部詳細 × 全部門: 行＝部門（その下のカテゴリはたたむ）＋◆全部門合計。店（slug）かエリア合計（slug 無し） */
 async function allDetail_(slug){
@@ -874,25 +941,485 @@ function allDeptNote_(){
     S.meta.departments.map(d=>`<button class="btn" data-go="cdept" data-a="${esc(d)}" data-k="n:${esc(d)}">${esc(d)}</button>`).join("")+`</div>`;
 }
 
+/* ══ 中分類を選んだ合計（2026-11-01・PO「惣菜でベーカリーの数字を含まない合計を見たい → どうせなら任意で選んだ中分類だけの合計を、全部門で」）══
+   設定は部門に1つ（この PC・このアカウント＝hissuru_catx_<アカウント>）。覚えるのは「除く名前」＝あとの月に新しくできた中分類は、はじめから合計に入る。
+   その部門の表はどれも同じ設定で出す: 商品部全体（店の行・◆全店舗合計）・商品部詳細（エリア合計・店）・運営部全体・運営部詳細（エリア合計・店）・
+     店舗事業部会議・受払の表・全部門（計）（部門ごとに、その部門の設定で足す）。店舗用の入口・週間・仕入分析・会議用まとめには入れない（週間・仕入分析は一言）。
+   数: 部門の計 − 除いた中分類（愛知の2分類など、表に出さない行の値は部門の計の中に残る＝いままでと同じ）。率は足した額から出し直す
+     （c の表＝RATE_OF・sumCells_ と同じ／店舗事業部会議・受払＝jigyoRates_＝HQ の _jigyo_recalc_rates と同じ式）。
+   新分類で分かれた組（SPLIT_GROUPS）の片方だけを入れ、前年が分かれていない月は、その合計の前年比を「—」（理由を表の下に1行）。
+   名前は月で違う（旧分類・新分類）: その表にある名前だけを当てる（NFKC でそろえて）。表にある名前が全部「除く」になるときは、絞らない（全部 0 の表にしない）。
+   絞っていることを読み違えないよう、同じ琥珀色の印を3か所に: 選ぶ欄の札・上の帯・合計の行の名前（＋表の下の1行と印刷の題）。合計に入れていない行は薄く。 */
+const CATX_KEY_=()=>"hissuru_catx_"+(authedEmail||"local");
+let _cxm={s:null,o:{}};
+function catxObj_(){ const s=S.catx||"{}"; if(_cxm.s!==s){ let o={}; try{ o=JSON.parse(s)||{}; }catch(e){ o={}; } _cxm={s:s,o:o}; } return _cxm.o; }
+/* いつも同じ字にする（履歴の比べ・覚える物を1つの形に）: 部門の名前順・名前の重なりなし・空の部門は持たない */
+function catxStr_(o){ const r={}; Object.keys(o||{}).sort().forEach(d=>{ const a=[...new Set((Array.isArray(o[d])?o[d]:[]).map(String).filter(Boolean))].sort(); if(a.length) r[d]=a; }); return JSON.stringify(r); }
+function catxSave_(){ try{ localStorage.setItem(CATX_KEY_(),S.catx||"{}"); }catch(e){} }
+function catxLoad_(){ let o={}; try{ o=JSON.parse(localStorage.getItem(CATX_KEY_())||"{}")||{}; }catch(e){ o={}; } S.catx=catxStr_(o); }
+function catxRaw_(dept){ return catxObj_()[dept]||[]; }
+/* 当てる画面: 本部用の入口・累計・段の地図の4つと店舗事業部会議 */
+function catxHere_(){ return S.viewMode!=="viewer"&&!!S.entered&&S.view==="cum"&&(TREE.includes(S.mode)||S.mode==="店舗事業部会議"); }
+function catxOf_(dept){ return catxHere_()?catxRaw_(dept):[]; }
+/* その表にある名前（present）のうち、除く物の Set。全部が「除く」になるときは空（絞らない） */
+function catxEx_(dept,present){
+  const x=catxOf_(dept); if(!x.length||!present.length) return new Set();
+  const xs=new Set(x.map(nfk_)), ex=present.filter(n=>xs.has(nfk_(n)));
+  return ex.length&&ex.length<present.length?new Set(ex):new Set();
+}
+const catxNames_=a=>a.length<=2?a.join("・"):a.slice(0,2).join("・")+" ほか"+(a.length-2);
+/* 印の字: 除く物が少なければ「ベーカリーを除く」・入れる物が少なければ「温惣菜・米飯だけ」 */
+function catxLabel_(present,ex){ if(!ex||!ex.size) return ""; const e=present.filter(n=>ex.has(n)), i=present.filter(n=>!ex.has(n)); return e.length<=i.length?catxNames_(e)+"を除く":catxNames_(i)+"だけ"; }
+const catxMk_=t=>t?`<span class="catmk">（${esc(t)}）</span>`:"";
+function catxMulti_(by){ const k=Object.keys(by); return k.length===1?k[0]+"は"+by[k[0]].label:k.join("・")+"は中分類を絞り込み中"; }
+/* いま描いた表にある、部門ごとの中分類の名前と今年の売上（選ぶ欄の一覧・札の字に使う。表を描くたびに作り直す） */
+const CXV={d:{}};
+function cxReset_(){ CXV.d={}; }
+function cxSeen_(dept,names,sales){ const o=CXV.d[dept]||(CXV.d[dept]={names:[],s:{}}); names.forEach(n=>{ if(!o.names.includes(n)) o.names.push(n); }); Object.keys(sales||{}).forEach(n=>{ if(o.s[n]==null) o.s[n]=sales[n]; }); }
+/* 部門の計（cells）から、除いた中分類の額を引く。率は引いたあとの額から（RATE_OF）。前年・予算も同じ */
+function catxSub_(base,exList){
+  if(!base) return base;
+  const F=["current","yoy","budget"], out={};
+  Object.keys(base).forEach(k=>{ const b=base[k];
+    if(!b||typeof b!=="object"||b.type==="rate"||RATE_OF[k]){ out[k]=b; return; }
+    const o=Object.assign({},b);
+    F.forEach(f=>{ if(b[f]==null) return; let s=b[f]; exList.forEach(cs=>{ const v=((cs||{})[k]||{})[f]; if(v!=null) s-=v; }); o[f]=Math.abs(s)<1e-6?0:s; });
+    out[k]=o; });
+  Object.keys(RATE_OF).forEach(k=>{ if(!(k in base)) return; const p=RATE_OF[k], o={type:"rate"}; let any=false;
+    F.forEach(f=>{ const n=(out[p[0]]||{})[f], d=(out[p[1]]||{})[f]; if(n!=null&&d!=null){ o[f]=d?n/d*100:0; any=true; } });
+    out[k]=any?o:null; });
+  return out;
+}
+/* 中分類の明細を読む。いまの画面と同じ読み方（同じ覚え方）で読む＝あとで同じ表を開いたとき、もう一度は取りに行かない
+   （全部門の画面＝allPath_ の厳しい読み方・部門の画面＝API.detail・API.detailStore） */
+function cxDetail_(dept,slug,k){
+  k=k||cxKey_();
+  if(k.all) return loadJsonStrict(`c/shohin_detail__${aslug(k.area)}__${dslug(dept)}__${k.ym}__${s8(k.snap)}${slug?"__"+slug:""}.json`);
+  return slug?API.detailStore(k.area,k.ym,k.snap,dept,slug):API.detail(k.area,k.ym,k.snap,dept);
+}
+/* 読み始めたときの見方。alive()＝その見方のまま（別の所が押されたら false＝残りは読まない・進み具合も書かない） */
+function cxKey_(){ const n=NAV.seq, t=TBL.seq; return {area:S.area,ym:S.ym,snap:S.snap,all:isAll_(S.dept),alive:()=>NAV.seq===n&&TBL.seq===t}; }
+const CX_STALE="__中分類の読み込みを止めた（見方が替わった）";
+/* 店ごとの中分類の並びを1つに（その店に無い中分類は、前の中分類のすぐ後ろへ）＝作る側の並び（エリアの明細と同じ）を崩さない */
+function cxMerge_(lists){ const out=[]; lists.forEach(l=>l.forEach((n,i)=>{ if(out.includes(n)) return; const at=i>0?out.indexOf(l[i-1])+1:0; out.splice(at,0,n); })); return out; }
+const cxSum_=(list,k)=>list.reduce((t,cs)=>t+((((cs||{})[k]||{}).current)||0),0);
+/* 新分類で分かれた組の片方だけを入れて、前年と比べられない組（その合計の前年比は「—」）。salesOf(名前) → {current, yoy} */
+function catxPartial_(present,ex,salesOf){
+  if(!ex||!ex.size) return [];
+  const no=splitNoYoy(salesOf), out=[];
+  SPLIT_GROUPS.forEach(g=>{ const m=g.members.filter(n=>present.includes(n)&&no.has(n)), inc=m.filter(n=>!ex.has(n)); if(inc.length&&inc.length<m.length) out.push(m); });
+  return out;
+}
+/* 表の下の1行（部門ごと）: 合計に入れていない中分類とその額（千円）・すべてに戻す・前年比が「—」の理由 */
+function catxNote_(items){
+  const L=(items||[]).filter(Boolean); if(!L.length) return "";
+  return L.map(x=>`<div class="catxnote"><span>✂ <b>${esc(x.dept)}</b>の合計に入れていない中分類：<b>${esc(x.ex.join("・"))}</b>（今年の売上 ${esc(kyen(x.s))}千円${x.g!=null?`・粗利 ${esc(kyen(x.g))}千円`:""}）</span>`+
+    `<button type="button" class="btn catreset" data-catreset="${esc(x.dept)}" title="${esc(x.dept)}の中分類を、すべて合計に入れます">すべてに戻す</button>`+
+    (x.part&&x.part.length?`<span class="lb" style="flex-basis:100%">前年比が「—」の合計は、新分類で分かれた中分類（${esc(x.part.map(m=>m.join("・")).join("／"))}）の片方だけを入れているためです（前年は分かれていないので比べられません）。</span>`:"")+
+    (x.more||"")+`</div>`).join("");
+}
+/* 商品部詳細・運営部詳細（店）・全部門の明細（renderSection）: 部門ごとに出し直す */
+function catxSection_(d){
+  const by={}, items=[], allEx=[]; let any=false, ny=false;
+  const dtMap={}; (d.dept_totals||[]).forEach(t=>dtMap[t.dept]=t);
+  Object.keys(dtMap).forEach(dp=>{
+    const rows=(d.rows||[]).filter(r=>r.dept===dp&&r.category!=null), names=rows.map(r=>r.category);
+    const sales={}; rows.forEach(r=>sales[r.category]=((r.cells||{}).sales_month||{}).current);
+    cxSeen_(dp,names,sales);
+    const ex=catxEx_(dp,names); if(!ex.size) return;
+    const exr=rows.filter(r=>ex.has(r.category)), exc=exr.map(r=>r.cells);
+    const part=catxPartial_(names,ex,n=>{ const r=rows.find(z=>z.category===n); return r?((r.cells||{}).sales_month||null):null; });
+    by[dp]={ex,label:catxLabel_(names,ex),cells:catxSub_(dtMap[dp].cells,exc),noYoy:part.length>0};
+    exc.forEach(c=>allEx.push(c)); any=true; if(part.length) ny=true;
+    items.push({dept:dp,ex:exr.map(r=>r.category),s:cxSum_(exc,"sales_month"),g:cxSum_(exc,"gross_profit_month"),part});
+  });
+  const grand=any&&d.grand_total?{cells:catxSub_(d.grand_total.cells,allEx),label:catxMulti_(by),noYoy:ny}:null;
+  return {by,any,grand,note:catxNote_(items)};
+}
+/* 同時に読む本数。GAS の窓口はデプロイした人のアカウントで動く（同時に走る本数の上限 約30本を、使う人みんなで分ける）＝いまの全部門（6本）と同じにする */
+const CX_POOL=6, CX_LOSS_TH=10;   // CX_LOSS_TH＝差損の印の線（HQ の INV_LOSS_ALERT_THRESHOLD と同じ 10%）
+async function pool_(items,n,fn,onDone,alive){
+  let i=0, done=0; const out=new Array(items.length);
+  const work=async()=>{ while(i<items.length&&(!alive||alive())){ const k=i++; try{ out[k]=await fn(items[k],k); }catch(e){ out[k]={__err:e}; } done++; if(onDone&&(!alive||alive())) onDone(done,items.length); } };
+  await Promise.all(Array.from({length:Math.min(n,items.length)},work));
+  if(alive&&!alive()) throw new Error(CX_STALE);   // 見方が替わった（呼んだ所は、待っている間に押されたとして捨てる）
+  return out;
+}
+/* 読んでいる間の印（選ぶ欄のすぐ右と、表がまだ無いときは表の場所にも）。i＝null で消す */
+function cxProg_(i,n,dept){
+  const p=$("catProg"), b=$("cxBodyProg"), t=i==null?"":`中分類を集めています${dept?"（"+dept+"）":""} ${i}/${n}`;
+  if(p) p.innerHTML=t?`<span class="spin dark"></span>${esc(t)}`:"";
+  if(b&&t) b.innerHTML=`<span class="spin dark"></span>${esc(t)}（はじめの1回だけ。読んだ表は5分覚えるので、あとはすぐ出ます）`;
+}
+/* 商品部全体（by_store・行＝店）: 店ごとに、その店の中分類の明細で出し直す。
+   HQ が by_store の行に categories（中分類ごとの cells・alerts・inv）を足したら、それを使う（読み足し 0・自動で切り替わる）。
+   無ければ、店の明細（c/shohin_detail__…__{店}）を CX_POOL 本ずつ並べて読む（読んだ表は5分覚える）。
+   店の行の印: 粗利マイナスは絞った額で出し直す。差損は、中分類ごとの差損の額（inv）が届いたときだけ出し直す（無ければ出さない・表の下に一言） */
+async function catxByStore_(d,dept){
+  if(!d||!Array.isArray(d.rows)||!catxOf_(dept).length) return d;
+  let per;
+  if(d.rows.length&&d.rows.every(r=>Array.isArray(r.categories))) per=d.rows.map(r=>r.categories.filter(c=>c&&c.category!=null&&!isHiddenCat_(dept,c.category)));
+  else {
+    const slugs=d.rows.map(r=>slugOfFull_(r.store_full||"")), k=cxKey_();
+    let res;
+    try{
+      res=await pool_(slugs,CX_POOL,s=>(s==null||s==="__total__")?Promise.resolve(null)
+        :cxDetail_(dept,s,k).catch(e=>{ if(isNoFile(e)) return null; throw e; }),(i,n)=>cxProg_(i,n,k.all?dept:""),k.alive);
+    } finally { if(k.alive()) cxProg_(null); }
+    const er=res.find(p=>p&&p.__err); if(er) throw er.__err;
+    per=res.map(p=>p?(p.rows||[]).filter(r=>r.category!=null&&(!r.dept||r.dept===dept)):null);
+  }
+  const names=cxMerge_(per.map(p=>(p||[]).map(c=>c.category))), sales={};
+  per.forEach(p=>(p||[]).forEach(c=>{ sales[c.category]=(sales[c.category]||0)+((((c.cells||{}).sales_month)||{}).current||0); }));
+  cxSeen_(dept,names,sales);
+  if(!names.length) return Object.assign({},d,{_cx:{dept,label:"",note:`<div class="catxwarn">✂ この期間は${esc(dept)}の中分類の明細が無いため、中分類の絞り込みは効きません（部門全体の数）。</div>`}});
+  const ex=catxEx_(dept,names); if(!ex.size) return d;
+  const cols=d.columns||[], nul=Object.fromEntries(cols.map(c=>[c.key,null])), allEx=[], miss=[], catSum={};
+  let inv=true;
+  const rows=d.rows.map((r,i)=>{
+    const p=per[i]; if(!p){ miss.push(r.label||r.store); return Object.assign({},r,{cells:nul,alerts:null,_miss:true}); }
+    const exc=p.filter(c=>ex.has(c.category)), inc=p.filter(c=>!ex.has(c.category));
+    exc.forEach(c=>allEx.push(c.cells));
+    p.forEach(c=>{ const s=(c.cells||{}).sales_month||{}, o=catSum[c.category]||(catSum[c.category]={current:0,yoy:0}); o.current+=s.current||0; o.yoy+=s.yoy||0; });
+    const cells=catxSub_(r.cells,exc.map(c=>c.cells));
+    const part=catxPartial_(p.map(c=>c.category),ex,n=>{ const c=p.find(z=>z.category===n); return c?((c.cells||{}).sales_month||null):null; });
+    const hasInv=p.length>0&&p.every(c=>c.inv&&c.inv.book_value!=null); if(!hasInv) inv=false;
+    let lr=0, la=false;
+    if(hasInv){ const lp=inc.reduce((t,c)=>t+(+c.inv.loss_price||0),0), bk=inc.reduce((t,c)=>t+(+c.inv.book_value||0),0); lr=bk?lp/bk*100:0; la=lr>CX_LOSS_TH; }
+    const alerts={loss_rate:lr,loss_alert:la,gp_negative:(((cells.gross_profit_month||{}).current)||0)<0,inv_cost_zero:inc.some(c=>!!(c.alerts&&c.alerts.inv_cost_zero))};
+    return Object.assign({},r,{cells,alerts,_noYoy:part.length>0});
+  });
+  const label=catxLabel_(names,ex), gpart=catxPartial_(names,ex,n=>catSum[n]||null);
+  const gt=d.grand_total?Object.assign({},d.grand_total,{cells:miss.length?nul:catxSub_(d.grand_total.cells,allEx),_mk:label,_noYoy:gpart.length>0}):null;
+  const more=(inv?"":`<span class="lb" style="flex-basis:100%">店の行の差損の印（粗利のマスの黄色）は、絞り込み中は出していません（中分類ごとの差損の額が届いていないため）。粗利マイナスの印は、絞った額で出しています。</span>`)+
+    (miss.length?`<span class="lb" style="flex-basis:100%">中分類の明細が無い店（${esc(miss.join("・"))}）は出し直せないため、その店の行と ◆全店舗合計 は「—」です。</span>`:"");
+  return Object.assign({},d,{rows,grand_total:gt,_miss:miss.length>0,
+    _cx:{dept,label,note:catxNote_([{dept,ex:names.filter(n=>ex.has(n)),s:cxSum_(allEx,"sales_month"),g:cxSum_(allEx,"gross_profit_month"),part:gpart,more}])}});
+}
+/* 運営部詳細のエリア合計（by_dept・行＝部門・中分類が無い）: 絞り込み中の部門だけ、エリアの明細を1本ずつ読んで出し直す */
+async function catxByDept_(d){
+  if(!d||!Array.isArray(d.rows)) return d;
+  const act=d.rows.filter(r=>r.dept&&catxOf_(r.dept).length); if(!act.length) return d;
+  const k=cxKey_();
+  let parts; try{ parts=await pool_(act,CX_POOL,r=>cxDetail_(r.dept,"",k).catch(e=>{ if(isNoFile(e)) return null; throw e; }),(i,n)=>cxProg_(i,n,""),k.alive); }
+  finally { if(k.alive()) cxProg_(null); }
+  const er=parts.find(p=>p&&p.__err); if(er) throw er.__err;
+  const items=[], allEx=[], by={}; let any=false, ny=false;
+  act.forEach((r,i)=>{
+    const p=parts[i]; if(!p){ cxSeen_(r.dept,[],{}); return; }   // 明細が無い（絞れない）＝印も出さない
+    const cats=(p.rows||[]).filter(z=>z.dept===r.dept&&z.category!=null), names=cats.map(z=>z.category);
+    const sales={}; cats.forEach(z=>sales[z.category]=((z.cells||{}).sales_month||{}).current); cxSeen_(r.dept,names,sales);
+    const ex=catxEx_(r.dept,names); if(!ex.size) return;
+    const exr=cats.filter(z=>ex.has(z.category)), part=catxPartial_(names,ex,n=>{ const z=cats.find(q=>q.category===n); return z?((z.cells||{}).sales_month||null):null; });
+    const cells=catxSub_(r.cells,exr.map(z=>z.cells));
+    by[r.dept]={label:catxLabel_(names,ex),cells,noYoy:part.length>0,
+      alerts:Object.assign({},r.alerts||{},{loss_rate:0,loss_alert:false,gp_negative:(((cells.gross_profit_month||{}).current)||0)<0})};   // 差損は中分類ごとの額が無いので出さない
+    exr.forEach(z=>allEx.push(z.cells)); any=true; if(part.length) ny=true;
+    items.push({dept:r.dept,ex:exr.map(z=>z.category),s:cxSum_(exr.map(z=>z.cells),"sales_month"),g:cxSum_(exr.map(z=>z.cells),"gross_profit_month"),part,
+      more:`<span class="lb" style="flex-basis:100%">この部門の行の差損の印（粗利のマスの黄色）は、絞り込み中は出していません（中分類ごとの差損の額が届いていないため）。粗利マイナスの印は、絞った額で出しています。</span>`});
+  });
+  if(!any) return d;
+  const rows=d.rows.map(r=>by[r.dept]?Object.assign({},r,{cells:by[r.dept].cells,alerts:by[r.dept].alerts,_mk:by[r.dept].label,_noYoy:by[r.dept].noYoy}):r);
+  const gt=d.grand_total?Object.assign({},d.grand_total,{cells:catxSub_(d.grand_total.cells,allEx),_mk:catxMulti_(by),_noYoy:ny}):null;
+  return Object.assign({},d,{rows,grand_total:gt,_cx:{note:catxNote_(items)}});
+}
+/* 運営部全体（行＝部門・中分類 × 列＝合計・店）: 部門の行を、合計の列と店の列ごとに出し直す（指標を替えても使い回す） */
+function catxUneibu_(d){
+  if(!(d._cxc&&d._cxc.k===S.catx)){
+    const st=d.stores||[], info={}, seen=[]; let any=false;
+    [...new Set(d.rows.filter(r=>r.type==="dept").map(r=>r.dept))].forEach(dp=>{
+      const dr=d.rows.find(r=>r.type==="dept"&&r.dept===dp), cats=d.rows.filter(r=>r.type!=="dept"&&r.dept===dp), names=cats.map(r=>r.category);
+      const sales={}; cats.forEach(r=>sales[r.category]=(((r.grand||{}).sales_month)||{}).current);
+      seen.push([dp,names,sales]);
+      const ex=catxEx_(dp,names); if(!ex.size) return;
+      any=true;
+      const exr=cats.filter(r=>ex.has(r.category));
+      const so=col=>n=>{ const r=cats.find(z=>z.category===n); if(!r) return null; const c=col==null?(r.grand||{}):((r.stores||{})[col]||{}); return c.sales_month||null; };
+      const x={ex,label:catxLabel_(names,ex),grand:catxSub_(dr.grand,exr.map(r=>r.grand)),stores:{},nyG:catxPartial_(names,ex,so(null)).length>0,nyS:{}};
+      st.forEach(s=>{ const b=(dr.stores||{})[s.short]; x.stores[s.short]=b?catxSub_(b,exr.map(r=>(r.stores||{})[s.short])):b; x.nyS[s.short]=catxPartial_(names,ex,so(s.short)).length>0; });
+      x.item={dept:dp,ex:exr.map(r=>r.category),s:cxSum_(exr.map(r=>r.grand),"sales_month"),g:cxSum_(exr.map(r=>r.grand),"gross_profit_month"),part:catxPartial_(names,ex,so(null))};
+      info[dp]=x;
+    });
+    d._cxc={k:S.catx,v:{any,info,seen,note:catxNote_(Object.values(info).map(x=>x.item))}};
+  }
+  const v=d._cxc.v; v.seen.forEach(a=>cxSeen_(a[0],a[1],a[2]));
+  return v;
+}
+/* 店舗事業部会議・受払の表の率（HQ の _jigyo_recalc_rates と同じ式）。keys＝表の率の列 */
+function jigyoRates_(v,keys){
+  const o=Object.assign({},v||{}), g=k=>+o[k]||0, s=g("sales_month"), pp=g("purchase_price_month"), ibk=g("inventory_book_value"), iav=g("inventory_actual_value");
+  const R={gross_profit_rate_month:s?g("gross_profit_month")/s*100:0, discount_rate:s?g("discount_amount")/s*100:0, discard_rate:s?g("discard_amount")/s*100:0,
+    purchase_margin_rate:pp?(1-g("purchase_cost_month")/pp)*100:0, inventory_loss_rate:ibk?g("inventory_loss_price")/ibk*100:0, inventory_cost_rate:iav?g("inventory_cost")/iav*100:0};
+  (keys||[]).forEach(k=>{ if(k in R&&o[k]!=null) o[k]=R[k]; });   // 届いていない（null）マスは「—」のまま
+  return o;
+}
+function jigyoYoyRates_(y){ const o=Object.assign({},y||{}); if(o.gross_profit_rate_month!=null){ const s=+o.sales_month||0; o.gross_profit_rate_month=s?(+o.gross_profit_month||0)/s*100:0; } return o; }
+function jgSub_(base,list,keys){ const o=Object.assign({},base||{}); keys.forEach(k=>{ if(o[k]==null) return; let s=+o[k]; list.forEach(v=>{ const x=(v||{})[k]; if(x!=null) s-=+x; }); o[k]=Math.abs(s)<1e-6?0:s; }); return o; }
+/* 店舗事業部会議・受払: 部門の行と ■合計 を出し直す（額は引く・率は jigyoRates_）。rows はエリア合計の中分類の率を出し直したあとの行 */
+function catxJigyo_(rows,grand,ak,rk){
+  const by={}, items=[], allEx=[]; let any=false, ny=false;
+  const yk=y=>Object.keys(y||{}).filter(k=>k!=="gross_profit_rate_month");
+  [...new Set(rows.filter(r=>r.type==="dept").map(r=>r.dept))].forEach(dp=>{
+    const cats=rows.filter(r=>r.type==="category"&&r.dept===dp), names=cats.map(r=>r.category);
+    const sales={}; cats.forEach(r=>sales[r.category]=(r.values||{}).sales_month);
+    cxSeen_(dp,names,sales);
+    const ex=catxEx_(dp,names); if(!ex.size) return;
+    const exr=cats.filter(r=>ex.has(r.category)), dr=rows.find(r=>r.type==="dept"&&r.dept===dp);
+    const part=catxPartial_(names,ex,n=>{ const r=cats.find(z=>z.category===n); return r?{current:(r.values||{}).sales_month,yoy:(r.yoy||{}).sales_month}:null; });
+    by[dp]={ex,label:catxLabel_(names,ex),values:jigyoRates_(jgSub_(dr.values,exr.map(r=>r.values),ak),rk),
+      yoy:jigyoYoyRates_(jgSub_(dr.yoy,exr.map(r=>r.yoy),yk(dr.yoy))),noYoy:part.length>0};
+    exr.forEach(r=>allEx.push(r)); any=true; if(part.length) ny=true;
+    items.push({dept:dp,ex:exr.map(r=>r.category),s:exr.reduce((t,r)=>t+(+(r.values||{}).sales_month||0),0),g:exr.reduce((t,r)=>t+(+(r.values||{}).gross_profit_month||0),0),part});
+  });
+  const g=any&&grand?{values:jigyoRates_(jgSub_(grand.values,allEx.map(r=>r.values),ak),rk),yoy:jigyoYoyRates_(jgSub_(grand.yoy,allEx.map(r=>r.yoy),yk(grand.yoy))),label:catxMulti_(by),noYoy:ny}:null;
+  return {by,any,grand:g,note:catxNote_(items)};
+}
+/* 週間・仕入分析: 絞り込みは効かない（部門全体の数）と一言 */
+function catxNoEffect_(depts){
+  if(S.viewMode==="viewer") return "";
+  const o=catxObj_(), a=(depts||[]).filter(d=>(o[d]||[]).length); if(!a.length) return "";
+  return `<div class="catxwarn">✂ 中分類の絞り込みは、この表にはまだ効きません（部門全体の数）。<span class="lb">絞り込み中：${esc(a.map(d=>d+"＝"+catxNames_(o[d])+"を除く").join("・"))}</span></div>`;
+}
+
+/* ── 選ぶ欄（部門の右）「中分類 [すべて（9）▾]」。開くと一覧（パソコンの一覧と同じ: クリック＝その1つだけ／Ctrl＋クリック＝足す・外す／Shift＋クリック＝範囲）──
+   部門が並ぶ表（全部門・運営部全体・運営部詳細・店舗事業部会議）では、一覧の上に部門の札（設定は部門ごと）。
+   押すたびに、表だけを描き直す（選ぶ帯・A・PD の欄はそのまま＝窓口へ行かない）。開いてから閉じるまでの変更は「ひとつ前に戻る」1回で戻る */
+const CXP={open:false,pushed:false,dept:"",anchor:-1,fc:0,list:null,warn:"",tok:0};
+function catxMultiHere_(){ return isAll_(S.dept)||S.mode==="運営部全体"||S.mode==="店舗事業部会議"||S.mode==="運営部詳細"; }
+function catxActLabel_(dp){ const x=catxOf_(dp); if(!x.length) return ""; const v=CXV.d[dp]; if(v){ const ex=catxEx_(dp,v.names); return ex.size?catxLabel_(v.names,ex):""; } return catxNames_(x)+"を除く"; }   // 表を描く前（名前がまだ分からない）だけ、覚えた名前で
+function catxBtn_(){
+  if(!catxMultiHere_()){
+    const v=CXV.d[S.dept], n=v?v.names.length:0, x=catxOf_(S.dept);
+    if(!v) return {t:x.length?catxNames_(x)+"を除く":"すべて",on:!!x.length};   // 表を描く前
+    if(!n) return {t:"すべて",on:false};
+    const ex=catxEx_(S.dept,v.names);
+    return ex.size?{t:`${catxLabel_(v.names,ex)}（${n-ex.size}/${n}）`,on:true}:{t:`すべて（${n}）`,on:false};
+  }
+  const act=S.meta.departments.map(dp=>[dp,catxActLabel_(dp)]).filter(a=>a[1]);
+  if(!act.length) return {t:"すべて（部門ごと）",on:false};
+  if(act.length===1) return {t:`${act[0][0]}：${act[0][1]}`,on:true};
+  return {t:`${act.length}部門で絞り込み中（${act.map(a=>a[0]).join("・")}）`,on:true};
+}
+/* 上の帯・印刷の題に足す字（絞っていなければ空） */
+function catxBand_(){
+  if(!catxHere_()) return "";
+  if(!catxMultiHere_()) return catxActLabel_(S.dept);
+  const act=S.meta.departments.map(dp=>[dp,catxActLabel_(dp)]).filter(a=>a[1]); if(!act.length) return "";
+  if(act.length===1&&act[0][0]===S.dept&&S.mode!=="店舗事業部会議") return act[0][1];   // 帯に部門の名前が出ている（北関東・惣菜（ベーカリーを除く））
+  return act.length===1?`${act[0][0]}は${act[0][1]}`:`${act.map(a=>a[0]).join("・")}は中分類を絞り込み中`;
+}
+function catBtnHtml_(){
+  if(!catxHere_()) return "";
+  const b=catxBtn_();
+  return `<span class="lb">中分類</span><span class="catwrap" id="catWrap"><button type="button" class="catbtn${b.on?" on":""}" id="catBtn" aria-haspopup="listbox" aria-expanded="false" onclick="catOpen_()" onmouseenter="catWarm_()" onfocus="catWarm_()" title="合計に入れる中分類を選びます（この PC に、部門ごとに覚えます）">${esc(b.t)} <span aria-hidden="true">▾</span></button>`+
+    `<span class="catprog" id="catProg" aria-live="polite"></span><div class="catpop" id="catPop" hidden></div></span>`;
+}
+/* 表を描いたあと: 選ぶ欄の札・上の帯・開いている一覧を、いま描いた表の名前で書き直す */
+function catxMarks_(){
+  const b=$("catBtn"); if(b){ const x=catxBtn_(); b.innerHTML=`${esc(x.t)} <span aria-hidden="true">▾</span>`; b.classList.toggle("on",x.on); }
+  drawNav_();
+  if(CXP.open) catDrawPop_();
+}
+function catDefDept_(){ if(!isAll_(S.dept)&&S.meta.departments.includes(S.dept)) return S.dept; const o=catxObj_(); return S.meta.departments.find(d=>(o[d]||[]).length)||S.meta.departments[0]; }
+/* 一覧の名前: いま描いた表にあれば、それ（右の数はいま見ている所の売上）。無ければ（商品部全体・運営部詳細のエリア合計）エリアの明細を1本読む（覚える） */
+async function catList_(dp){
+  const v=CXV.d[dp]; if(v&&v.names.length) return {names:v.names,s:v.s,src:"view"};
+  const p=await cxDetail_(dp,"").catch(()=>null);
+  const rows=((p&&p.rows)||[]).filter(r=>r.category!=null&&(!r.dept||r.dept===dp)), s={};
+  rows.forEach(r=>s[r.category]=((r.cells||{}).sales_month||{}).current);
+  return {names:rows.map(r=>r.category),s,src:"area"};
+}
+/* 選ぶ欄に手が近づいたら、一覧の名前を先に読んでおく（押したときに待たせない） */
+function catWarm_(){ if(!catxHere_()) return; const dp=catDefDept_(); if(!(CXV.d[dp]&&CXV.d[dp].names.length)) cxDetail_(dp,"").catch(()=>{}); }
+async function catOpen_(){
+  if(CXP.open){ catClose_(); return; }
+  const pop=$("catPop"), b=$("catBtn"); if(!pop||!b) return;
+  Object.assign(CXP,{open:true,pushed:false,dept:catDefDept_(),anchor:-1,fc:0,warn:"",list:null});
+  b.setAttribute("aria-expanded","true"); pop.hidden=false;
+  pop.innerHTML=`<div class="cphead"><b>中分類</b><span class="cphelp"><span class="spin dark"></span>一覧を読んでいます…</span></div>`;
+  document.addEventListener("pointerdown",catOutside_,true);
+  await catDrawPop_(true);
+}
+function catClose_(back){
+  CXP.open=false; CXP.pushed=false;
+  const pop=$("catPop"), b=$("catBtn");
+  if(pop){ pop.hidden=true; pop.innerHTML=""; }
+  if(b){ b.setAttribute("aria-expanded","false"); if(back!==false) b.focus(); }
+  document.removeEventListener("pointerdown",catOutside_,true);
+}
+function catOutside_(e){ const w=$("catWrap"); if(!w||!w.contains(e.target)) catClose_(false); }
+async function catDrawPop_(focus){
+  const pop=$("catPop"); if(!pop||!CXP.open) return;
+  const tok=++CXP.tok, dp=CXP.dept, L=await catList_(dp); if(!CXP.open||CXP.dept!==dp||tok!==CXP.tok) return;   // 後から始めた描き直しがあれば、こちらは捨てる
+  CXP.list=L; catPaint_(focus);
+}
+/* 一覧を、いまの CXP.list と選び方で描く（読みに行かない） */
+function catPaint_(focus){
+  const pop=$("catPop"), L=CXP.list; if(!pop||!CXP.open||!L) return;
+  const dp=CXP.dept, names=L.names, x=new Set(catxRaw_(dp).map(nfk_)), multi=catxMultiHere_();
+  const allEx=names.length>0&&names.every(n=>x.has(nfk_(n)));   // 全部を除く形は絞らない（catxEx_ と同じ）
+  const inc=n=>allEx||!x.has(nfk_(n)), nInc=names.filter(inc).length;
+  if(CXP.fc>=names.length) CXP.fc=0;
+  const old=$("cpList"), st=old?old.scrollTop:0, had=focus||pop.contains(document.activeElement);
+  const tabs=multi?`<div class="cpdepts" role="tablist" aria-label="部門（設定は部門ごと）">`+S.meta.departments.map(d=>`<button type="button" role="tab" aria-selected="${d===dp}" class="${d===dp?"on":""}" data-cpdept="${esc(d)}">${esc(d)}${catxRaw_(d).length?'<span class="dot" title="絞り込み中"></span>':""}</button>`).join("")+`</div>`:"";
+  const where=L.src==="view"?(S.mode==="商品部全体"?"全店の和":storeShortOf_(STORE_MODES.includes(S.mode)?S.storeTab:"__total__")):"エリア合計";
+  pop.innerHTML=`<div class="cphead"><b>中分類（${esc(dp)}）</b><span class="cphelp">クリック＝その1つだけ／Ctrl＋クリック＝足す・外す／Shift＋クリック＝範囲</span></div>`+tabs+
+    `<div class="cpbar"><button type="button" class="btn" data-cpall>すべて（${names.length}）</button><span class="cpsum${nInc<names.length?" on":""}">${nInc<names.length?`${nInc}/${names.length} を合計に入れています`:"すべて合計に入れています"}</span></div>`+
+    (names.length?`<div class="cplist" id="cpList" role="listbox" aria-multiselectable="true" aria-label="${esc(dp)}の中分類（選んだものを合計に入れます）" tabindex="0" aria-activedescendant="cpo${CXP.fc}">`+
+      names.map((n,i)=>{ const on=inc(n); return `<div class="cpo${on?" on":""}${i===CXP.fc?" fc":""}" role="option" id="cpo${i}" aria-selected="${on}" data-i="${i}"><span class="nm">${esc(n)}</span>${on?"":`<span class="xt">合計に入れていない</span>`}<span class="am">${L.s[n]==null?"":esc(kyen(L.s[n]))}</span></div>`; }).join("")+`</div>`
+      :`<div class="note">この部門の中分類は、この期間の表にありません。</div>`)+
+    `<div class="cpwarn" id="cpWarn">${esc(CXP.warn||"")}</div>`+
+    `<div class="cpfoot"><span>右の数＝今年の売上（千円・${esc(where)}）。選び方は、この PC に部門ごとに覚えます</span><button type="button" class="btn" data-cpclose>閉じる</button></div>`;
+  const l=$("cpList"); if(l){ l.scrollTop=st; if(had) l.focus({preventScroll:true}); }
+  // 画面の右端からはみ出すときは、左へ寄せる（部門の札が付くと幅が広い）
+  pop.style.left="0px"; const over=pop.getBoundingClientRect().right-(document.documentElement.clientWidth-8); if(over>0) pop.style.left=(-over)+"px";
+}
+/* i 番めを押した（m.ctrl・m.shift）。全部を外すことはできない（1つは残す） */
+function catPick_(i,m){
+  const L=CXP.list; if(!L||!L.names.length) return;
+  const names=L.names, x=new Set(catxRaw_(CXP.dept).map(nfk_)), allEx=names.every(n=>x.has(nfk_(n)));
+  const inc=new Set(names.filter(n=>allEx||!x.has(nfk_(n))));
+  CXP.warn="";
+  if(m.shift){ const a=CXP.anchor>=0?CXP.anchor:CXP.fc, lo=Math.min(a,i), hi=Math.max(a,i); if(!m.ctrl) inc.clear(); names.slice(lo,hi+1).forEach(n=>inc.add(n)); }
+  else if(m.ctrl){ const n=names[i]; if(inc.has(n)){ if(inc.size<=1){ CXP.warn="1つは合計に入れてください（全部を外すことはできません）"; CXP.fc=i; catPaint_(true); return; } inc.delete(n); } else inc.add(n); CXP.anchor=i; }
+  else { inc.clear(); inc.add(names[i]); CXP.anchor=i; }
+  CXP.fc=i;
+  catCommit_(CXP.dept,names.filter(n=>!inc.has(n)));
+}
+/* 除く名前を決めて、表を描き直す。exPresent＝一覧の中で除く物。一覧に無い名前（ほかの月にだけある中分類）は残す。null＝すべてに戻す（覚えた物も消す） */
+function catCommit_(dp,exPresent){
+  const names=(CXP.list&&CXP.dept===dp)?CXP.list.names:[];
+  const keep=exPresent==null?[]:catxRaw_(dp).filter(n=>!names.some(m=>nfk_(m)===nfk_(n)));
+  const o=Object.assign({},catxObj_()); o[dp]=exPresent==null?[]:exPresent.concat(keep);
+  const str=catxStr_(o);
+  CXP.tok++;   // 読みかけの一覧の描き直しは捨てる（表を描いたあとの catxMarks_ が、新しい表の名前で描き直す）
+  if(str!==S.catx) tblNav_({catx:str},true);
+  catPaint_(true);
+}
+/* 表の下の「すべてに戻す」 */
+function catReset_(dp){ const o=Object.assign({},catxObj_()); o[dp]=[]; const str=catxStr_(o); if(str!==S.catx) tblNav_({catx:str},false); }
+function catFocusOnly_(){ const l=$("cpList"); if(!l) return; l.querySelectorAll(".cpo.fc").forEach(x=>x.classList.remove("fc")); const o=$("cpo"+CXP.fc); if(o){ o.classList.add("fc"); l.setAttribute("aria-activedescendant",o.id); o.scrollIntoView({block:"nearest"}); } }
+document.addEventListener("click",e=>{
+  const q=s=>e.target.closest&&e.target.closest(s);
+  const rs=q("[data-catreset]"); if(rs){ catReset_(rs.dataset.catreset); return; }
+  const uk=q("[data-uke]"); if(uk){ ukeSet_(uk.dataset.uke==="1"); return; }
+  if(!q("#catPop")) return;
+  const t=q("[data-cpdept]"); if(t){ Object.assign(CXP,{dept:t.dataset.cpdept,anchor:-1,fc:0,warn:""}); catDrawPop_(true); return; }
+  if(q("[data-cpall]")){ catCommit_(CXP.dept,null); return; }
+  if(q("[data-cpclose]")){ catClose_(); return; }
+  const o=q("[data-i]"); if(o) catPick_(+o.dataset.i,{ctrl:e.ctrlKey||e.metaKey,shift:e.shiftKey});
+});
+/* キーボード: ↑↓ で動く・Shift＋↑↓ で範囲・スペース＝足す・外す（Ctrl＋クリックと同じ）・Enter＝その1つだけ・Ctrl＋A＝すべて・Esc で閉じる */
+document.addEventListener("keydown",e=>{
+  if(!CXP.open) return;
+  if(e.key==="Escape"){ e.preventDefault(); catClose_(); return; }
+  const l=e.target.closest&&e.target.closest("#cpList"); if(!l||!CXP.list) return;
+  const n=CXP.list.names.length; if(!n) return;
+  if(["ArrowDown","ArrowUp","Home","End"].includes(e.key)){
+    e.preventDefault();
+    const was=CXP.fc; CXP.fc=Math.max(0,Math.min(n-1,e.key==="ArrowDown"?was+1:e.key==="ArrowUp"?was-1:e.key==="Home"?0:n-1));
+    if(e.shiftKey){ if(CXP.anchor<0) CXP.anchor=was; catPick_(CXP.fc,{shift:true}); } else catFocusOnly_();
+    return;
+  }
+  if(e.key===" "){ e.preventDefault(); catPick_(CXP.fc,{ctrl:true}); return; }
+  if(e.key==="Enter"){ e.preventDefault(); catPick_(CXP.fc,{}); return; }
+  if((e.ctrlKey||e.metaKey)&&(e.key==="a"||e.key==="A")){ e.preventDefault(); catCommit_(CXP.dept,null); }
+});
+
+/* ── 受払の数（2026-11-01・PO「元々あった生の受払データ確認機能が消えているので、在庫金額などを見られるように」）──
+   商品部詳細・運営部詳細の表の上に「表の中身：指標｜受払」。受払＝いま見ている店（かエリア合計）の、受払表の18列（jigyo の表のまま・前年比較3列つき）。
+   商品部詳細は、その部門の行だけ。はじめの1回だけ1本読む（覚える）。中分類の絞り込みもここに当てる。切り替えは、この PC に覚える */
+function ukeHere_(){ return S.viewMode!=="viewer"&&S.view==="cum"&&CM_MODES.includes(S.mode); }
+function ukeSegHtml_(){
+  return `<span class="ukeseg" role="group" aria-label="表の中身"><span class="lb">表の中身</span>`+
+    `<button type="button" class="${S.uke?"":"on"}" aria-pressed="${!S.uke}" data-uke="0">指標<small>売上・粗利…（計画・前年比）</small></button>`+
+    `<button type="button" class="${S.uke?"on":""}" aria-pressed="${!!S.uke}" data-uke="1">受払<small>在庫・仕入・棚卸（受払表の18列）</small></button></span>`;
+}
+function ukeSet_(on){ on=!!on; if(on===!!S.uke||!ukeHere_()) return; savePref_({uke:on}); return tblNav_({uke:on},false); }
+async function ukeHtml_(st,so){
+  let d;
+  try{ d=st==="__total__"?await API.jigyo(S.area,S.ym,S.snap):await API.jigyoStore(S.area,S.ym,S.snap,st); }
+  catch(e){ if(isNoFile(e)) return `<div class="note">この条件の受払の表がありません（${esc(st==="__total__"?"エリア合計":(so?so.short:"店"))}）。</div>`; throw e; }
+  const one=(S.mode==="商品部詳細"&&!isAll_(S.dept))?S.dept:null;
+  if(one&&!(d.rows||[]).some(r=>r.dept===one)) return `<div class="note">${esc(one)}の受払の行は、この期間の表にありません。</div>`;
+  const sel=S.snaps.find(x=>x.snapshot===S.snap);
+  return `<div class="splitnote" style="margin:0 0 6px;font-size:13px;color:#334155">受払表の数（${esc(st==="__total__"?"エリア合計":(so?so.short:"店"))}・${esc(sel?String(sel.label||"").replace(/\(.*?\)/,"").trim():"")}・千円／率は%）。繰越在庫・棚卸は、その時点の在庫。仕入・売上・値引・廃棄・粗利は、月初からの累計です。</div>`+
+    renderJigyo(d,{catx:true,onlyDept:one});
+}
+
+/* ── 表だけを描き直す（中分類・受払の切り替え）。見方は履歴に積む（coalesce＝一覧を開いている間は1つにまとめる）──
+   選ぶ帯・店のタブ・A・PD の欄は描き直さない（窓口へ行かない・入力中の欄を壊さない） */
+const TBL={seq:0};
+function tblNav_(patch,coalesce){
+  const cur=curNav_()||{v:viewState_(),d:0}, d=cur.d||0;
+  if(coalesce&&CXP.pushed){ Object.assign(S,patch); try{ history.replaceState({hissuru:Object.assign({},cur,{v:viewState_()})},""); }catch(e){} NAV.trail[d]=viewState_(); }
+  else {
+    const here=Object.assign({},cur,{v:viewState_(),sc:scrollState_(),from:""});
+    try{ history.replaceState({hissuru:here},""); }catch(e){}
+    NAV.trail[d]=here.v; Object.assign(S,patch);
+    try{ history.pushState({hissuru:{v:viewState_(),d:d+1}},""); }catch(e){}
+    NAV.trail.length=d+1; NAV.trail[d+1]=viewState_();
+    if(coalesce) CXP.pushed=true;
+  }
+  catxSave_(); drawNav_();
+  return redrawTable_();
+}
+async function redrawTable_(){
+  const box=$("tblBox"); if(!box){ show_({why:"表の中身"}); return; }
+  const my=++TBL.seq, ns=NAV.seq, t0=performance.now();
+  box.classList.add("stale"); cxReset_();
+  let html; try{ html=await bodyHtml_(ns); }catch(e){ html=bodyErr_(e); }
+  if(my!==TBL.seq||ns!==NAV.seq) return;   // 待っている間に、別の所が押された
+  box.innerHTML=html; box.classList.remove("stale");
+  const us=$("ukeSeg"); if(us) us.innerHTML=ukeSegHtml_();
+  drawScope(); afterTable_();
+  const L=(window.__navlog=window.__navlog||[]); L.push({why:"表の中身",mode:S.mode,store:storeShortOf_(S.storeTab),dept:S.dept,metric:S.metric,ms:Math.round(performance.now()-t0)});
+  if(L.length>200) L.splice(0,L.length-200);
+  window.__navN=(window.__navN||0)+1;
+}
+/* 表を描いたあと（drawBody・redrawTable_ の両方） */
+function afterTable_(){ if(S.mode==="運営部全体"&&$("uTbl")) drawUneibu(S.metric); sokCurEst_(); catxMarks_(); }
+/* 戻るの吹き出し・移ったときの一言に足す字（その見方の、中分類の絞り込みと受払） */
+function cxDesc_(v){
+  let s=""; if(v.uke&&CM_MODES.includes(v.mode)&&v.view==="cum") s+="・受払";
+  if(v.view!=="cum") return s;
+  let o={}; try{ o=JSON.parse(v.catx||"{}")||{}; }catch(e){}
+  const multi=isAll_(v.dept)||["運営部全体","運営部詳細","店舗事業部会議"].includes(v.mode);
+  if(!multi) return s+((o[v.dept]||[]).length?"・"+catxNames_(o[v.dept])+"を除く":"");
+  const ks=Object.keys(o).filter(k=>(o[k]||[]).length); return s+(ks.length?"・"+ks.join("・")+"は絞り込み":"");
+}
+/* 見方を変えたとき: 次に読む表を、店の一覧と同時に読み始める（期間 → 店の一覧 → 表、の3本を順に待たない）。読んだ表は覚えるので、あとで同じ物を読む */
+function prefetchBody_(){
+  try{
+    const st=S.storeTab, known=st!=="__total__"&&(S.stores||[]).some(s=>s.slug===st), ok=p=>{ if(p&&p.catch) p.catch(()=>{}); };
+    if(S.view!=="cum") return;
+    if(S.mode==="商品部全体") ok(isAll_(S.dept)?loadAllDepts_(allPath_.byStore):API.byStore(S.area,S.ym,S.snap,S.dept));
+    else if(S.mode==="運営部全体") ok(API.uneibu(S.area,S.ym,S.snap));
+    else if(S.mode==="店舗事業部会議"||(ukeHere_()&&S.uke)){ if(st==="__total__") ok(API.jigyo(S.area,S.ym,S.snap)); else if(known) ok(API.jigyoStore(S.area,S.ym,S.snap,st)); }
+    else if(S.mode==="商品部詳細"&&!isAll_(S.dept)){ if(st==="__total__") ok(API.detail(S.area,S.ym,S.snap,S.dept)); else if(known) ok(API.detailStore(S.area,S.ym,S.snap,S.dept,st)); }
+    else if(S.mode==="運営部詳細"&&st==="__total__") ok(API.byDept(S.area,S.ym,S.snap));
+  }catch(e){}
+}
+
 /* 押して下りる所の印（第2便）。data-go＝行き先の種類・data-a/b＝引数・data-k＝戻ったときに光らせる目印 */
 function goAttr_(g){ return g?` data-go="${esc(g.go)}" data-a="${esc(g.a||"")}" data-b="${esc(g.b||"")}" data-k="${esc(g.k||"")}" title="${esc(g.title||"")}"`:""; }
 function goLabel_(t,g){ return g?`<span class="gl">${esc(t)}</span><span class="gch" aria-hidden="true">›</span>`:esc(t); }
 /* opts（第2便）: rowGo(r)＝その行を押した先（無ければ押せない）・totalGo＝合計の行・headGo(c)＝列の見出しを押した先・rowCls(r)＝行に足すクラス */
 function renderRollup(d,headLabel,labelOf,opts){
   const o=opts||{}, cols=d.columns;
-  let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" style="left:0">${esc(headLabel)}</th>`+
+  let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" style="left:0">${esc(headLabel)}${o.headSub?catxMk_(o.headSub):""}</th>`+
     cols.map(c=>{ const g=o.headGo?o.headGo(c):null;
       return `<th${g?` class="go"`:""}${goAttr_(g)}>${esc(c.label)}<span class="u">${c.type==="amount"?"千円":"%"}</span>${g?`<span class="gch" aria-hidden="true">›</span>`:""}</th>`; }).join("")+`</tr></thead><tbody>`;
   const tg=o.totalGo||null;
-  if(d.grand_total) h+=`<tr class="total${tg?" go":""}"${goAttr_(tg)}><td class="h" style="left:0">${goLabel_(d.grand_total.label||"\u25C6 合計",tg)}</td>`+cols.map(c=>`<td>${cellHtml(d.grand_total.cells[c.key],c,true)}</td>`).join("")+`</tr>`;
+  if(d.grand_total) h+=`<tr class="total${tg?" go":""}"${goAttr_(tg)}><td class="h" style="left:0">${goLabel_(d.grand_total.label||"\u25C6 合計",tg)}${catxMk_(d.grand_total._mk)}</td>`+cols.map(c=>`<td>${cellHtml(d.grand_total.cells[c.key],c,true,!!d.grand_total._noYoy)}</td>`).join("")+`</tr>`;
   d.rows.forEach(r=>{
     const g=o.rowGo?o.rowGo(r):null;
-    h+=`<tr class="datarow${g?" go":""}${o.rowCls?o.rowCls(r):""}"${goAttr_(g)}><td class="h" style="left:0">${goLabel_(labelOf(r),g)}</td>`+cols.map(c=>{
+    h+=`<tr class="datarow${g?" go":""}${o.rowCls?o.rowCls(r):""}"${goAttr_(g)}><td class="h" style="left:0">${goLabel_(labelOf(r),g)}${catxMk_(r._mk)}</td>`+cols.map(c=>{
       let cls=""; if(c.key==="gross_profit_month"&&r.alerts){ cls=r.alerts.gp_negative?" gp-neg":(r.alerts.loss_alert?" gp-loss":""); }
-      return `<td class="${cls}">${cellHtml(r.cells[c.key],c,false)}</td>`;
+      return `<td class="${cls}">${cellHtml(r.cells[c.key],c,false,!!r._noYoy)}</td>`;
     }).join("")+`</tr>`;
   });
-  return h+`</tbody></table></div>`;
+  return h+`</tbody></table></div>`+(o.tail||"");
 }
 /* 運営部全体（逆ピボット 行=部門/カテゴリ \u00D7 列=店舗・指標選択） */
 let _uneibu=null;
@@ -906,6 +1433,8 @@ function renderUneibu(d){
 function drawUneibu(mkey){
   const d=_uneibu,col=d.columns.find(c=>c.key===mkey)||d.columns[0],st=d.stores||[];
   mkey=col.key;
+  const cx=catxUneibu_(d);   // 中分類を選んだ合計（部門の行を、合計の列と店の列ごとに出し直す）。絞らない部門は、いままでと同じ
+  const xi=dp=>cx.info[dp]||null;
   const hd=(full,label)=>{ const g={go:"unei",a:full,k:"h:"+(full||"__total__"),title:`押すと、${full?label:"エリア合計"}の全部門の明細と、運営部の A・PD（運営部詳細）`};
     return `<th class="go"${goAttr_(g)}>${esc(label)}<span class="gch" aria-hidden="true">›</span></th>`; };
   let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" style="left:0">部門・カテゴリ</th>${hd("","合計")}`+st.map(s=>hd(s.full,s.short)).join("")+`</tr></thead><tbody>`;
@@ -921,10 +1450,12 @@ function drawUneibu(mkey){
      届いた表の下の合計の行は出さない（回によっては ＳＭ外・経費 など6部門の外の行を含むため。その行は表には残し、下に一言） */
   const deptRows=d.rows.filter(r=>r.type==="dept"&&S.meta.departments.includes(r.dept));
   const outside=[...new Set(d.rows.filter(r=>r.type==="dept"&&!S.meta.departments.includes(r.dept)).map(r=>r.dept))];
+  const gOf=r=>xi(r.dept)?xi(r.dept).grand:r.grand, sOf=(r,sh)=>xi(r.dept)?xi(r.dept).stores[sh]:(r.stores||{})[sh];
   if(deptRows.length){
-    const gAll=sumCells_(deptRows.map(r=>r.grand),d.columns);
-    h+=`<tr class="total${isAll_(S.dept)?" curdept":""}" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門合計</td>${cell("","",cellHtml(gAll[mkey],col,true),"c:__total__|all")}`+
-      st.map(s=>{ const c=sumCells_(deptRows.map(r=>(r.stores||{})[s.short]),d.columns); return cell(s.full,"",cellHtml(c[mkey],col,true),"c:"+s.full+"|all"); }).join("")+`</tr>`;
+    const gAll=sumCells_(deptRows.map(gOf),d.columns), allMk=cx.any?catxMk_(catxMulti_(cx.info)):"";
+    const nyA=deptRows.some(r=>xi(r.dept)&&xi(r.dept).nyG), nyAS=sh=>deptRows.some(r=>xi(r.dept)&&xi(r.dept).nyS[sh]);
+    h+=`<tr class="total${isAll_(S.dept)?" curdept":""}" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門合計${allMk}</td>${cell("","",cellHtml(gAll[mkey],col,true,nyA),"c:__total__|all")}`+
+      st.map(s=>{ const c=sumCells_(deptRows.map(r=>sOf(r,s.short)),d.columns); return cell(s.full,"",cellHtml(c[mkey],col,true,nyAS(s.short)),"c:"+s.full+"|all"); }).join("")+`</tr>`;
   } else if(d.grand_total){ const gt=d.grand_total;   // 部門の行が無い表は、届いた合計の行をそのまま
     h+=`<tr class="total" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門合計</td>${cell("","",cellHtml((gt.grand||{})[mkey],col,true),"c:__total__|all")}`+st.map(s=>cell(s.full,"",cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true),"c:"+s.full+"|all")).join("")+`</tr>`; }
   const hid=[];
@@ -934,14 +1465,15 @@ function drawUneibu(mkey){
     const ny=set=>{ const v=isCat&&set.has(k); if(v) noted.add(r.category); return v; };
     const est=c=>isCat?estOf_(c,marked,estPrior(d.ym,r.category)):null;   // 部門の行は印を読まない
     const cur=(r.dept===S.dept)?" curdept":"";
-    const gc=(r.grand||{})[mkey];
-    h+=`<tr class="${r.type==="dept"?"subtotal":"datarow"}${cur}"${r.type==="dept"?` data-k="d:${esc(r.dept)}"`:""}><td class="h" style="left:0">${esc(isCat?r.label:withSum_(r.label))}</td>`;
-    h+=cell("",r.dept,cellHtml(gc,col,false,ny(nyGrand),est(gc)),"c:__total__|"+ri);
-    h+=st.map(s=>{ const sc=(r.stores&&r.stores[s.short]||{})[mkey]; return cell(s.full,r.dept,cellHtml(sc,col,false,ny(nyStore[s.short]),est(sc)),"c:"+s.full+"|"+ri); }).join("")+`</tr>`;
+    const x=xi(r.dept), dx=!isCat&&x, xo=isCat&&x&&x.ex.has(r.category);   // dx＝出し直した部門の行・xo＝合計に入れていない中分類
+    const gc=(dx?x.grand:(r.grand||{}))[mkey];
+    h+=`<tr class="${r.type==="dept"?"subtotal":"datarow"}${cur}${xo?" catx":""}"${r.type==="dept"?` data-k="d:${esc(r.dept)}"`:""}><td class="h" style="left:0">${esc(isCat?r.label:withSum_(r.label))}${dx?catxMk_(x.label):""}${xo?`<br><span class="badge bd-catx">合計に入れていない</span>`:""}</td>`;
+    h+=cell("",r.dept,cellHtml(gc,col,false,dx?x.nyG:ny(nyGrand),est(gc)),"c:__total__|"+ri);
+    h+=st.map(s=>{ const sc=((dx?x.stores[s.short]:(r.stores&&r.stores[s.short]))||{})[mkey]; return cell(s.full,r.dept,cellHtml(sc,col,false,dx?x.nyS[s.short]:ny(nyStore[s.short]),est(sc)),"c:"+s.full+"|"+ri); }).join("")+`</tr>`;
   });
   const outNote=(deptRows.length&&outside.length)?`<div class="splitnote">全部門合計は6部門（${esc(S.meta.departments.join("・"))}）の合計です。${esc(outside.join("・"))} の行は入れていません（店舗事業部会議の合計には入っています）。</div>`:"";
   h+=`</tbody></table></div>`;
-  $("uTbl").innerHTML=h+outNote+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats);
+  $("uTbl").innerHTML=h+outNote+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats)+cx.note;
 }
 /* 事業部会議（18列2段＋前年比較3列） */
 function cmpCell(cur,prev,isRate,hib,noYoy,estP,curMark){
@@ -953,28 +1485,37 @@ function cmpCell(cur,prev,isRate,hib,noYoy,estP,curMark){
   else if(noYoy) h+=`<div class="prev">前 \u2014</div>`;
   return h+`</div>`;
 }
-function renderJigyo(d){
-  const cols=d.columns, cmp=d.compare||[]; const grp=[];
+/* opts.catx（本部用の入口だけ）: エリア合計の中分類の率を額から出し直す（届いた表は店の率の和＝HQ の既知の不具合）・中分類を選んだ合計。
+   opts.onlyDept: その部門の行だけ（受払の表・商品部詳細）。■合計は出さない（部門の行が合計） */
+function renderJigyo(d,opts){
+  const o=opts||{}, cols=d.columns, cmp=d.compare||[]; const grp=[];
+  const rk=cols.filter(c=>c.type==="rate").map(c=>c.key), ak=cols.filter(c=>c.type!=="rate").map(c=>c.key);
+  let rows=d.rows||[], grand=d.grand;
+  if(o.catx&&d.is_store_view===false&&!d.store) rows=rows.map(r=>r.type==="category"?Object.assign({},r,{values:jigyoRates_(r.values,rk),yoy:r.yoy?jigyoYoyRates_(r.yoy):r.yoy}):r);
+  if(o.onlyDept){ rows=rows.filter(r=>r.dept===o.onlyDept); grand=null; }
+  const cx=o.catx?catxJigyo_(rows,grand,ak,rk):null;
   cols.forEach(c=>{ const g=c.group||""; if(g===""&&grp.length) grp[grp.length-1].span++; else grp.push({g,span:1}); });
-  const fv=(c,v)=>v==null?"\u2014":(c.type==="rate"?pct(v):kyen(v));
+  const fv=(c,v)=>v==null?"—":(c.type==="rate"?pct(v):kyen(v));
   let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" rowspan="2" style="left:0">部門・カテゴリ</th>`+
     grp.map(g=>`<th colspan="${g.span}" style="text-align:center">${esc(g.g)}</th>`).join("")+(cmp.length?`<th colspan="${cmp.length}" style="text-align:center">前年比較</th>`:"")+`</tr><tr>`+
     cols.map(c=>`<th>${esc(c.sub_header||"")}</th>`).join("")+cmp.map(c=>`<th>${esc(c.label)}</th>`).join("")+`</tr></thead><tbody>`;
-  const noYoy=splitNoYoyRows(d.rows.filter(r=>r.type!=="dept"),r=>({current:(r.values||{}).sales_month,yoy:(r.yoy||{}).sales_month})), noted=new Set();
-  const marked=d.rows.some(r=>r.type==="category"&&r.yoy_est===true);   // 事業部会議の印は、中分類の行に yoy_est（予算の列は無い）
-  const row=(r,cls)=>{ const v=r.values||{},y=r.yoy||{};
-    const ny=r.type==="category"&&noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
+  const noYoy=splitNoYoyRows(rows.filter(r=>r.type!=="dept"),r=>({current:(r.values||{}).sales_month,yoy:(r.yoy||{}).sales_month})), noted=new Set();
+  const marked=rows.some(r=>r.type==="category"&&r.yoy_est===true);   // 事業部会議の印は、中分類の行に yoy_est（予算の列は無い）
+  const row=(r,cls,x)=>{ const v=(x?x.values:r.values)||{},y=(x?x.yoy:r.yoy)||{};
+    let ny=r.type==="category"&&noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
+    if(x&&x.noYoy) ny=true;   // 中分類を選んだ合計で、前年と比べられない組を片方だけ入れた
     const ep=r.type==="category"&&(marked?r.yoy_est===true:estPrior(d.ym,r.category));
     const mk=key=>(r.type==="category"&&r.cur_est===true&&CUR_EST_KEYS.includes(key))?curEstMark_({cur_est:true}):"";   // 委託の速報の粗利（行の印）
-    return `<tr class="${cls}"><td class="h" style="left:0">${esc(r.type==="dept"?withSum_(r.label):r.label)}</td>`+cols.map(c=>`<td>${v[c.key]!=null&&mk(c.key)?`<span class="cev">${mk(c.key)}${fv(c,v[c.key])}</span>`:fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep,mk(c.key))}</td>`).join("")+`</tr>`; };
+    const xo=r.type==="category"&&cx&&cx.by[r.dept]&&cx.by[r.dept].ex.has(r.category);
+    return `<tr class="${cls}${xo?" catx":""}"><td class="h" style="left:0">${esc(r.type==="dept"?withSum_(r.label):r.label)}${x?catxMk_(x.label):""}${xo?`<br><span class="badge bd-catx">合計に入れていない</span>`:""}</td>`+cols.map(c=>`<td>${v[c.key]!=null&&mk(c.key)?`<span class="cev">${mk(c.key)}${fv(c,v[c.key])}</span>`:fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep,mk(c.key))}</td>`).join("")+`</tr>`; };
   const hid=[];
-  d.rows.forEach(r=>{
+  rows.forEach(r=>{
     if(r.type==="category"&&zeroCells_(r.values)&&zeroCells_(r.yoy)){ hid.push([r.dept||"",r.category||r.label]); return; }   // すべて 0 の中分類（今年のどの列も・前年も）
-    h+=row(r,r.type==="dept"?"subtotal":"datarow");
+    h+=row(r,r.type==="dept"?"subtotal":"datarow",r.type==="dept"&&cx?cx.by[r.dept]:null);
   });
-  if(d.grand) h+=row({label:d.grand.label||"\u25C6 合計",values:d.grand.values,yoy:d.grand.yoy},"total");
+  if(grand) h+=row({label:grand.label||"◆ 合計",values:grand.values,yoy:grand.yoy},"total",cx&&cx.grand);
   h+=`</tbody></table></div>`;
-  return h+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats);
+  return h+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_((d._hidCats||[]).filter(x=>!o.onlyDept||x.dept===o.onlyDept))+(cx?cx.note:"");
 }
 /* 仕入分析（目標粗利率・在庫日数\u2192計算・\u00B110%色） */
 const BDAYS=25; let _shiire=null;
@@ -1001,7 +1542,8 @@ function drawShiire(gp,inv){
 /* role/area/dept は入室ゲートの選択値。入室確定で asg（担当）へ固定コピーし、以後 area/dept は表示側の選択として独立に動く */
 const S={ meta:null, viewMode:"hq", entered:false, asg:null, role:"buyer", area:"", dept:"",
   mode:"商品部全体", ym:"", snap:"", snaps:[], stores:[], storeTab:"__total__", metric:"sales_month", hist:false,
-  view:"cum", wi:-1, wmetric:"s", wtmetric:"s", q:"inv_week", qopen:"" };   // 第5便: view＝累計（cum）・週間（week）・気になる所（find）。wi＝週の番号（-1＝最新）
+  view:"cum", wi:-1, wmetric:"s", wtmetric:"s", q:"inv_week", qopen:"",
+  catx:"{}", uke:false };   // 2026-11-01: catx＝中分類の絞り込み（部門ごとの除く名前・catxStr_ の字）・uke＝表の中身を受払に   // 第5便: view＝累計（cum）・週間（week）・気になる所（find）。wi＝週の番号（-1＝最新）
 const MODE_BG={ "商品部詳細":"#E1F5FE","商品部全体":"#E1F5FE","運営部詳細":"#E8F5E9","運営部全体":"#E8F5E9","店舗事業部会議":"#EDE7F6" };
 /* 入口の担当（PO 2026-10-14・10-15）。どこに書けるかは、ここで選んだ担当で決める（サーバーは本部ドメインかを確かめる）。
    商品部の担当（BY）と運営部の担当（SV）は、エリアと担当部門を選ぶ。責任者（課長以上）は商品部と運営部を分けない＝両方の全部門。
@@ -1174,6 +1716,7 @@ function enter(){
   // 第2便: 入ると、担当で決めた段から始まる（運営部の担当＝運営部全体・ほか＝商品部全体）。店はエリア合計・指標は売上・期間は最新
   S.mode=START_BY_ROLE[S.role]||"商品部全体"; S.storeTab="__total__"; S.metric="sales_month"; S.snap=""; S.hist=false;
   S.view="cum"; S.wi=-1; S.qopen="";   // 入ると累計（いまの画面）から
+  catxLoad_(); S.uke=!!loadPref_().uke;   // 中分類の絞り込み（部門ごと）と、表の中身（指標｜受払）は、この PC に覚えた物から
   if(S.role==="lead") S.dept=ALL_DEPT;   // 責任者は、はじめから全部門（計）（PO 2026-10-16）。ほかの担当は担当部門から
   S.entered=true; navInit_(); show_({why:"入室"});
 }
@@ -1198,17 +1741,18 @@ function metricLabel_(k){ const m=METRICS.find(x=>x.key===(k||S.metric)); return
 function storeShortOf_(slug){ if(!slug||slug==="__total__") return "エリア合計"; const s=(S.stores||[]).find(x=>x.slug===slug); return s?s.short:"店"; }
 function slugOfFull_(full){ if(!full) return "__total__"; const s=(S.stores||[]).find(x=>x.full===full); return s?s.slug:null; }
 function viewState_(){ return {mode:S.mode,area:S.area,ym:S.ym,snap:S.snap,dept:S.dept,storeTab:S.storeTab,metric:S.metric,hist:!!S.hist,
-  view:S.view,wi:S.wi,wmetric:S.wmetric,wtmetric:S.wtmetric,q:S.q,qopen:S.qopen}; }
+  view:S.view,wi:S.wi,wmetric:S.wmetric,wtmetric:S.wtmetric,q:S.q,qopen:S.qopen,catx:S.catx||"{}",uke:!!S.uke}; }
 function describe_(v){
   if(!v) return "";
   if(v.view==="find") return "🔎 気になる所";
-  if(v.view==="week") return "週間・"+(v.mode==="運営部全体"?"運営部全体":describe_(Object.assign({},v,{view:"cum",hist:false})));
+  if(v.view==="week") return "週間・"+(v.mode==="運営部全体"?"運営部全体":describe_(Object.assign({},v,{view:"cum",hist:false,catx:"{}",uke:false})));
   const st=storeShortOf_(v.storeTab);
-  if(v.mode==="商品部全体") return `商品部全体（${deptLabel_(v.dept)}）`;
-  if(v.mode==="商品部詳細") return `商品部詳細（${st}・${deptLabel_(v.dept)}）${v.hist&&!isAll_(v.dept)?"・🕘 履歴":""}`;
-  if(v.mode==="運営部全体") return `運営部全体（${metricLabel_(v.metric)}）`;
-  if(v.mode==="運営部詳細") return `運営部詳細（${st}）${v.hist&&!isAll_(v.dept)?"・🕘 履歴":""}`;
-  if(v.mode==="店舗事業部会議") return `店舗事業部会議（${st}）`;
+  const cx=cxDesc_(v);
+  if(v.mode==="商品部全体") return `商品部全体（${deptLabel_(v.dept)}${cx}）`;
+  if(v.mode==="商品部詳細") return `商品部詳細（${st}・${deptLabel_(v.dept)}${cx}）${v.hist&&!isAll_(v.dept)?"・🕘 履歴":""}`;
+  if(v.mode==="運営部全体") return `運営部全体（${metricLabel_(v.metric)}${cx}）`;
+  if(v.mode==="運営部詳細") return `運営部詳細（${st}${cx}）${v.hist&&!isAll_(v.dept)?"・🕘 履歴":""}`;
+  if(v.mode==="店舗事業部会議") return `店舗事業部会議（${st}${cx}）`;
   return v.mode;
 }
 function curNav_(){ try{ return (history.state&&history.state.hissuru)||null; }catch(e){ return null; } }
@@ -1405,7 +1949,8 @@ function drawNav_(){
   const sel=S.snaps.find(x=>x.snapshot===S.snap);
   const snapTxt=S.view!=="cum"&&WK.meta?wkWeekLabel_():sel?String(sel.label||"").replace(/\(.*?\)/,"").replace(/\s+/g," ").trim():"";
   const showDept=S.view!=="find"&&!["店舗事業部会議","データ管理"].includes(S.mode);
-  const ctx=S.mode==="データ管理"?"":`<span class="ctx">${esc(S.area)}${showDept?"・"+esc(deptLabel_(S.dept)):""}${snapTxt?"・"+esc(snapTxt):""}</span>`;
+  const bm=catxBand_();   // 中分類の絞り込み中は、部門の後ろに（ベーカリーを除く）
+  const ctx=S.mode==="データ管理"?"":`<span class="ctx">${esc(S.area)}${showDept?"・"+esc(deptLabel_(S.dept)):""}${bm?`<span class="cxband">（${esc(bm)}）</span>`:""}${snapTxt?"・"+esc(snapTxt):""}</span>`;
   el.innerHTML=`<button class="btn back" id="navBack" onclick="goBack_()" ${d>0?"":"disabled"} title="${esc(tip)}">← ひとつ前に戻る</button>`+
     `<div class="crumbs" aria-label="いま見ている所">${ctx}${crumbs_()}</div>`;
 }
@@ -1433,11 +1978,12 @@ function backToGate(){ S.entered=false; S.asg=null; if(S.mode==="データ管理
 function setMode(m){ const view=TREE.includes(m)&&S.view!=="cum"?"week":"cum"; if(m===S.mode&&view===S.view) return; nav_({mode:m,view},{why:"段の地図"}); }
 function openStoreView_(){ try{ window.open(storeUrl_(),"_blank","noopener"); }catch(e){} }
 function needDept_(m){ return m==="商品部詳細"||m==="商品部全体"||m==="仕入分析"||m==="運営部詳細"; }
-function printHq_(){ const t=$("printTitle"); if(!t){ window.print(); return; } const store=(STORE_MODES.includes(S.mode)&&S.storeTab&&S.storeTab!=="__total__")?S.stores.find(x=>x.slug===S.storeTab):null; const parts=[esc(S.area)]; if(needDept_(S.mode))parts.push(esc(deptLabel_(S.dept))); if(STORE_MODES.includes(S.mode))parts.push(store?esc(store.short):"エリア合計"); t.innerHTML=`<div class="ptitle">ヒッスル｜${S.view==="find"?"気になる所":esc(S.mode)+(S.view==="week"?"（週間）":"")} ${parts.join("／")}</div><div class="psub">${esc(S.view!=="cum"?wkWeekLabel_():snapLabelNow())} ／ 印刷日時 ${esc(nowStamp_())}</div>`; window.print(); }
+function printHq_(){ const t=$("printTitle"); if(!t){ window.print(); return; } const store=(STORE_MODES.includes(S.mode)&&S.storeTab&&S.storeTab!=="__total__")?S.stores.find(x=>x.slug===S.storeTab):null; const parts=[esc(S.area)]; const bm=catxBand_(); if(needDept_(S.mode))parts.push(esc(deptLabel_(S.dept))+(bm?`（${esc(bm)}）`:"")); else if(bm) parts.push(`（${esc(bm)}）`); if(ukeHere_()&&S.uke) parts.push("受払"); if(STORE_MODES.includes(S.mode))parts.push(store?esc(store.short):"エリア合計"); t.innerHTML=`<div class="ptitle">ヒッスル｜${S.view==="find"?"気になる所":esc(S.mode)+(S.view==="week"?"（週間）":"")} ${parts.join("／")}</div><div class="psub">${esc(S.view!=="cum"?wkWeekLabel_():snapLabelNow())} ／ 印刷日時 ${esc(nowStamp_())}</div>`; window.print(); }
 
 /* 選択バー（エリア/年月/データ期間/部門）＋押し方のひとこと＋本文 */
 async function refreshView(){
   const seq=NAV.seq, v=$("view");
+  cxReset_();   // 前の表の中分類の名前で、札・帯を出さない（表を描いたあとで書き直す）
   if(S.mode==="データ管理"){ await renderDataManage(); land_(seq); return; }
   if(wkFix_()){ await wkView_(seq); return; }   // 週間・気になる所（第5便）
   const areaSel=`<select onchange="onArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?'selected':''}>${esc(a)}</option>`).join("")+`</select>`;
@@ -1447,9 +1993,12 @@ async function refreshView(){
     ? (isAll_(S.dept)?`<option value="" selected disabled>部門を選択</option>`:"")
     : `<option value="${ALL_DEPT}" ${isAll_(S.dept)?'selected':''}>全部門（計）</option>`;
   const deptSel=needDept_(S.mode)?`<span class="lb">部門</span><select onchange="onDept(this.value)">`+allOpt+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?'selected':''}>${esc(d)}</option>`).join("")+`</select>`:"";
-  v.innerHTML=`<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="snapSel" onchange="onSnap(this.value)"></select>${deptSel}${wkSelRight_()}</div>`+
+  if(CXP.open) catClose_(false);   // 選ぶ帯を描き直すので、開いていた中分類の一覧は閉じる
+  catxSave_(); if(!!loadPref_().uke!==!!S.uke) savePref_({uke:!!S.uke});   // 戻るで前の選び方に戻ったときも、この PC に覚える
+  v.innerHTML=`<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="snapSel" onchange="onSnap(this.value)"></select>${deptSel}${catBtnHtml_()}${wkSelRight_()}</div>`+
     `<div id="storetabs"></div><div id="scope"></div><div id="body"><div class="note">読み込み中…</div></div>`;
   await loadSnaps(); if(seq!==NAV.seq) return;
+  prefetchBody_();   // 表を、店の一覧と同時に読み始める（2026-11-01・期間 → 店の一覧 → 表の3本を順に待たない）
   await loadStores(); if(seq!==NAV.seq) return;
   drawStoreTabs(); drawScope(); drawNav_();
   if(TREE.includes(S.mode)) renderAppTreeSubs_();
@@ -1509,55 +2058,20 @@ function drawScope(){
   let h=howto_();
   // 委託の粗利に (推定) が出ている表では、帯の終わりに一文（sokCurEst_・表を描いたあと）。棚卸未実施の部門の分は、いままでどおり高めに出る
   if(sel&&sel.file_type==="05-4") h+=`<div class="sokuho"><span>⚠</span><span><b>月途中の速報値（${esc((sel.label||"").replace("📊","").trim())}）を表示中です。</b> 月末確定（📌）取込前は棚卸未実施部門で粗利が高めに出ます。<span id="sokCurEst"></span></span></div>`;
-  if(S.mode!=="仕入分析"&&S.mode!=="店舗事業部会議"&&S.mode!=="運営部全体") h+=legend();
+  if(S.mode!=="仕入分析"&&S.mode!=="店舗事業部会議"&&S.mode!=="運営部全体"&&!(ukeHere_()&&S.uke)) h+=legend();
   if(S.mode==="商品部詳細"&&S.asg&&S.asg.role!=="viewer"&&!isAll_(S.dept))
-    h+=`<div style="margin:8px 0"><button class="btn" onclick="bulkOpenSheet(this)">📗 会議用まとめ（${esc(S.dept)}×${esc(S.area)} 全店を1ファイル）</button> <span id="bulkMsg" class="lb"></span></div>`;
+    h+=`<div style="margin:8px 0"><button class="btn" onclick="bulkOpenSheet(this)">📗 会議用まとめ（${esc(S.dept)}×${esc(S.area)} 全店を1ファイル）</button>${catxOf_(S.dept).length?` <span class="lb bulkhint" style="color:#92400e">会議用まとめには、中分類の絞り込みは入りません（部門全体の数）</span>`:""} <span id="bulkMsg" class="lb"></span></div>`;
   $("scope").innerHTML=h;
 }
 async function drawBody(seq){
-  const b=$("body"); b.innerHTML=`<div class="note">読み込み中…</div>`;
+  const b=$("body"); b.innerHTML=`<div class="note" id="cxBodyProg">読み込み中…</div>`;
+  cxReset_(); TBL.seq++;
   try{
-    const st=STORE_MODES.includes(S.mode)?S.storeTab:"__total__";
-    const so=st!=="__total__"?S.stores.find(x=>x.slug===st):null;
-    let html="";
-    if(S.mode==="商品部詳細"&&isAll_(S.dept)){
-      html=renderSection(await allDetail_(st==="__total__"?"":st),{deptGo:"sdept",fold:true});
-    }
-    else if(S.mode==="商品部詳細"){
-      html=st==="__total__"?renderSection(await API.detail(S.area,S.ym,S.snap,S.dept)):await storeDetailHtml(st,so,S.dept);
-    }
-    else if(S.mode==="商品部全体"&&isAll_(S.dept)){
-      html=renderRollup(await allByStore_(),"店舗",r=>r.label||r.store,{
-        rowGo:r=>({go:"shohin",a:r.store_full||"",k:"r:"+(r.store_full||r.store),title:`押すと、${r.label||r.store}の部門ごとの計（商品部詳細）`}),
-        totalGo:{go:"shohin",a:"",k:"r:__total__",title:"押すと、エリア合計の部門ごとの計（商品部詳細）"},
-        headGo:c=>({go:"metric",a:c.key,k:"h:"+c.key,title:`押すと、この指標（${c.label}）を、部門・カテゴリ×店で並べます（運営部全体）`})
-      });
-    }
-    else if(S.mode==="商品部全体"){
-      const d=await API.byStore(S.area,S.ym,S.snap,S.dept);
-      html=renderRollup(d,"店舗",r=>r.label||r.store,{
-        rowGo:r=>({go:"shohin",a:r.store_full||"",k:"r:"+(r.store_full||r.store),title:`押すと、${r.label||r.store}の${S.dept}の明細と A・PD（商品部詳細）`}),
-        totalGo:{go:"shohin",a:"",k:"r:__total__",title:`押すと、エリア合計の${S.dept}の明細と A・PD（商品部詳細）`},
-        headGo:c=>({go:"metric",a:c.key,k:"h:"+c.key,title:`押すと、この指標（${c.label}）を、部門・カテゴリ×店で並べます（運営部全体）`})
-      });
-    }
-    else if(S.mode==="運営部詳細"){
-      if(st==="__total__") html=renderRollup(await API.byDept(S.area,S.ym,S.snap),"部門",r=>r.label||r.dept,{
-        rowGo:r=>({go:"cdept",a:r.dept,k:"d:"+r.dept,title:`押すと、下の運営部の A・PD を ${r.dept} に替えます`}),
-        rowCls:r=>r.dept===S.dept?" curdept":""});
-      else html=await storeDetailHtml(st,so,null);
-    }
-    else if(S.mode==="運営部全体") html=renderUneibu(await API.uneibu(S.area,S.ym,S.snap));
-    else if(S.mode==="店舗事業部会議"){
-      html=st==="__total__"?renderJigyo(await API.jigyo(S.area,S.ym,S.snap)):renderJigyo(await API.jigyoStore(S.area,S.ym,S.snap,st));
-    }
-    else if(S.mode==="仕入分析"&&isAll_(S.dept)) html=`<div class="allnote"><span>仕入分析は部門ごとです。部門を選んでください：</span>`+
-      S.meta.departments.map(d=>`<button class="btn" data-go="sdept" data-a="${esc(d)}" data-k="n:${esc(d)}">${esc(d)}</button>`).join("")+`</div>`;
-    else if(S.mode==="仕入分析") html=renderShiire(await API.shiire(S.area,S.ym,S.snap,S.dept));
+    const html=await bodyHtml_(seq);
     if(seq!=null&&seq!==NAV.seq) return;   // 待っている間に、別の所が押された（前の結果で上書きしない）
-    b.innerHTML=html;
-    if(S.mode==="運営部全体") drawUneibu(S.metric);
-    sokCurEst_();
+    // 表は #tblBox の中（中分類・受払の切り替えは、表だけを描き直す）。商品部詳細・運営部詳細は、表の上に「表の中身：指標｜受払」
+    b.innerHTML=(ukeHere_()?`<div id="ukeSeg">${ukeSegHtml_()}</div>`:"")+`<div id="tblBox">${html}</div>`;
+    afterTable_();
     // コメント（G2）: 商品部詳細/運営部詳細（エリア合計・店舗タブとも表示。編集可否は canEditSec が判定）
     if((S.mode==="商品部詳細"||S.mode==="運営部詳細")&&isAll_(S.dept)){
       b.insertAdjacentHTML("beforeend",`<div id="cpanel" style="margin-top:14px">${allDeptNote_()}</div>`);   // 全部門では A・PD を読まない・書かない
@@ -1568,11 +2082,55 @@ async function drawBody(seq){
     }
   }catch(e){
     if(seq!=null&&seq!==NAV.seq) return;
-    const m=String(e&&e.message||e);
-    b.innerHTML=m.includes("ファイルなし")||m.includes("未収載")
-      ? `<div class="note">この条件の実績データがありません。<br>実績があるのは主に <b>北関東・首都圏</b>。<b>東北（北東北・宮城・山形）は実績が未更新の期間があります</b>（予算は全エリア登録済み）。</div>`
-      : `<div class="err">データを取得できません：${esc(m)}</div>`;
+    cxProg_(null);
+    b.innerHTML=bodyErr_(e);
+    catxMarks_();
   }
+}
+function bodyErr_(e){
+  const m=String(e&&e.message||e);
+  return m.includes("ファイルなし")||m.includes("未収載")
+    ? `<div class="note">この条件の実績データがありません。<br>実績があるのは主に <b>北関東・首都圏</b>。<b>東北（北東北・宮城・山形）は実績が未更新の期間があります</b>（予算は全エリア登録済み）。</div>`
+    : `<div class="err">データを取得できません：${esc(m)}</div>`;
+}
+/* いまの見方の表の HTML（読む・中分類の絞り込み・描く）。drawBody と redrawTable_（表だけの描き直し）の両方から */
+async function bodyHtml_(seq){
+  const st=STORE_MODES.includes(S.mode)?S.storeTab:"__total__";
+  const so=st!=="__total__"?S.stores.find(x=>x.slug===st):null;
+  if(ukeHere_()&&S.uke) return await ukeHtml_(st,so);
+  if(S.mode==="商品部詳細"&&isAll_(S.dept)) return renderSection(await allDetail_(st==="__total__"?"":st),{deptGo:"sdept",fold:true,catx:true});
+  if(S.mode==="商品部詳細") return st==="__total__"?renderSection(await API.detail(S.area,S.ym,S.snap,S.dept),{catx:true}):await storeDetailHtml(st,so,S.dept);
+  if(S.mode==="商品部全体"&&isAll_(S.dept)){
+    const d=await allByStore_();
+    return renderRollup(d,"店舗",r=>r.label||r.store,{
+      rowGo:r=>({go:"shohin",a:r.store_full||"",k:"r:"+(r.store_full||r.store),title:`押すと、${r.label||r.store}の部門ごとの計（商品部詳細）`}),
+      totalGo:{go:"shohin",a:"",k:"r:__total__",title:"押すと、エリア合計の部門ごとの計（商品部詳細）"},
+      headGo:c=>({go:"metric",a:c.key,k:"h:"+c.key,title:`押すと、この指標（${c.label}）を、部門・カテゴリ×店で並べます（運営部全体）`}),
+      headSub:d.grand_total._mk?"各店も "+d.grand_total._mk:"", tail:d._cx?d._cx.note:""
+    });
+  }
+  if(S.mode==="商品部全体"){
+    const d=await catxByStore_(await API.byStore(S.area,S.ym,S.snap,S.dept),S.dept);
+    return renderRollup(d,"店舗",r=>r.label||r.store,{
+      rowGo:r=>({go:"shohin",a:r.store_full||"",k:"r:"+(r.store_full||r.store),title:`押すと、${r.label||r.store}の${S.dept}の明細と A・PD（商品部詳細）`}),
+      totalGo:{go:"shohin",a:"",k:"r:__total__",title:`押すと、エリア合計の${S.dept}の明細と A・PD（商品部詳細）`},
+      headGo:c=>({go:"metric",a:c.key,k:"h:"+c.key,title:`押すと、この指標（${c.label}）を、部門・カテゴリ×店で並べます（運営部全体）`}),
+      headSub:d._cx&&d._cx.label?"各店も "+d._cx.label:"", tail:d._cx?d._cx.note:""
+    });
+  }
+  if(S.mode==="運営部詳細"){
+    if(st==="__total__"){ const d=await catxByDept_(await API.byDept(S.area,S.ym,S.snap));
+      return renderRollup(d,"部門",r=>r.label||r.dept,{
+        rowGo:r=>({go:"cdept",a:r.dept,k:"d:"+r.dept,title:`押すと、下の運営部の A・PD を ${r.dept} に替えます`}),
+        rowCls:r=>r.dept===S.dept?" curdept":"", tail:d._cx?d._cx.note:""}); }
+    return await storeDetailHtml(st,so,null);
+  }
+  if(S.mode==="運営部全体") return renderUneibu(await API.uneibu(S.area,S.ym,S.snap));
+  if(S.mode==="店舗事業部会議") return renderJigyo(st==="__total__"?await API.jigyo(S.area,S.ym,S.snap):await API.jigyoStore(S.area,S.ym,S.snap,st),{catx:true});
+  if(S.mode==="仕入分析"&&isAll_(S.dept)) return `<div class="allnote"><span>仕入分析は部門ごとです。部門を選んでください：</span>`+
+    S.meta.departments.map(d=>`<button class="btn" data-go="sdept" data-a="${esc(d)}" data-k="n:${esc(d)}">${esc(d)}</button>`).join("")+`</div>`;
+  if(S.mode==="仕入分析") return catxNoEffect_([S.dept])+renderShiire(await API.shiire(S.area,S.ym,S.snap,S.dept));
+  return "";
 }
 function onArea(v){ nav_({area:v,snap:"",storeTab:"__total__"},{why:"エリア"}); }
 function onYm(v){ nav_({ym:v,snap:""},{why:"年月"}); }
@@ -1602,12 +2160,12 @@ function storeNote(s){
 const isNoFile=e=>{const m=String(e&&e.message||e);return m.includes("ファイルなし")||m.includes("未収載");};
 async function storeDetailHtml(slug,so,dept){
   try{
-    if(dept) return renderSection(await API.detailStore(S.area,S.ym,S.snap,dept,slug));
+    if(dept) return renderSection(await API.detailStore(S.area,S.ym,S.snap,dept,slug),{catx:true});
     const parts=await Promise.all(S.meta.departments.map(d=>
       API.detailStore(S.area,S.ym,S.snap,d,slug).catch(e=>{ if(isNoFile(e)) return null; throw e; })));
     const got=parts.filter(Boolean);
     if(!got.length) return storeNote(so);
-    return renderSection({...got[0], rows:got.flatMap(p=>p.rows||[]), dept_totals:got.flatMap(p=>p.dept_totals||[]), _hidCats:got.flatMap(p=>p._hidCats||[]), grand_total:null},{deptGo:true});
+    return renderSection({...got[0], rows:got.flatMap(p=>p.rows||[]), dept_totals:got.flatMap(p=>p.dept_totals||[]), _hidCats:got.flatMap(p=>p._hidCats||[]), grand_total:null},{deptGo:true,catx:true});
   }catch(e){
     if(isNoFile(e)) return storeNote(so);
     return `<div class="err">データを取得できません：${esc(String(e&&e.message||e))}</div>`;
@@ -2909,6 +3467,8 @@ async function wkView_(seq){
       const sm=am.stores.find(s=>s.slug===st); if(sm) WK.C=await wkLoad_(sm.file); if(seq!==NAV.seq) return;
     }
     $("scope").innerHTML=wkHowto_();
+    // 中分類の絞り込みは、週の表にはまだ効かない（部門全体の数）＝絞り込み中の部門があれば一言（🔎 気になる所は中分類ごとの当たりなので出さない）
+    const cxw=S.view==="week"?catxNoEffect_(dept===WK_ALL?S.meta.departments:[dept]):"";
     let html;
     if(S.view==="find") html=wkFindHtml_();
     else if(S.mode==="運営部全体") html=wkKpiHtml_(WK_AREA,WK_ALL)+wkUneibuHtml_()+wkTermsHtml_();
@@ -2916,7 +3476,7 @@ async function wkView_(seq){
       ((S.mode==="商品部詳細"||S.mode==="運営部詳細")?`<div class="allnote" style="margin:0 0 12px"><span>✎ A・PD は、累計（月初から）の画面で書きます。</span><button class="btn"${wkGo_({view:"cum"},"","累計")}>累計の画面へ</button></div>`:"")+
       wkTermsHtml_();
     if(seq!==NAV.seq) return;
-    b.innerHTML=`<div class="wk">${html}</div>`;
+    b.innerHTML=`<div class="wk">${cxw}${html}</div>`;
     wkDraw_();
   }catch(e){
     if(seq!==NAV.seq) return;
