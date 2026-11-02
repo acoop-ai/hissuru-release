@@ -22,10 +22,30 @@
   /* 上の帯の字（2026-10-26 PO「余白に余裕があるので、もっと文字フォントを大きく」）: 帯の字はおおむね +2px（いちばん小さい 10〜11px は 12〜13px へ）。
      表の数字のマス（.cell）の字は変えない。表の左の見出しの列（部門・カテゴリ）は 12px → 14px（table.c の th.h・td.h） */
   header .logo{background:#0f172a;color:#fff;font-weight:700;font-size:14px;border-radius:6px;padding:6px 8px;}
-  header h1{font-size:19px;margin:0;} header .sub{font-size:13px;color:var(--muted);}
-  header .user{margin-left:auto;font-size:13px;color:var(--muted);}
+  /* 上の帯（2026-11-02 PO「システム名が重複するので左上をはっきりと大きく、1か所で良い」）:
+     システム名は左上の1か所だけ（大きく）。重複でない字（PDCA のどの段か・本番データ・build）は名前の右に小さく2行。
+     右は「いまの担当」（入室後・本部用だけ）→ ログイン → ご利用ガイド。幅が足りないときは折り返す（はみ出さない） */
+  header{flex-wrap:wrap;row-gap:6px;padding:5px 16px;min-height:52px;}
+  header .brand{display:flex;align-items:center;gap:12px;min-width:0;}
+  header h1{font-size:25px;font-weight:800;margin:0;letter-spacing:.04em;line-height:1.1;white-space:nowrap;color:#0f172a;}
+  header .bsub{display:flex;flex-direction:column;gap:1px;border-left:2px solid var(--border);padding-left:12px;line-height:1.3;min-width:0;}
+  header .hmode{font-size:13.5px;color:#334155;white-space:nowrap;}
+  header .hstep{display:inline-block;background:#0f172a;color:#fff;border-radius:5px;padding:0 7px;margin-right:6px;font-size:12.5px;font-weight:700;line-height:19px;}
+  header .hstep.sv{background:#475569;}
+  header .bname{font-size:12px;color:#64748b;white-space:nowrap;}
+  header .hsp{flex:1 1 0;min-width:8px;}
+  header .user{font-size:13px;color:var(--muted);}
+  /* いまの担当（入室後）: 何の担当で入っているか・どこに書けるか・担当を変える、を1つの札に */
+  header .hasg{display:flex;align-items:center;gap:10px;border:1px solid var(--border);background:#f8fafc;border-radius:9px;padding:3px 5px 3px 10px;}
+  header .hasg[hidden]{display:none;}
+  header .hasg .who{display:flex;flex-direction:column;gap:1px;line-height:1.2;}
+  header .hasg .chs{display:flex;align-items:center;gap:5px;font-size:13px;color:#475569;white-space:nowrap;}
+  header .hasg .role-badge{border-radius:6px;padding:0 7px;font-weight:700;font-size:13.5px;line-height:20px;}
+  header .hasg .chip{font-size:13.5px;padding:0 7px;line-height:20px;}
+  header .hasg .wh{font-size:12px;color:#475569;white-space:nowrap;}
+  header .hasg .btn{padding:4px 10px;font-size:13px;white-space:nowrap;}
   .page{transition:background-color .3s;min-height:calc(100vh - 55px);}
-  main{max-width:1400px;margin:0 auto;padding:20px 16px 40px;}
+  main{max-width:1400px;margin:0 auto;padding:14px 16px 40px;}
   h2.title{font-size:20px;font-weight:600;margin:0;} .subtitle{font-size:14px;color:var(--muted);margin:2px 0 0;}
   .btn{border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;padding:6px 12px;color:#334155;}
   .btn.primary{background:#0284c7;border-color:#0284c7;color:#fff;font-weight:600;}
@@ -55,7 +75,7 @@
   .rb-buyer{background:var(--sky100);color:var(--sky800);} .rb-admin{background:#fef3c7;color:#92400e;} .rb-viewer{background:#f1f5f9;color:#475569;} .rb-unei{background:#dcfce7;color:#166534;}
 
   /* モードタブ */
-  .modes{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:18px 0 0;}
+  .modes{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:0;}   /* 2026-11-02: 上の題と担当の帯を上の帯へ移したので、段の地図がいちばん上 */
   .modes button{border:1px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;font-size:15px;padding:6px 11px;color:#334155;}
   .modes button.on{background:#0284c7;border-color:#0284c7;color:#fff;font-weight:600;}
   /* 管理者用（データ管理）は閲覧系タブと明確に別物と分かるよう、右端へ隔離＋琥珀色の枠 */
@@ -69,6 +89,13 @@
 
   /* 選択バー・タブ */
   .selbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0;}
+  /* 選ぶ帯（本部用・2026-11-02）: 「ここで選ぶ」を白い札1枚にまとめる。左＝選ぶ物（選んだ値を太字で）・右＝見方の切り替えと印刷。
+     見出しの字（エリア・年月…）は従・選んだ値は主（字の大きさ・太さで差をつける） */
+  #view .selbar{background:#fff;border:1px solid var(--border);border-radius:10px;padding:6px 10px;margin:10px 0 8px;gap:6px 8px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+  #view .selbar > .lb{font-size:13.5px;color:#475569;font-weight:600;margin-left:4px;}
+  #view .selbar > .lb:first-child{margin-left:0;}
+  #view .selbar select{font-weight:600;color:#0f172a;border-color:#94a3b8;cursor:pointer;min-height:34px;}
+  #view .selbar select:hover,#view .selbar .catbtn:hover{border-color:#0284c7;}
   .tabs2{display:flex;flex-wrap:wrap;gap:3px;margin:10px 0;}
   .tabs2 button{border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:14px;padding:4px 6px;color:#475569;}   /* 字は 12→14px・左右の余白は 9→6px（北関東の18店が 1366 の幅で1行に入る） */
   .tabs2 button.on{background:#0369a1;border-color:#0369a1;color:#fff;font-weight:600;}
@@ -151,10 +178,14 @@
   .uprow .st{width:18px;text-align:center;}
   .uprow.done{color:#166534;} .uprow.fail{color:#b91c1c;} .uprow.wait{color:#94a3b8;} .uprow.now{color:#0369a1;font-weight:600;}
   .upnote{font-size:11px;color:var(--muted);margin-top:6px;}
-  /* データ鮮度の警告バー（HQ側の同期・取込が止まった時に気づけるように） */
-  #freshBar{display:flex;align-items:flex-start;gap:10px;background:#fef2f2;border-bottom:2px solid #fecaca;color:#7f1d1d;padding:10px 16px;font-size:13px;line-height:1.6;}
-  #freshBar.warn{background:#fffbeb;border-bottom-color:#fde68a;color:#78350f;}
-  #freshBar b{font-weight:700;}
+  /* データの届き具合の知らせ（上の帯のすぐ下・2026-11-02 PO で決まりを替えた）:
+     #noticeUp＝受払（月中）のアップロード忘れ（黄・本部用）／#noticeCopy＝本部 PC の取込・写しの止まり（赤・管理者だけ）。
+     文の途中で改行しない。入る幅なら1行・入らなければ文の切れ目で折り返す（右が空いたまま2行にしない）。印刷には出さない */
+  .fbar{display:flex;align-items:center;gap:10px;background:#fffbeb;border-bottom:2px solid #fde68a;color:#78350f;padding:7px 16px;font-size:13px;line-height:1.6;}
+  .fbar.copy{background:#fef2f2;border-bottom-color:#fecaca;color:#7f1d1d;}
+  .fbar b{font-weight:700;}
+  .fbar .fbtxt{display:flex;flex-wrap:wrap;gap:0 .45em;}
+  @media print{ .fbar{display:none !important;} }
   #busyOverlay{position:fixed;inset:0;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;z-index:200;}
   #busyOverlay .bcard{background:#fff;border-radius:14px;padding:20px 26px;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:center;min-width:260px;}
   #busyOverlay .bttl{font-weight:700;font-size:14px;margin-top:10px;color:#0f172a;}
@@ -310,16 +341,18 @@
     .modes .admin-sep{margin-left:0;border-left:none;padding-left:0;}
     .navbar{flex-wrap:wrap;gap:4px 8px;}
     .crumbs .ctx{display:none;}
+    header h1{font-size:21px;} header .hmode{white-space:normal;} header .hasg .wh{display:none;} header .hasg{flex-wrap:wrap;}
   }
   @media print{ .navbar,.howto,.mtabs,#navtoast{display:none !important;} }
   /* ── 週間モード（第5便・2026-10-16）: 累計｜週間の切り替え・🔎 気になる所を探す・週の推移・棚卸・気になる所 ── */
   .selright{margin-left:auto;display:flex;align-items:center;gap:8px;}
-  .wkseg{display:inline-flex;border:1px solid #0284c7;border-radius:9px;overflow:hidden;}
-
-  .wkseg button{border:0;background:#fff;color:#0369a1;font-size:15px;font-weight:600;padding:1px 12px;cursor:pointer;font-family:inherit;line-height:1.1;}   /* 印刷の釦（高さ 35px）より低く＝あとから足しても帯の高さが変わらない */
-
-  .wkseg button+button{border-left:1px solid #0284c7;} .wkseg button.on{background:#0284c7;color:#fff;}
-  .wkseg small{display:block;font-size:12px;font-weight:400;}
+  /* 切り替えの釦（累計｜週間・指標｜受払）: 字だけの短い釦（2026-11-02 PO「横長に情報を詰めた釦は避ける」）。説明はホバー（title）・ご利用ガイド。
+     選んでいる方は濃い青の地に白の太字＋「✓」。釦の高さは帯の選ぶ欄（34px）と同じ */
+  .wkseg{display:inline-flex;border:1px solid #0284c7;border-radius:8px;overflow:hidden;}
+  .wkseg button{border:0;background:#fff;color:#0369a1;font-size:15px;font-weight:600;padding:0 14px;min-height:32px;cursor:pointer;font-family:inherit;line-height:1.1;white-space:nowrap;}
+  .wkseg button+button{border-left:1px solid #0284c7;} .wkseg button.on{background:#0284c7;color:#fff;cursor:default;}
+  .wkseg button:not(.on):hover{background:#f0f9ff;}
+  .wkseg button.on::before,.ukeseg button.on::before{content:"✓ ";font-weight:700;}
   .selbar .btn{font-size:15px;}
   #scope .btn{font-size:14px;}
   .othermodes button:disabled{opacity:.45;cursor:not-allowed;}
@@ -409,17 +442,22 @@
   /* ── 中分類を選んだ合計・受払の数（2026-11-01）──
      選ぶ欄（部門の右）・絞り込み中の印は同じ琥珀色で3か所（選ぶ欄の札・上の帯・合計の行の名前）・合計に入れていない行は薄く */
   .catwrap{position:relative;display:inline-flex;align-items:center;gap:6px;}
-  .catbtn{font-size:15px;padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;color:#0f172a;font-family:inherit;max-width:430px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:34px;}
+  .catbtn{font-size:15px;padding:5px 10px;border:1px solid #94a3b8;border-radius:6px;background:#fff;cursor:pointer;color:#0f172a;font-weight:600;font-family:inherit;max-width:430px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:34px;}
   .catbtn:hover{border-color:#94a3b8;}
   .catbtn.on{background:#fffbeb;border:2px solid #d97706;color:#92400e;font-weight:700;padding:4px 9px;}
   .catprog{font-size:13px;color:#92400e;white-space:nowrap;}
   .catprog:empty{display:none;}
   .catprog .spin{margin-right:4px;}
-  .catpop{position:absolute;top:calc(100% + 4px);left:0;z-index:60;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,.18);padding:10px 12px;width:min(460px,92vw);font-size:14px;color:#0f172a;}
+  .catpop{position:absolute;top:calc(100% + 4px);left:0;z-index:60;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,.18);padding:10px 12px;width:min(480px,94vw);font-size:14px;color:#0f172a;}
   .catpop[hidden]{display:none;}
   .catpop .cphead{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:6px;}
   .catpop .cphead b{font-size:15px;}
   .catpop .cphelp{font-size:12.5px;color:#334155;}
+  /* 選び方の帯（2026-11-02 PO が一部だけ選ぶ方法を見つけられなかった）: 一覧のすぐ上に、キーの形で。選び方そのもの（クリック・Ctrl・Shift）は変えない */
+  .catpop .cphow{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:3px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:6px 10px;margin:0 0 8px;font-size:13.5px;color:#0c4a6e;line-height:1.5;}
+  .catpop .cphow > b{color:#075985;grid-row:1 / span 3;align-self:start;padding-top:1px;}   /* 見出し「選び方」は左・3つの選び方は1行ずつ */
+  .catpop .cphow span{white-space:nowrap;}
+  .catpop kbd{display:inline-block;font-family:inherit;font-size:12.5px;font-weight:700;color:#0f172a;background:#fff;border:1px solid #94a3b8;border-bottom-width:2px;border-radius:5px;padding:0 6px;line-height:19px;margin:0 2px;}
   .catpop .cpdepts{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 8px;}
   .catpop .cpdepts button{border:1px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;font-size:13px;padding:3px 9px;color:#334155;font-family:inherit;min-height:28px;}
   .catpop .cpdepts button.on{background:#0369a1;border-color:#0369a1;color:#fff;font-weight:600;}
@@ -453,20 +491,32 @@
   .catxwarn{border-left:4px solid #d97706;background:#fffbeb;color:#78350f;border-radius:8px;padding:8px 12px;font-size:14px;font-weight:700;margin:0 0 10px;}
   .catxwarn .lb{font-weight:400;font-size:12.5px;margin-left:8px;color:#92400e;}
   .crumbs .cxband{color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:5px;padding:0 6px;margin-left:2px;font-weight:700;}
-  .ukeseg{display:inline-flex;align-items:stretch;gap:0;margin:0 0 8px;border:1px solid #0284c7;border-radius:9px;overflow:hidden;}
-  .ukeseg .lb{align-self:center;padding:0 10px;font-size:13px;color:#334155;background:#f8fafc;border-right:1px solid #0284c7;}
-  .ukeseg button{border:0;background:#fff;color:#0369a1;font-size:15px;font-weight:600;padding:3px 14px;cursor:pointer;font-family:inherit;line-height:1.15;text-align:left;}
+  .ukeseg{display:inline-flex;align-items:stretch;gap:0;margin:0;border:1px solid #0284c7;border-radius:8px;overflow:hidden;}
+  .ukeseg .lb{align-self:stretch;display:flex;align-items:center;padding:0 10px;font-size:13.5px;font-weight:600;color:#334155;background:#f1f5f9;border-right:1px solid #0284c7;white-space:nowrap;}
+  .ukeseg button{border:0;background:#fff;color:#0369a1;font-size:15px;font-weight:600;padding:0 14px;min-height:32px;cursor:pointer;font-family:inherit;line-height:1.1;white-space:nowrap;}
   .ukeseg button+button{border-left:1px solid #0284c7;}
-  .ukeseg button.on{background:#0284c7;color:#fff;}
-  .ukeseg small{display:block;font-size:12px;font-weight:400;}
+  .ukeseg button.on{background:#0284c7;color:#fff;cursor:default;}
+  .ukeseg button:not(.on):hover{background:#f0f9ff;}
+  /* 表のすぐ上の1行（2026-11-02）: 左＝表の中身の切り替え・凡例（表の読み方）、右＝会議用まとめ（する事） */
+  .tbltools{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:8px 0;}
+  .tbltools .tl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;min-width:0;}
+  .tbltools .tr{margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px 8px;}
+  .tbltools .legend{margin:0;}
+  .tbltools .bulkhint{font-size:12.5px;}
+  /* 押し方のひとこと・速報の注意: 入る幅なら1行に並べる（入らなければ上下に） */
+  .scoperow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0;}
+  .scoperow > .howto,.scoperow > .sokuho{margin:0;flex:1 1 auto;}
+  .scoperow > .sokuho{padding:6px 12px;align-items:center;}
   #tblBox.stale{opacity:.45;transition:opacity .15s;pointer-events:none;}
-  @media print{ .catpop,.catprog,.ukeseg,.catreset,.bulkhint{display:none !important;} table.c tr.catx td{opacity:.5;} }
+  @media print{ .catpop,.catprog,.ukeseg,#ukeSeg,.catreset,.bulkhint{display:none !important;} table.c tr.catx td{opacity:.5;} }
 </style>
 </head>
 <body>
 <header>
   <span class="logo">AC</span>
-  <div><h1>ヒッスル <span class="sub">PDCA プラットフォーム・build web-2026-11-01a</span></h1></div>
+  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-02a</span></span></div></div>
+  <span class="hsp"></span>
+  <div class="hasg" id="hdrAsg" hidden></div>
   <span class="user" id="user"></span>
   <button class="btn ghelp" onclick="openGuide()" title="このシステムの使い方を表示します">📖 ご利用ガイド</button>
 </header>
@@ -1263,8 +1313,10 @@ function catPaint_(focus){
   const old=$("cpList"), st=old?old.scrollTop:0, had=focus||pop.contains(document.activeElement);
   const tabs=multi?`<div class="cpdepts" role="tablist" aria-label="部門（設定は部門ごと）">`+S.meta.departments.map(d=>`<button type="button" role="tab" aria-selected="${d===dp}" class="${d===dp?"on":""}" data-cpdept="${esc(d)}">${esc(d)}${catxRaw_(d).length?'<span class="dot" title="絞り込み中"></span>':""}</button>`).join("")+`</div>`:"";
   const where=L.src==="view"?(S.mode==="商品部全体"?"全店の和":storeShortOf_(STORE_MODES.includes(S.mode)?S.storeTab:"__total__")):"エリア合計";
-  pop.innerHTML=`<div class="cphead"><b>中分類（${esc(dp)}）</b><span class="cphelp">クリック＝その1つだけ／Ctrl＋クリック＝足す・外す／Shift＋クリック＝範囲</span></div>`+tabs+
+  // 選び方の帯（2026-11-02）: 一覧のすぐ上に、キーの形で。選び方そのもの（クリック・Ctrl・Shift・キーボード）は変えない
+  pop.innerHTML=`<div class="cphead"><b>中分類（${esc(dp)}）</b><span class="cphelp">青い行＝合計に入れている中分類</span></div>`+tabs+
     `<div class="cpbar"><button type="button" class="btn" data-cpall>すべて（${names.length}）</button><span class="cpsum${nInc<names.length?" on":""}">${nInc<names.length?`${nInc}/${names.length} を合計に入れています`:"すべて合計に入れています"}</span></div>`+
+    `<div class="cphow" role="note"><b>選び方</b><span><kbd>クリック</kbd>＝その1つだけ</span><span><kbd>Ctrl</kbd>＋<kbd>クリック</kbd>＝足す・外す</span><span><kbd>Shift</kbd>＋<kbd>クリック</kbd>＝範囲</span></div>`+
     (names.length?`<div class="cplist" id="cpList" role="listbox" aria-multiselectable="true" aria-label="${esc(dp)}の中分類（選んだものを合計に入れます）" tabindex="0" aria-activedescendant="cpo${CXP.fc}">`+
       names.map((n,i)=>{ const on=inc(n); return `<div class="cpo${on?" on":""}${i===CXP.fc?" fc":""}" role="option" id="cpo${i}" aria-selected="${on}" data-i="${i}"><span class="nm">${esc(n)}</span>${on?"":`<span class="xt">合計に入れていない</span>`}<span class="am">${L.s[n]==null?"":esc(kyen(L.s[n]))}</span></div>`; }).join("")+`</div>`
       :`<div class="note">この部門の中分類は、この期間の表にありません。</div>`)+
@@ -1331,9 +1383,10 @@ document.addEventListener("keydown",e=>{
    商品部詳細は、その部門の行だけ。はじめの1回だけ1本読む（覚える）。中分類の絞り込みもここに当てる。切り替えは、この PC に覚える */
 function ukeHere_(){ return S.viewMode!=="viewer"&&S.view==="cum"&&CM_MODES.includes(S.mode); }
 function ukeSegHtml_(){
+  // 字だけの短い釦（2026-11-02）。中身の説明はホバー（title）
   return `<span class="ukeseg" role="group" aria-label="表の中身"><span class="lb">表の中身</span>`+
-    `<button type="button" class="${S.uke?"":"on"}" aria-pressed="${!S.uke}" data-uke="0">指標<small>売上・粗利…（計画・前年比）</small></button>`+
-    `<button type="button" class="${S.uke?"on":""}" aria-pressed="${!!S.uke}" data-uke="1">受払<small>在庫・仕入・棚卸（受払表の18列）</small></button></span>`;
+    `<button type="button" class="${S.uke?"":"on"}" aria-pressed="${!S.uke}" data-uke="0" title="売上・粗利…（計画・前年比）">指標</button>`+
+    `<button type="button" class="${S.uke?"on":""}" aria-pressed="${!!S.uke}" data-uke="1" title="在庫・仕入・棚卸（受払表の18列＋前年比較）">受払</button></span>`;
 }
 function ukeSet_(on){ on=!!on; if(on===!!S.uke||!ukeHere_()) return; savePref_({uke:on}); return tblNav_({uke:on},false); }
 async function ukeHtml_(st,so){
@@ -1368,11 +1421,11 @@ async function redrawTable_(){
   const box=$("tblBox"); if(!box){ show_({why:"表の中身"}); return; }
   const my=++TBL.seq, ns=NAV.seq, t0=performance.now();
   box.classList.add("stale"); cxReset_();
+  const us=$("ukeSeg"); if(us) us.innerHTML=ukeSegHtml_();   // 押した方を、表が届く前に選んだ形にする（押した結果をすぐ返す）
   let html; try{ html=await bodyHtml_(ns); }catch(e){ html=bodyErr_(e); }
   if(my!==TBL.seq||ns!==NAV.seq) return;   // 待っている間に、別の所が押された
   box.innerHTML=html; box.classList.remove("stale");
-  const us=$("ukeSeg"); if(us) us.innerHTML=ukeSegHtml_();
-  drawScope(); afterTable_();
+  drawScope(); afterTable_();   // 表の上の1行（表の中身の切り替え・凡例・会議用まとめ）も、ここで描き直す
   const L=(window.__navlog=window.__navlog||[]); L.push({why:"表の中身",mode:S.mode,store:storeShortOf_(S.storeTab),dept:S.dept,metric:S.metric,ms:Math.round(performance.now()-t0)});
   if(L.length>200) L.splice(0,L.length-200);
   window.__navN=(window.__navN||0)+1;
@@ -1573,31 +1626,150 @@ async function boot(){
   renderLogin_();
 }
 
-/* ── 表示データの鮮度チェック ──
-   outbox(meta.json) の最終更新が古い＝HQ側の同期/取込が止まっている可能性。
-   2026-07-18 に同期が4日間停止し、ユーザーが「アップロードしたのに反映されない」と気づけなかった事故を受けて追加。 */
-/* 判定と描画（純粋関数・単体で検証可能）: 24時間以上古ければバーを出す。3日以上は赤 */
-function renderFreshBar_(metaUpdated){
-  const old=$("freshBar"); if(old) old.remove();
-  if(!metaUpdated) return false;
-  const t=new Date(String(metaUpdated).replace(/-/g,"/"));   // "yyyy-MM-dd HH:mm:ss"
-  if(isNaN(t)) return false;
-  const hours=(Date.now()-t.getTime())/36e5;
-  if(hours<24) return false;                // 1日以内は正常（通常は5分毎に更新される）
-  const days=Math.floor(hours/24);
-  const bar=document.createElement("div");
-  bar.id="freshBar"; bar.className = hours>=72 ? "" : "warn";   // 3日以上は赤・それ未満は黄
-  bar.innerHTML=`<span>${hours>=72?"🔴":"⚠️"}</span><span><b>表示中のデータは ${esc(metaUpdated)} 時点のものです（約${days}日前）。</b>`+
-    `本部側のデータ更新が停止している可能性があります。新しくアップロードした受払CSV・予算はまだ反映されていません。`+
-    `<br>お手数ですが、この表示が続く場合は本部（システム担当）へご連絡ください。</span>`;
-  const page=$("page");
-  if(page && page.parentNode) page.parentNode.insertBefore(bar, page);
+/* ── データの届き具合の知らせ（2026-11-02 PO「データが止まっているという警告は、常に出すのではなく、翌週の月曜日にアップロードされずにいた場合には
+   日付を超えた火曜日からアラートを出す」「月末の月曜が翌月へ超える週は、翌月の10日頃の月末締めを待ってからのアップロードとなるため、この週でのアラートは
+   出さなくて結構」「その代わり、週間の数字を計算するために、翌月の第1週は7日に満たなくても、必ずアップロードをする必要があることをアラート」）──
+   ① 受払（月中）のアップロード忘れ（本部用・黄・#noticeUp）: 週＝月〜日。その日曜までの受払（05-4・月初からの累計）は、翌週の月曜にアップロードする
+      （meta.json の snapshots[日曜の年月] に「日曜の日付235959」が入る）。日 T（日本の日付・サーバーの時計）には、T−2 日以前の最後の日曜 S の週から
+      さかのぼって UP_WEEKS 週を見る（月曜はまだ前の週まで・火曜から先週の分を見る）。
+      ・月をまたがない週（S の翌日が、週の月曜と同じ月）: S の受払が要る
+      ・月をまたぐ週: 前の月の分は知らせない（翌月10日ごろの月末確定を待つ）。前の月の最後の日 E が S より前なら、新しい月の第1週（E+1〜S・7日未満）を
+        必ず（S の受払を S の年月に）。月末確定と組み合わせて、月をまたぐ週の週間の動きを計算するため。E＝S（月末が日曜）なら何も要らない
+      ・要る日曜は月末の日になることが無いので、05-2（月末確定）と 05-4 を日付で取り違えない
+      ・エリアごとに見る（2026-11-02 三田さん「エリアごとに見る」）: meta.json に snapshots_by_area（エリアごとの、snapshots と同じ形の一覧・HQ が足す）があれば、
+        エリアごとに判定し、届いていないエリアの名前を帯に出す。見るエリアは、直近3か月（今月・先月・先々月）に受払表が1本でも届いたエリア
+        （ずっと上げていないエリアを、毎週出し続けない）。欄が無い間は、snapshots（エリアをまとめた一覧）で見る（どこかのエリアで届けば、その週は届いたとみなす）。
+        エリアごとの一覧を別のファイル（snapshots/エリア__年月.json）で読むと、エリア×月の数だけ窓口の往復が増えるので読まない
+      ・店舗用の入口には出さない（店舗の方はアップロードしない）。帯の言葉は、データ管理の画面の名前（⚙️ データ管理・📥 受払CSV 取込）にそろえる
+   ② 本部 PC の取込・写しの止まり（管理者だけ・赤・#noticeCopy）: 生存の印＝ドライブの status.json の checked_at（本部 PC の取込が1〜2分ごとに書き、
+      写し〔同期〕がドライブへ送る。取込が止まっても、写しが止まっても古くなる）。LIVE_STALE_H 時間（翌日＝24 時間・2026-11-02 三田さん）より古ければ出す。
+      窓口の getDataFreshness が、いつも一緒に返す（statusCheckedAt・GAS は変えない・窓口の本数は増えない）。
+      ・meta.json の時刻（データを作った時刻）では判定しない: アップロードが無い日が続くと、本部が動いていても古くなる
+        （2026-11-02 の赤い帯はこれ。4日間アップロードが0本で、作り直す物が無かった＝HQ 11/02 09:44 の便）
+      ・生存の印が読めないときだけ、meta.json が META_STALE_H 時間より古ければ出す（「止まっているとは限らない」と添える）
+      ・店舗・ほかの方には出さない（することが無いため）。管理者かはサーバーに聞く（getMyRights・止まっているときだけ＝ふだんは窓口を増やさない）
+   帯の id は noticeUp・noticeCopy（データ管理のアップロードの棒 #upBar と同じ名前にしない） */
+const UP_WEEKS=5, LIVE_STALE_H=24, META_STALE_H=24;
+const d8_=s=>new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8)));
+const f8_=d=>d.toISOString().slice(0,10).replace(/-/g,"");
+const addD_=(d,n)=>new Date(d.getTime()+n*864e5);
+const mdOf_=d=>(d.getUTCMonth()+1)+"/"+d.getUTCDate();
+/* 日 t8（yyyymmdd）に見る週（新しい順）。kind: week＝月をまたがない・first＝月をまたぐ週の新しい月の第1週・monthend＝月末が日曜（要る物なし） */
+function upWeeks_(t8,n){
+  const out=[], ym=d=>f8_(d).slice(0,6);
+  let S=addD_(d8_(t8),-2); S=addD_(S,-S.getUTCDay());
+  for(let k=0;k<(n||UP_WEEKS);k++,S=addD_(S,-7)){
+    const M=addD_(S,-6), N=addD_(S,1);
+    if(ym(N)===ym(M)) out.push({kind:"week",mon:f8_(M),sun:f8_(S),need:f8_(S)});
+    else if(ym(S)!==ym(M)){ const F=d8_(ym(S)+"01"); out.push({kind:"first",mon:f8_(M),sun:f8_(S),need:f8_(S),first:f8_(F),days:Math.round((S-F)/864e5)+1,prevYm:ym(M)}); }
+    else out.push({kind:"monthend",mon:f8_(M),sun:f8_(S),need:null});
+  }
+  return out;
+}
+/* 要るのに meta.json の snapshots に無い週（新しい順）＝エリアをまとめて見る */
+function upMissing_(t8,snaps,n){ return upWeeks_(t8,n).filter(w=>w.need&&!(((snaps||{})[w.need.slice(0,6)])||[]).includes(w.need+"235959")); }
+/* 見るエリア＝直近3か月（日 t8 の月・先月・先々月）に、受払表が1本でも届いたエリア（並びは order＝meta.areas の順） */
+function upAreasActive_(t8,byArea,order){
+  const T=d8_(t8), yms=[0,1,2].map(k=>f8_(new Date(Date.UTC(T.getUTCFullYear(),T.getUTCMonth()-k,1))).slice(0,6));
+  const names=(order||[]).filter(a=>a in byArea).concat(Object.keys(byArea).filter(a=>!(order||[]).includes(a)));
+  return names.filter(a=>yms.some(ym=>(((byArea[a]||{})[ym])||[]).length));
+}
+/* エリアごとに見る: 要るのに届いていない週と、そのエリア（新しい順・w.areas） */
+function upMissingArea_(t8,byArea,order,n){
+  const act=upAreasActive_(t8,byArea,order);
+  return upWeeks_(t8,n).filter(w=>w.need).map(w=>Object.assign({},w,{areas:act.filter(a=>!((((byArea[a]||{})[w.need.slice(0,6)])||[]).includes(w.need+"235959")))})).filter(w=>w.areas.length);
+}
+/* どちらで判定するか: meta.json に snapshots_by_area（中身のある物）があればエリアごと（area）・無ければまとめて（all） */
+function upJudge_(t8,meta,n){
+  const by=meta&&meta.snapshots_by_area;
+  if(by&&typeof by==="object"&&!Array.isArray(by)&&Object.keys(by).length) return {mode:"area",miss:upMissingArea_(t8,by,meta.areas,n)};
+  return {mode:"all",miss:upMissing_(t8,(meta&&meta.snapshots)||{},n)};
+}
+/* 知らせの文（無ければ ""）。誰が（受払表をアップロードする方）→ 何を（どの週の受払表を・どこから）→ なぜ（週間の数字のため）。先週・先々週は、日 t8 の週から数える */
+const UP_WHERE="「⚙️ データ管理」の「📥 受払CSV 取込」から";
+function upBarHtml_(t8,miss,mode){
+  if(!miss||!miss.length) return "";
+  const at=w=>w.areas&&w.areas.length?esc(w.areas.join("・")):"";   // エリアごとに見たときの、届いていないエリア
+  const T=d8_(t8), lastSun=f8_(addD_(T,-((T.getUTCDay()+6)%7)-1)), prevSun=f8_(addD_(d8_(lastSun),-7));
+  const rng=w=>mdOf_(d8_(w.mon))+"〜"+mdOf_(d8_(w.sun));
+  const lab=w=>w.sun===lastSun?`先週（${rng(w)}）`:w.sun===prevSun?`先々週（${rng(w)}）`:rng(w);
+  const asc=miss.slice().sort((a,b)=>a.sun<b.sun?-1:1), wk=asc.filter(w=>w.kind==="week"), fi=asc.filter(w=>w.kind==="first");
+  const parts=[`<b class="fbwho">受払表をアップロードする方へ：</b>`];
+  if(wk.length){
+    // 届いていないエリアが同じ週は1文にまとめる（エリアをまとめて見たときは、エリアの名前を出さない＝1文）
+    const grp=[]; wk.forEach(w=>{ const k=at(w), g=grp.find(x=>x.k===k); if(g) g.w.push(w); else grp.push({k,w:[w]}); });
+    grp.forEach(g=>parts.push(`<b>${esc(g.w.map(lab).join("・"))}の受払表（月中）が、${g.k?g.k+" で":""}まだ届いていません。</b>`));
+    parts.push(`<span>${UP_WHERE}アップロードしてください。週間の数字を出すためです。</span>`);
+  }
+  fi.forEach(w=>{ const F=d8_(w.first), S=d8_(w.sun), m=F.getUTCMonth()+1, pm=+w.prevYm.slice(4);
+    const r=w.days===1?mdOf_(F):mdOf_(F)+"〜"+mdOf_(S), where=wk.length?"同じ所から":UP_WHERE;
+    parts.push((at(w)
+      ?`<b>${m}月の第1週（${esc(r)}・${w.days}日分）の受払表（月中）が、${at(w)} でまだ届いていません。7日に満たなくても${where}アップロードしてください。</b>`
+      :`<b>${m}月の第1週（${esc(r)}・${w.days}日分）の受払表（月中）を、7日に満たなくても${where}アップロードしてください。</b>`)+
+      `<span>${pm}月の月末確定と組み合わせて、月をまたぐ週（${esc(rng(w))}）の週間の動きを計算するためです。</span>`); });
+  // 補足（アップロードの直後も、取り込みが終わるまで残る）はホバーに（帯を1行に収めるため・同じファイルは送り直しても自動で除外される）
+  const how=mode==="area"?"エリアごとに確かめています。":"エリアをまとめて確かめています（どこかのエリアで届けば、その週は届いたとみなす）。";
+  return `<span>⚠️</span><span class="fbtxt" data-judge="${mode==="area"?"area":"all"}" title="${how}アップロードの直後は、取り込みが終わるまでこの表示が残ります（同じファイルを送り直しても、自動で除外されます）">${parts.join("")}</span>`;
+}
+/* 時刻 at から now まで何時間か（どちらも "yyyy-MM-dd HH:mm:ss"・日本時刻）。読めなければ null */
+function hoursSince_(at,now){
+  const p=v=>{ if(!v) return null; const t=new Date(String(v).replace(/-/g,"/")); return isNaN(t)?null:t.getTime(); };
+  const a=p(at), b=p(now); return a==null||b==null?null:(b-a)/36e5;
+}
+/* 本部 PC の取込・写しが止まっているか（f＝getDataFreshness の返事）。止まっていなければ null。
+   生存の印（statusCheckedAt）が読めれば、それだけで決める。読めないときだけ、データを作った時刻（metaUpdated）で（止まっているとは限らない） */
+function liveJudge_(f,now){
+  if(!f) return null;
+  const hl=hoursSince_(f.statusCheckedAt,now);
+  if(hl!=null) return hl>=LIVE_STALE_H?{kind:"live",at:f.statusCheckedAt,h:hl}:null;
+  const hm=hoursSince_(f.metaUpdated,now);
+  return hm!=null&&hm>=META_STALE_H?{kind:"meta",at:f.metaUpdated,h:hm}:null;
+}
+/* 知らせの文（管理者だけ）。誰が（管理者）→ 何を（本部PC の取込と写しを確かめる）→ なぜ（止まっている間はアップロードした物が出ない） */
+function copyBarHtml_(j){
+  if(!j) return "";
+  const m=String(j.at).replace(/\//g,"-").match(/^\d{4}-(\d{2})-(\d{2}) (\d{1,2}):(\d{2})/), when=m?`${+m[1]}/${+m[2]} ${+m[3]}:${m[4]}`:String(j.at);
+  const dur=j.h<24?`約${Math.floor(j.h)}時間`:`約${Math.floor(j.h/24)}日`;   // 24 時間からは日で（約1日）
+  const head=j.kind==="live"
+    ?`<b>（管理者だけに表示）本部PC の取込の印が ${esc(when)} から届いていません（${dur}）。</b>`
+    :`<b>（管理者だけに表示）本部PC の取込の印（status.json）が読めません。データを作った時刻は ${esc(when)}（${dur}前）です。</b><span>アップロードが無い日が続くと古くなるので、止まっているとは限りません。</span>`;
+  return `<span>🔴</span><span class="fbtxt">${head}<span>本部PC の取込と、ドライブへの写し（同期）が動いているかを、本部PC（HQ）に確かめてください。</span>`+
+    `<span>止まっている間は、アップロードした受払表・予算が画面に出ません。</span></span>`;
+}
+/* 上の帯のすぐ下に出す・消す（id＝noticeUp／noticeCopy） */
+function fbarSet_(id,html,cls){
+  const old=$(id); if(old) old.remove();
+  if(!html) return false;
+  const bar=document.createElement("div"); bar.id=id; bar.className="fbar"+(cls?" "+cls:""); bar.setAttribute("role","status"); bar.innerHTML=html;
+  const page=$("page"), next=id==="noticeUp"&&$("noticeCopy")?$("noticeCopy"):page;   // 並びは いつも 受払 → 写し
+  if(page&&page.parentNode) page.parentNode.insertBefore(bar,next);
   return true;
 }
+function renderUpBar_(t8,meta){ if(S.viewMode==="viewer") return fbarSet_("noticeUp",""); const j=upJudge_(t8,meta); return fbarSet_("noticeUp",upBarHtml_(t8,j.miss,j.mode)); }
+function renderCopyBar_(j){ return fbarSet_("noticeCopy",copyBarHtml_(j),"copy"); }
+function jstNow_(){ return new Date(Date.now()+9*36e5).toISOString().slice(0,19).replace("T"," "); }   // サーバーの時刻が取れないときだけ（端末の時計を日本時刻に）
 async function checkFreshness_(){
-  if(!IS_GAS) return;                       // ローカルはミラーなので判定しない
-  try{ const f=await capi("getDataFreshness"); renderFreshBar_(f && f.metaUpdated); }
-  catch(e){ /* 鮮度が取れなくても本体の利用は妨げない */ }
+  let f=null;
+  if(IS_GAS){ try{ f=await capi("getDataFreshness"); }catch(e){ /* 取れなくても本体の利用は妨げない */ } }
+  const now=(f&&f.now)||jstNow_();
+  renderUpBar_(String(now).slice(0,10).replace(/-/g,""),S.meta||{});   // 窓口を増やさない（読んだ meta.json だけ・エリアごとの一覧があればエリアごと）
+  const j=liveJudge_(f,now);
+  if(j){   // 止まっているときだけ、管理者かを聞く（ふだんは窓口を増やさない）
+    try{ const r=await capi("getMyRights"); if(r&&r.admin) renderCopyBar_(j); }catch(e){}
+  }
+}
+/* 上の帯（2026-11-02 PO「システム名が重複するので、左上をはっきりと大きく表示できれば1か所で良い」）:
+   システム名（ヒッスル）は左上の1か所だけ。名前の右の小さな札＝どの入口・PDCA のどの段か。右＝いまの担当（入室後の本部用だけ・asgHtml）。
+   いままで各画面の上にあった題「PDCA（ヒッスル）｜本部用・店舗閲覧」と「C：Check — 数値確認（本番データ）」は、ここへ移した */
+const HDR_MODE={
+  hq:`<span class="hstep">C：Check</span>数値確認・本番データ`,
+  hqLogin:`<span class="hstep">本部用</span>C：Check 数値確認・本番データ`,
+  viewer:`<span class="hstep sv">店舗閲覧</span>自分の店舗・部門の数値と、やるべきこと（A/P/D）`
+};
+function hdrSet_(kind,asgHtml){
+  const m=$("hdrMode"); if(m) m.innerHTML=HDR_MODE[kind]||HDR_MODE.hq;
+  const a=$("hdrAsg"); if(a){ a.innerHTML=asgHtml||""; a.hidden=!asgHtml; }
+  setHdrH_();   // 帯の高さが変わることがある（狭い幅で折り返す）→ 貼り付く「いまここ」の位置を合わせ直す
 }
 
 /* ログイン画面（会社Google）。本部用は本部のドメインだけ・店舗用は4ドメイン。本部用には店舗用の入口への案内を出す */
@@ -1608,10 +1780,8 @@ function renderLogin_(msg){
     `<div style="margin-top:14px;padding:10px 12px;border:1px solid #bae6fd;background:#f0f9ff;border-radius:8px;font-size:13px">`+
     `<b>🏪 店舗の方はこちら</b><br>店舗用の入口から、自分の店舗・部門のPDCAを見て印刷できます。会社の Google アカウント（jaz-acoop 系4ドメイン）で入れます。`+
     `<div style="margin-top:8px"><a class="btn" style="text-decoration:none" href="${esc(storeUrl_())}">店舗用の入口を開く</a></div></div>`;
+  hdrSet_(store?"viewer":"hqLogin");   // 題（PDCA（ヒッスル）｜本部用・店舗閲覧）は上の帯の札に（2026-11-02・システム名は左上の1か所）
   $("app").innerHTML=
-    (store
-      ? `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2><p class="subtitle">自分の店舗・部門の数値と、やるべきこと（A/P/D）をひと目で確認</p></div>`
-      : `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜本部用</h2><p class="subtitle">C：Check — 数値確認（本番データ）</p></div>`)+
     `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">🔐</div><h3>${store?"会社アカウントでログイン":"本部のアカウントでログイン"}</h3>`+
     `<p class="cdesc">${store
       ?"会社の Google アカウント（jaz-acoop 系4ドメイン）でログインしてください。個人の Gmail ではご利用いただけません。"
@@ -1659,7 +1829,7 @@ async function startApp_(){
     if(S.viewMode!=="viewer") wkLoadMeta_().then(wkAttach_);   // 週の表の目次（第5便）。入口も入室も待たない（届いたら足す）・無ければ「累計｜週間」と 🔎 を出さない
     booted=true;
     if(S.viewMode==="viewer") renderViewerGate(); else renderGate();
-    checkFreshness_();   // 表示データの鮮度を確認（HQ側の同期停止に気づけるように・非同期で邪魔しない）
+    checkFreshness_();   // データの届き具合（受払のアップロード忘れ・写しの止まり）を確かめる（非同期で邪魔しない）
   }catch(e){ booted=true; $("app").innerHTML=`<div class="err">初期化エラー：${esc(e.message||e)}</div>`; }
 }
 
@@ -1691,8 +1861,8 @@ function renderGate(){
   const selects=S.role==="viewer"?"":`<div class="gate-selects"><span class="lb">エリア：</span>${areaSel}${roleNeedsDept_(S.role)?`<span class="lb">部門：</span>${deptSel}`:""}</div>`;
   // 入口の釦は1つ（PO 2026-10-15「入室時に閲覧かコメント記入かを選ぶ必要はない。ただの入室で良い」）。書ける担当は、詳細モードの表の下のコメント欄にそのまま書く
   const enterBtns=`<button class="btn primary" style="width:100%;padding:10px" id="gEnter" onclick="enter()">\uD83D\uDEAA ${S.role==="viewer"?"閲覧者として入室する":"入室する"}</button>`;
+  hdrSet_("hq");   // 入る前は、上の帯に担当を出さない
   $("app").innerHTML=
-    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
     `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">\uD83D\uDEAA</div><h3>担当を選んで入室してください</h3>`+
     `<p class="cdesc">あなたの担当を選ぶと中に入れます。担当で、コメントを書ける所が決まります（商品部は商品部詳細、運営部は運営部詳細）。見るだけのときは閲覧者を選びます。</p></div>`+
     `<div class="cbody"><div class="roles">${roleCards}</div>${selects}`+
@@ -1904,10 +2074,12 @@ function renderApp(){
   const a=S.asg;
   const rb=a.role==="buyer"?"rb-buyer":a.role==="lead"?"rb-admin":a.role==="unei"?"rb-unei":"rb-viewer";
   const roleLabel=ROLES.find(r=>r.k===a.role).label;
-  const asg=`<div class="asgbar"><span class="lb">担当：</span><span class="role-badge ${rb}">${roleLabel}</span>`+
-    (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(roleNeedsDept_(a.role)?`<span class="chip d">${esc(a.dept)}</span>`:"")+
-    `<span class="lb" style="margin-left:6px">${esc(writeHint_())}</span>`+
-    `<button class="btn" style="margin-left:auto;padding:4px 10px" onclick="backToGate()">担当を変更</button></div>`;
+  // いまの担当は上の帯の右（2026-11-02 PO「担当の行は右に余白が大きい」）。担当・エリア・部門の札＋書ける所のひとこと＋担当を変更
+  const asg=`<div class="who"><div class="chs"><span>担当</span><span class="role-badge ${rb}">${roleLabel}</span>`+
+    (a.role!=="viewer"?`<span class="chip a">${esc(a.area)}</span>`:"")+(roleNeedsDept_(a.role)?`<span class="chip d">${esc(a.dept)}</span>`:"")+`</div>`+
+    `<div class="wh">${esc(writeHint_())}</div></div>`+
+    `<button class="btn" onclick="backToGate()" title="入口に戻って、担当・エリア・部門を選び直します">担当を変更</button>`;
+  hdrSet_("hq",asg);
   // 段の地図（4つのモードを、押してつながる形で）。押せば直接その段へ（明細の段は、いまの店かエリア合計）
   const lvSub={
     "商品部全体":`行＝店・${deptLabel_(S.dept)}`,
@@ -1927,8 +2099,7 @@ function renderApp(){
     : "";
   const modes=`<div class="modes">`+tree+others+`<span id="wkFindSlot" style="display:contents">${wkOn_()?wkFindBox_():""}</span>`+adminBtn+`</div>`;
   $("app").innerHTML=
-    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）</h2><p class="subtitle">C：Check \u2014 数値確認（本番データ）</p></div>`+
-    asg+modes+`<div class="navbar" id="navbar"></div><div id="printTitle"></div>`+`<div id="view" style="margin-top:10px"><div class="note">読み込み中…</div></div>`;
+    modes+`<div class="navbar" id="navbar"></div><div id="printTitle"></div>`+`<div id="view"><div class="note">読み込み中…</div></div>`;
   setHdrH_();
   drawNav_();
   refreshView();
@@ -2014,10 +2185,12 @@ function renderAppTreeSubs_(){
 
   });
 }
+/* データ期間の字: 並べるための空白（全角の空白の続き）を1つに詰める（中身の字は変えない・2026-11-02 選ぶ帯を1行に） */
+function snapText_(l){ return String(l||"").replace(/\s+/g," ").trim(); }
 async function loadSnaps(){
   try{ const s=await API.snapshots(S.area,S.ym); S.snaps=s.snapshots||[];
     if(!S.snaps.some(o=>o.snapshot===S.snap)) S.snap=s.default||(S.snaps[0]&&S.snaps[0].snapshot)||"";   // 戻るで元の期間を保つ。無ければ最新
-    $("snapSel").innerHTML=S.snaps.map(o=>`<option value="${esc(o.snapshot)}">${esc(o.label)}</option>`).join(""); if(S.snap)$("snapSel").value=S.snap;
+    $("snapSel").innerHTML=S.snaps.map(o=>`<option value="${esc(o.snapshot)}">${esc(snapText_(o.label))}</option>`).join(""); if(S.snap)$("snapSel").value=S.snap;
   }catch(e){ S.snaps=[]; S.snap=""; $("snapSel").innerHTML="<option>—</option>"; }
 }
 /* 押し方のひとこと（押してみれば分かる、に頼らない）・速報の注意・凡例 */
@@ -2055,12 +2228,22 @@ function howto_(){
 }
 function drawScope(){
   const sel=S.snaps.find(s=>s.snapshot===S.snap);
-  let h=howto_();
+  // 押し方のひとこと・速報の注意は、入る幅なら1行に並べる（2026-11-02）
+  let row=howto_();
   // 委託の粗利に (推定) が出ている表では、帯の終わりに一文（sokCurEst_・表を描いたあと）。棚卸未実施の部門の分は、いままでどおり高めに出る
-  if(sel&&sel.file_type==="05-4") h+=`<div class="sokuho"><span>⚠</span><span><b>月途中の速報値（${esc((sel.label||"").replace("📊","").trim())}）を表示中です。</b> 月末確定（📌）取込前は棚卸未実施部門で粗利が高めに出ます。<span id="sokCurEst"></span></span></div>`;
-  if(S.mode!=="仕入分析"&&S.mode!=="店舗事業部会議"&&S.mode!=="運営部全体"&&!(ukeHere_()&&S.uke)) h+=legend();
-  if(S.mode==="商品部詳細"&&S.asg&&S.asg.role!=="viewer"&&!isAll_(S.dept))
-    h+=`<div style="margin:8px 0"><button class="btn" onclick="bulkOpenSheet(this)">📗 会議用まとめ（${esc(S.dept)}×${esc(S.area)} 全店を1ファイル）</button>${catxOf_(S.dept).length?` <span class="lb bulkhint" style="color:#92400e">会議用まとめには、中分類の絞り込みは入りません（部門全体の数）</span>`:""} <span id="bulkMsg" class="lb"></span></div>`;
+  if(sel&&sel.file_type==="05-4") row+=`<div class="sokuho"><span>⚠</span><span><b>月途中の速報値（${esc(snapText_(sel.label).replace("📊","").trim())}）を表示中です。</b> 月末確定（📌）取込前は棚卸未実施部門で粗利が高めに出ます。<span id="sokCurEst"></span></span></div>`;
+  let h=row?`<div class="scoperow">${row}</div>`:"";
+  // 表のすぐ上の1行（2026-11-02 PO「凡例・会議用まとめ・表の中身が、それぞれ1行で右が空く」）:
+  //   左＝表の中身［指標｜受払］（選ぶ）・凡例（読み方）、右＝📗 会議用まとめ（する事）
+  const L=[], R=[];
+  if(ukeHere_()) L.push(`<span id="ukeSeg">${ukeSegHtml_()}</span>`);
+  if(S.mode!=="仕入分析"&&S.mode!=="店舗事業部会議"&&S.mode!=="運営部全体"&&!(ukeHere_()&&S.uke)) L.push(legend());
+  if(S.mode==="商品部詳細"&&S.asg&&S.asg.role!=="viewer"&&!isAll_(S.dept)){
+    R.push(`<button class="btn" onclick="bulkOpenSheet(this)" title="${esc(S.dept)}×${esc(S.area)} の、エリア合計と全店の表を、1つのスプレッドシートにまとめます">📗 会議用まとめ（全店を1ファイル）</button>`);
+    if(catxOf_(S.dept).length) R.push(`<span class="lb bulkhint" style="color:#92400e" title="会議用まとめには、中分類の絞り込みは入りません（部門全体の数）">※ まとめは部門全体の数（絞り込みなし）</span>`);
+    R.push(`<span id="bulkMsg" class="lb"></span>`);
+  }
+  if(L.length||R.length) h+=`<div class="tbltools" id="tblTools"><div class="tl">${L.join("")}</div>${R.length?`<div class="tr">${R.join("")}</div>`:""}</div>`;
   $("scope").innerHTML=h;
 }
 async function drawBody(seq){
@@ -2069,8 +2252,8 @@ async function drawBody(seq){
   try{
     const html=await bodyHtml_(seq);
     if(seq!=null&&seq!==NAV.seq) return;   // 待っている間に、別の所が押された（前の結果で上書きしない）
-    // 表は #tblBox の中（中分類・受払の切り替えは、表だけを描き直す）。商品部詳細・運営部詳細は、表の上に「表の中身：指標｜受払」
-    b.innerHTML=(ukeHere_()?`<div id="ukeSeg">${ukeSegHtml_()}</div>`:"")+`<div id="tblBox">${html}</div>`;
+    // 表は #tblBox の中（中分類・受払の切り替えは、表だけを描き直す）。「表の中身：指標｜受払」は、表のすぐ上の1行（drawScope）
+    b.innerHTML=`<div id="tblBox">${html}</div>`;
     afterTable_();
     // コメント（G2）: 商品部詳細/運営部詳細（エリア合計・店舗タブとも表示。編集可否は canEditSec が判定）
     if((S.mode==="商品部詳細"||S.mode==="運営部詳細")&&isAll_(S.dept)){
@@ -2836,7 +3019,7 @@ function fileB64(f){ return new Promise((res,rej)=>{ const r=new FileReader(); r
    ②ファイル毎の状態リスト（待機/送信中/完了/失敗）と進捗バー
    ③ボタンはスピナー付き「送信中…」に変え、押下を無効化 */
 /* ビルド表記はヘッダーの1か所だけを出所にする（二重管理で食い違わせない） */
-const BUILD=((document.querySelector("header .sub")||{}).textContent||"").replace(/^.*?・/,"").trim();
+const BUILD=((document.querySelector("header .build")||{}).textContent||"").trim();   // 上の帯の build（2026-11-02 から .build の中だけ）
 /* ===== ご利用ガイド =====
    本文はサーバー（Guide.gs＝唯一の原本）にあり、認証済み利用者だけが getGuide で受け取る。
    フロント（GitHub Pages で公開される）には本文を一切置かない。ここは入れ物だけ。 */
@@ -3147,6 +3330,7 @@ function snapLabelNow(){ const s=S.snaps.find(x=>x.snapshot===S.snap); return s?
 
 function renderViewerGate(){
   $("page").style.background="";
+  hdrSet_("viewer");   // 題（PDCA（ヒッスル）｜店舗閲覧）は上の帯の札に（2026-11-02）
   const p=loadPref_();
   if(p.area && S.meta.areas.includes(p.area)) S.area=p.area;
   if(p.dept && S.meta.departments.includes(p.dept)) S.dept=p.dept;
@@ -3154,7 +3338,6 @@ function renderViewerGate(){
   const areaSel=`<select id="vArea" onchange="vGateArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?"selected":""}>${esc(a)}</option>`).join("")+`</select>`;
   const deptSel=`<select id="vDept" onchange="vGateCheck()"><option value="">部門を選択</option>`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?"selected":""}>${esc(d)}</option>`).join("")+`</select>`;
   $("app").innerHTML=
-    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2><p class="subtitle">自分の店舗・部門の数値と、やるべきこと（A/P/D）をひと目で確認</p></div>`+
     `<div class="gate-wrap"><div class="card"><div class="chead"><div class="cico">\uD83C\uDFEA</div><h3>店舗と部門を選んでください</h3>`+
     `<p class="cdesc">あなたのお店と担当部門を選ぶと、自店舗のPDCAとエリア合計が見られます。</p></div>`+
     `<div class="cbody"><div class="gate-selects"><span class="lb">エリア：</span>${areaSel}<span class="lb">店舗：</span><select id="vStore" onchange="vGateCheck()"><option value="">読み込み中\u2026</option></select><span class="lb">部門：</span>${deptSel}</div>`+
@@ -3183,13 +3366,13 @@ function vBackToGate(){ S.entered=false; renderViewerGate(); }
 
 async function renderViewerApp(){
   $("page").style.background="#E1F5FE";
+  hdrSet_("viewer");
   const store=S.stores.find(x=>x.slug===S.storeTab);
   const areaSel=`<select onchange="vChangeArea(this.value)">`+S.meta.areas.map(a=>`<option value="${esc(a)}" ${a===S.area?"selected":""}>${esc(a)}</option>`).join("")+`</select>`;
   const storeSel=`<select id="vaStore" onchange="vChangeStore(this.value)"><option value="__area__" ${S.storeTab==="__area__"?"selected":""}>エリア合計</option><option value="__all__" ${S.storeTab==="__all__"?"selected":""}>全店（まとめて）</option>`+S.stores.map(s=>`<option value="${esc(s.slug)}" ${s.slug===S.storeTab?"selected":""}>${esc(s.short)}</option>`).join("")+`</select>`;
   const deptSel=`<select onchange="vChangeDept(this.value)">`+S.meta.departments.map(d=>`<option value="${esc(d)}" ${d===S.dept?"selected":""}>${esc(d)}</option>`).join("")+`</select>`;
   const ymSel=`<select onchange="vChangeYm(this.value)">`+S.meta.year_months.map(y=>`<option value="${esc(y)}" ${y===S.ym?"selected":""}>${esc(y.slice(0,4))}年${Number(y.slice(4))}月</option>`).join("")+`</select>`;
   $("app").innerHTML=
-    `<div style="margin-bottom:6px"><h2 class="title">PDCA（ヒッスル）｜店舗閲覧</h2></div>`+
     `<div class="asgbar"><span class="chip a">${esc(S.area)}</span><span class="chip s">${esc(vScopeLabel_())}</span><span class="chip d">${esc(S.dept)}</span>`+
     `<button class="btn" style="margin-left:auto;padding:4px 10px" onclick="vBackToGate()">選び直す</button></div>`+
     `<div class="selbar"><span class="lb">エリア</span>${areaSel}<span class="lb">店舗</span>${storeSel}<span class="lb">部門</span>${deptSel}<span class="lb">年月</span>${ymSel}<span class="lb">データ期間</span><select id="vSnap" onchange="vChangeSnap(this.value)"></select>`+
@@ -3399,8 +3582,8 @@ function wkSeg_(){
   const cum=S.view==="cum";
   const toWeek={view:"week",hist:false};
   return `<span class="wkseg" role="group" aria-label="数字の見方">`+
-    `<button class="${cum?"on":""}"${cum?"":wkGo_({view:"cum"},"","累計")} title="月初からの累計（いままでの画面）">累計<small>月初から（いまの画面）</small></button>`+
-    `<button class="${cum?"":"on"}"${cum?wkGo_(toWeek,"","週間"):""} title="受払表を1週ずつに直した数（日曜締め）">週間<small>1週ずつ（日曜締め）</small></button></span>`;
+    `<button class="${cum?"on":""}"${cum?"":wkGo_({view:"cum"},"","累計")} title="累計＝月初からの累計（いままでの画面）" aria-pressed="${cum}">累計</button>`+
+    `<button class="${cum?"":"on"}"${cum?wkGo_(toWeek,"","週間"):""} title="週間＝受払表を1週ずつに直した数（日曜締め）" aria-pressed="${!cum}">週間</button></span>`;   // 字だけの短い釦（2026-11-02）・説明はホバー
 }
 /* 当たりの数（meta の hit_counts・エリアのファイルを読まずに）。週の問いは選んだ週・月の問いは、その週までに締まった月。
    月は meta.months（どこかのエリアで月末確定が届いた月・作る側が 05-2 から決める）から選ぶ＝当たりが 0 の月も選べる。
