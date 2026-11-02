@@ -514,7 +514,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-02a</span></span></div></div>
+  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-02b</span></span></div></div>
   <span class="hsp"></span>
   <div class="hasg" id="hdrAsg" hidden></div>
   <span class="user" id="user"></span>
@@ -2466,11 +2466,40 @@ async function snapsRaw_(area,ym){
   else { try{ src=(await API.snapshots(area,ym)).snapshots||[]; }catch(e){ src=[]; } }
   SNAPS_CACHE[k]=src; return src;
 }
-/* その月の週次（05-4）を古い順に {snap8, ym, snapshot} */
+/* 週の途中の取り込み（PO 2026-11-02）: 05-4 のデータ期間が日曜でない（例: 10/31〈土〉を 11/1 を待たずに取り込んだ）とき、
+   同じ週（月〜日）の後の 05-4（例: 11/1）が届いたら、その週の分として扱う＝週の並びから外し、そこに書いた A・PD は後の週に出す（ミラー）。
+   シートの行は書き換えない（書いた週のまま残る・直すときもその行のキーで送る）。後の週がまだ無い間は、その日付のまま注意を出す */
+function sun8_(s){ s=String(s); const d=new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8)); d.setDate(d.getDate()+(7-d.getDay())%7);
+  return String(d.getFullYear())+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0"); }
+async function closer_(area,snap8){
+  const s=String(snap8||""); if(!/^\d{8}$/.test(s)) return null;
+  const sun=sun8_(s); if(sun===s) return null;
+  let best=null;
+  for(const ym of [...new Set([s.slice(0,6),sun.slice(0,6)])]){
+    (await snapsRaw_(area,ym)).forEach(o=>{ if(String(o.file_type||"")!=="05-4") return; const w=s8(o.snapshot);
+      if(w>s&&w<=sun&&(!best||w>best.snap8)) best={snap8:w,ym:ym,snapshot:o.snapshot}; });
+  }
+  return best;
+}
+/* その月の週次（05-4）を古い順に {snap8, ym, snapshot}。同じ週の後の 05-4 が届いた「週の途中」の日付は入れない */
 async function weekly_(area,ym){
   const seen={};
-  return (await snapsRaw_(area,ym)).filter(o=>String(o.file_type||"")==="05-4").map(o=>({snap8:s8(o.snapshot),ym:ym,snapshot:o.snapshot}))
+  const list=(await snapsRaw_(area,ym)).filter(o=>String(o.file_type||"")==="05-4").map(o=>({snap8:s8(o.snapshot),ym:ym,snapshot:o.snapshot}))
     .filter(w=>w.snap8&&!seen[w.snap8]&&(seen[w.snap8]=1)).sort((p,q)=>p.snap8<q.snap8?-1:1);
+  const out=[];
+  for(const w of list){ if(!(await closer_(area,w.snap8))) out.push(w); }
+  return out;
+}
+/* 行の週を、届いた後の週に合わせる（表示だけ）。元のキーは kym・ksnap8 に残し、直す・済のときはそれで送る */
+async function alignRows_(area,rows){
+  const map={};
+  for(const w of new Set(rows.map(r=>String(r.snap8||"")).concat(rows.map(r=>String(r.resolved_week||""))))){
+    const c=await closer_(area,w); if(c) map[w]=c;
+  }
+  rows.forEach(r=>{
+    const c=map[String(r.snap8||"")]; if(c){ r.kym=r.ym; r.ksnap8=r.snap8; r.ym=c.ym; r.snap8=c.snap8; }
+    const rw=map[String(r.resolved_week||"")]; if(rw) r.resolved_week=rw.snap8;
+  });
 }
 /* その週が月末確定(05-2)か。表示中の月に限らず判定できる */
 async function isMonthEnd8_(area,ym,snap8){
@@ -2587,16 +2616,22 @@ function pdcaWeek_(rows, pair, prevW, x) {
 /* 場所（エリア・店・部門）の行を1回で読む（getCommentPlace）。need＝x より前に要る週の数（A・PD の欄＝5・履歴＝列の数＋4）。
    月末確定は、その月の最終週（x）で組み立て、閲覧のみ（me＝その週の MM/DD） */
 async function loadPlace_(k,need){
-  let x=k.snap8, xym=k.ym, xsnap=k.snap, me="", monthEnd=false;
+  let x=k.snap8, xym=k.ym, xsnap=k.snap, me="", monthEnd=false, merged=null, provisional=null;
   if(await isMonthEnd8_(k.area,k.ym,k.snap8)){
     monthEnd=true;
     const p=await weeksBefore_(k.area,k.ym,k.snap8,1);
     if(p.length){ x=p[0].snap8; xym=p[0].ym; xsnap=p[0].snapshot; me=lbl8_(x); }
+  } else {
+    const c=await closer_(k.area,k.snap8);                       // 週の途中の日付で、同じ週の後の 05-4 が届いている → その週で組み立てる
+    if(c){ merged={from:String(k.snap8),to:c.snap8}; x=c.snap8; xym=c.ym; xsnap=c.snapshot; }
+    else if(/^\d{8}$/.test(String(k.snap8))&&sun8_(k.snap8)!==String(k.snap8)) provisional={at:String(k.snap8),sun:sun8_(k.snap8)};
   }
   const weeks=await weeksBefore_(k.area,xym,x,need);
   const from=weeks.length?weeks[weeks.length-1].ym:xym;
   const r=await capi("getCommentPlace",k.area,k.store,k.dept,from);
-  return {area:k.area,store:k.store,dept:k.dept,rows:(r&&r.rows)||[],need,weeks,from,xw:{snap8:x,ym:xym,snapshot:xsnap},x,me,monthEnd,o:null};
+  const rows=(r&&r.rows)||[];
+  await alignRows_(k.area,rows);
+  return {area:k.area,store:k.store,dept:k.dept,rows,need,weeks,from,xw:{snap8:x,ym:xym,snapshot:xsnap},x,me,monthEnd,merged,provisional,o:null};
 }
 async function renderComments(seq){
   const el=$("cpanel"); if(!el||!cmHere_()) return;   // 全部門（計）の画面では読まない（失敗のあとの読み直しが、全部門の一言を上書きしないように）
@@ -2639,6 +2674,7 @@ function drawComments(){
     `<a href="#" data-jump="body" class="lb" style="margin-left:auto">↑ 表へ</a>`+
     `<button type="button" class="hbtn" id="histBtn" aria-expanded="${S.hist?"true":"false"}" aria-controls="cmhist" onclick="histToggle_()" title="課題 × 週の表（直近8週）。もう一度押すと閉じます（← ひとつ前に戻る でも戻れます）">🕘 週ごとの履歴</button>`+
     (S.sheetUrl?`<a href="${esc(safeUrl_(S.sheetUrl))}" target="_blank" rel="noopener" class="btn" style="margin-left:8px;text-decoration:none;padding:3px 10px;font-size:12px">📄 スプレッドシートで開く</a>`:"")+`</div>`;
+  h+=cmWeekNote_(PL);
   h+=cmTableHtml_(v,P,o);
   if(anyEdit) h+=`<div class="lb" style="margin-top:6px">セルに直接入力すると自動保存されます。「✓ 済」は課題ごとの完了の記録です（次の週に1回「済の報告」として下に出て、その次の週から出なくなります）。🗑 で消すのは、この週に書いた欄だけです。</div>`;
   else if(S.asg&&S.asg.role!=="viewer"&&!PL.monthEnd) h+=`<div class="lb" style="margin-top:6px">${esc(cmWhyReadonly_())}</div>`;
@@ -2709,9 +2745,17 @@ function cmRepRow_(it,P,o){
     now.map(r=>`<div class="cmtext">${esc(r.text)}</div><div class="cmmeta">${esc(lbl8_(r.snap8))} の PD</div>`).join("")+`</td>`+
     `<td class="cmrs">${cmResHtml_(it,o,true)}</td></tr>`;
 }
+/* 週の途中の日付の知らせ（PO 2026-11-02）。届く前＝注意（黄）・届いた後＝同じ週として出している（青） */
+function cmWeekNote_(pl){
+  if(pl.provisional){ const a=lblJa_(pl.provisional.at), b=lblJa_(pl.provisional.sun);
+    return `<div class="cmwarn">⚠ <b>${esc(a)}は週の途中のデータです</b>（${esc(b)}を待たずに取り込んだ受払）。<b>${esc(b)}がアップロードされたら、${esc(a)}の内容（A・PD）は${esc(b)}に自動で上書きされます</b>（書いた内容は消えません）。</div>`; }
+  if(pl.merged){ const a=lblJa_(pl.merged.from), b=lblJa_(pl.merged.to);
+    return `<div class="gnote">📌 ${esc(a)}は週の途中のデータのため、同じ週の<b>${esc(b)}と同じ内容（A・PD）</b>を表示しています。${esc(a)}に書いた内容も、ここに出ています。次の週は ${esc(b)} の PD を A に出して進みます。</div>`; }
+  return "";
+}
 /* 表の下の注意（未着手の警告・月末確定・A 欄の読み方）。hq＝本部の画面か */
 function cmTailHtml_(v,pl,hq){
-  let h="";
+  let h=hq?"":cmWeekNote_(pl);
   if(v.warn) h+=`<div class="cmwarn">⚠ ${v.warn.stale?"PDCA対応がなかったため、前の週までの課題をそのまま表示します。":""}<b>${esc(lblJa_(v.warn.from))}から課題更新が未着手です。</b>${pl.monthEnd?"":(hq?"PD（計画と実行）を記入して、PDCAサイクルを進めてください。":"PDCAサイクルを進めてください。")}</div>`;
   if(pl.monthEnd) h+=`<div class="gnote">📌 月末確定は ${pl.me?`<b>${esc(pl.me)} 週のA／PD</b> をそのまま表示しています（<b>閲覧のみ</b>）`:`<b>閲覧のみ</b>です`}。${hq?"確定値が出る時点では既に翌月のPDCAサイクルが始まっているため、この期間には書き込みません。":""}</div>`;
   if(v.live.length||v.report.length) h+=`<div class="gnote">A欄は<b>前の週までの PD</b>を課題ごとに自動表示しています（書かなかった週があっても4週まで${hq?"・書き込むのは PD":""}）。<b>済にした課題</b>は、次の週に1回「✓ 先週 済になった課題」として表のいちばん下に出て、その次の週から出なくなります${hq?"（🕘 週ごとの履歴で、いつでも見られます）":""}。</div>`;
@@ -2764,7 +2808,7 @@ function cmAfterNew_(el,iss,id,pl){
 }
 function enqueueSave(id,pl){
   pl=pl||PL; const it=pl&&pl.rows.find(x=>x.item_id===id); if(!it) return;
-  const key={ym:it.ym,snap8:it.snap8,area:pl.area,store:pl.store,dept:pl.dept};   // 保存時点の場所・週を固定（後で画面を切り替えても正しい週へ書く）
+  const key={ym:it.kym||it.ym,snap8:it.ksnap8||it.snap8,area:pl.area,store:pl.store,dept:pl.dept};   // 保存時点の場所・週を固定（後で画面を切り替えても正しい週へ書く）。週の途中の行は書いた週のキーのまま
   cmIndicator("saving","保存中…");
   saveQ=saveQ.then(async()=>{
     try{
@@ -2796,7 +2840,7 @@ function cResolve(iss,flag){
   pl.rows.forEach(r=>{ if((r.section===P.a||r.section===P.pd)&&(r.issue_id||r.item_id)===iss){ r.resolved=false; r.resolved_at=""; r.resolved_week=""; } });
   if(flag){ row.resolved=true; row.resolved_week=x; }
   drawComments();
-  const key={ym:row.ym,snap8:row.snap8,area:pl.area,store:pl.store,dept:pl.dept};
+  const key={ym:row.kym||row.ym,snap8:row.ksnap8||row.snap8,area:pl.area,store:pl.store,dept:pl.dept};
   cmIndicator("saving","保存中…");
   saveQ=saveQ.then(async()=>{
     try{ await capi("resolveComment",key,row.section,row.item_id,flag,x); cmIndicator("ok",(flag?"✓ 済にしました ":"戻しました ")+new Date().toTimeString().slice(0,5)); }
