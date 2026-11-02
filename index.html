@@ -514,7 +514,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-02b</span></span></div></div>
+  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-02c</span></span></div></div>
   <span class="hsp"></span>
   <div class="hasg" id="hdrAsg" hidden></div>
   <span class="user" id="user"></span>
@@ -2619,8 +2619,12 @@ async function loadPlace_(k,need){
   let x=k.snap8, xym=k.ym, xsnap=k.snap, me="", monthEnd=false, merged=null, provisional=null;
   if(await isMonthEnd8_(k.area,k.ym,k.snap8)){
     monthEnd=true;
-    const p=await weeksBefore_(k.area,k.ym,k.snap8,1);
-    if(p.length){ x=p[0].snap8; xym=p[0].ym; xsnap=p[0].snapshot; me=lbl8_(x); }
+    // その月の最後の 05-4（週の途中の日付も含める）。同じ週の後の 05-4 が届いていれば、その週（月末を含む週の A・PD・PO 2026-11-02）
+    const raw=(await snapsRaw_(k.area,k.ym)).filter(o=>String(o.file_type||"")==="05-4"&&s8(o.snapshot)<String(k.snap8)).sort((p,q)=>s8(p.snapshot)<s8(q.snapshot)?-1:1);
+    const lo=raw.length?raw[raw.length-1]:null;
+    if(lo){ const last=s8(lo.snapshot), c=await closer_(k.area,last);
+      if(c){ x=c.snap8; xym=c.ym; xsnap=c.snapshot; } else { x=last; xym=k.ym; xsnap=lo.snapshot; }
+      me=lbl8_(last); }
   } else {
     const c=await closer_(k.area,k.snap8);                       // 週の途中の日付で、同じ週の後の 05-4 が届いている → その週で組み立てる
     if(c){ merged={from:String(k.snap8),to:c.snap8}; x=c.snap8; xym=c.ym; xsnap=c.snapshot; }
