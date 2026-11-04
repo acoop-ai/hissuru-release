@@ -384,6 +384,10 @@
   .wk .metricbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 6px;}
   .wk .metricbar button{border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer;font-size:12.5px;padding:4px 12px;color:#475569;font-family:inherit;}
   .wk .metricbar button.on{background:#0f172a;border-color:#0f172a;color:#fff;font-weight:600;}
+  /* 🔗 グラフと表をそろえる（2026-11-04）: 指標の釦の続きに字の幅で置く（横に伸ばさない）。入っている間は色の面で分かる */
+  .wk .metricbar .wklink{display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:3px 10px;border:1px dashed var(--border);border-radius:999px;font-size:12px;color:#64748b;cursor:pointer;white-space:nowrap;user-select:none;}
+  .wk .metricbar .wklink:has(input:checked){border-style:solid;border-color:#93c5fd;background:#eff6ff;color:#1d4ed8;}
+  .wk .metricbar .wklink input{margin:0;cursor:pointer;}
   .wk .wkchart svg{display:block;width:100%;} .wk .wkchart text{font-family:inherit;}
   #wktip{position:fixed;z-index:60;pointer-events:none;background:#0f172a;color:#fff;border-radius:8px;padding:9px 11px;font-size:12px;line-height:1.6;max-width:380px;box-shadow:0 6px 18px rgba(0,0,0,.25);display:none;}
   #wktip b{font-size:13px;} #wktip .m{color:#cbd5e1;} #wktip hr{border:0;border-top:1px solid #334155;margin:5px 0;}
@@ -514,7 +518,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-02c</span></span></div></div>
+  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-04a</span></span></div></div>
   <span class="hsp"></span>
   <div class="hasg" id="hdrAsg" hidden></div>
   <span class="user" id="user"></span>
@@ -3622,7 +3626,29 @@ document.addEventListener("click",e=>{
   e.preventDefault();
   let p; try{ p=JSON.parse(t.dataset.wgo); }catch(x){ return; }
   const k=t.dataset.wland||t.dataset.k||"";
-  nav_(p,{from:k,why:t.dataset.why||"週間",land:t.dataset.wland?"wk":""});
+  nav_(wkLinkPatch_(p,wkLinked_()),{from:k,why:t.dataset.why||"週間",land:t.dataset.wland?"wk":""});
+});
+/* 🔗 グラフと表をそろえる（2026-11-04 三田さん「どちらかを変更したら、相手方を連動する。連動をチェックする場所を付けて、元の通り分離もできる」・初めはそろえる）。
+   そろえる間は、週の推移のグラフ（wmetric・5つ）と週の表／運営部の指標（wtmetric・7つ）の片方を替えると、もう片方も同じ指標に。
+   表の金額（値引き d・廃棄額 w）はグラフに無いので、率（値引率 dr・廃棄率 wr）にそろえる。設定は利用者ごと（prefKey_）に覚える・往復は増えない */
+const WK_LINK_CHART={d:"dr",w:"wr"};
+function wkLinked_(){ return loadPref_().wlink!==false; }
+function wkLinkPatch_(p,on){
+  if(!on||!p) return p;
+  const has=k=>Object.prototype.hasOwnProperty.call(p,k);
+  if(has("wtmetric")&&!has("wmetric")) return Object.assign({},p,{wmetric:WK_LINK_CHART[p.wtmetric]||p.wtmetric});
+  if(has("wmetric")&&!has("wtmetric")) return Object.assign({},p,{wtmetric:p.wmetric});
+  return p;
+}
+function wkLinkBox_(side){ return `<label class="wklink" title="入れると、グラフと表の片方を替えたとき、もう片方も同じ指標になります（表の値引き・廃棄額は、グラフでは値引率・廃棄率）。外すと別々に選べます"><input type="checkbox" data-wlink="${side}"${wkLinked_()?" checked":""}>🔗 グラフと表をそろえる</label>`; }
+document.addEventListener("change",e=>{
+  const t=e.target; if(!t||!t.matches||!t.matches("input[data-wlink]")||!S.entered) return;
+  const on=!!t.checked; savePref_({wlink:on});
+  document.querySelectorAll("input[data-wlink]").forEach(x=>{ x.checked=on; });   // グラフと表の2つのチェックは同じ1つの設定
+  if(!on) return;
+  // 入れたとき: チェックを入れた側に、もう片方をそろえる（もうそろっていれば何もしない）
+  const p=t.dataset.wlink==="table"?{wmetric:WK_LINK_CHART[S.wtmetric]||S.wtmetric}:{wtmetric:S.wmetric};
+  if((p.wmetric&&p.wmetric!==S.wmetric)||(p.wtmetric&&p.wtmetric!==S.wtmetric)) nav_(p,{from:t.dataset.wlink==="table"?"wkc:table":"wkc:trend",why:"そろえる",land:"wk"});
 });
 
 /* ── 切り替えと入口 ── */
@@ -3866,7 +3892,7 @@ function wkTrendHtml_(st,dept){
     :`<span><span class="ln" style="border-color:#2a78d6"></span>${WK_MLABEL[m]}</span><span><span class="ln" style="border-color:#eb6834"></span>4週の移動平均</span>`;
   const tabs=["s","g","gpr","dr","wr"].map(x=>`<button class="${m===x?"on":""}"${m===x?"":wkGo_({wmetric:x},"","グラフ","wkc:trend")}>${WK_MLABEL[x]}</button>`).join("");
   return `<div class="wk-card" data-k="wkc:trend"><h3>週の推移 — ${esc(wkStoreName_(st))}・${esc(dept===WK_ALL?"全部門（計）":dept)}</h3>`+
-    `<div class="concl">${esc(concl)}</div><div class="metricbar"><span class="lb">グラフ：</span>${tabs}</div>`+
+    `<div class="concl">${esc(concl)}</div><div class="metricbar"><span class="lb">グラフ：</span>${tabs}${wkLinkBox_("chart")}</div>`+
     `<div class="wk-legend">${leg}<span class="lb">単位：${wkIsRate_(m)?"%":"千円"}</span></div><div class="wkchart" id="wkchart"></div>`+
     ((m==="g"||m==="gpr")?`<div class="cap">週の粗利＝受払の式（売上 −〔週の始めの在庫＋仕入 − 週の終わりの在庫〕）。月初の在庫は前の月末の実地棚卸。<b>棚卸の入った回までは、月初からの粗利が確定</b>します。回と回の間に棚卸が無い週は、その合計を売上で割り振ります。最後の棚卸の回より後は暫定です。月末確定が届くと、その月は確定に替わります。</div>`:"")+`</div>`;
 }
@@ -4040,7 +4066,7 @@ function wkTableHtml_(){
     return `<tr class="${r.total?"total":r.sub?"subtotal":""} ${r.go?"go":""}"${r.go?wkGo_(r.go,r.k,"行"):""}><td class="h">${r.go?`<span class="gl">${esc(r.label)}</span><span class="gch">›</span>`:esc(r.label)}</td>`+cols.map(j=>cell(s,j)).join("")+
       `<td class="cmp">${a==null?"—":wkIsRate_(m)?a.toFixed(2):wkK_(a)}</td><td class="cmp">${rr==null?"—":wkIsRate_(m)?wkFpt_(rr,2):rr.toFixed(1)}</td><td class="cmp">${py==null?"—":py.toFixed(1)}</td>`+
       `<td class="cmp">${r.slug?wkChip_(hitsHere,r.slug,r.dept):""}</td></tr>`; }).join("");
-  const mb=`<div class="metricbar"><span class="lb">表の数字：</span>`+["s","g","gpr","d","dr","w","wr"].map(x=>`<button class="${m===x?"on":""}"${m===x?"":wkGo_({wtmetric:x},"","表の数字","wkc:table")}>${WK_MLABEL[x]}</button>`).join("")+`</div>`;
+  const mb=`<div class="metricbar"><span class="lb">表の数字：</span>`+["s","g","gpr","d","dr","w","wr"].map(x=>`<button class="${m===x?"on":""}"${m===x?"":wkGo_({wtmetric:x},"","表の数字","wkc:table")}>${WK_MLABEL[x]}</button>`).join("")+wkLinkBox_("table")+`</div>`;
   return `<div class="wk-card" data-k="wkc:table"><h3>週の表</h3><div class="cap">選んだ週まで8週。<i>斜体</i>＋「推」は按分した推定、「暫」は粗利の暫定。行を押すと、1段下へ。値引き・売上のマイナス（${WK_MINUS}）は戻し入れ・付け替えで、実際の動きです。</div>`+mb+`<div class="tbl-wrap"><table class="c"><thead>${head}</thead><tbody>${body}</tbody></table></div>`+hidNote_(R.hid,{cols})+`</div>`;
 }
 /* 週の表の「気になる所 n件 ›」: その行（店×部門・エリアなら部門）の、この週の当たり。押すと、当たりのいちばん多い問いで 🔎 を開く
