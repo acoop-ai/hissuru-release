@@ -487,6 +487,19 @@
   table.c tr.catx td{opacity:.45;}
   table.c tr.catx:hover td{opacity:.7;}
   .badge.bd-catx{background:#fef3c7;color:#92400e;font-weight:700;}
+  /* 6部門の外（ＳＭ外・経費など・参考）: ■合計（全部門合計）の下に、区切りの1行と落ち着いた字。強調しない（琥珀色の「合計に入れていない」の札とは別の印＝絞り込みと読み違えない） */
+  table.c tr.outsep td{background:#f8fafc;border-top:2px solid #cbd5e1;color:var(--muted);font-size:12px;font-weight:600;padding:5px 10px;}
+  table.c tr.outsep td.h{white-space:normal;font-size:12px;background:#f8fafc;}   /* 列の幅で折り返す（見出しの列を広げない） */
+  table.c tr.outrow td{color:var(--muted);}
+  table.c tr.outrow td.h{font-weight:400;} table.c tr.outrow.outdept td.h{font-weight:600;}
+  table.c tr.outrow .cell .act{background:transparent;font-weight:400;}
+  .jgprev{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#475569;background:#f1f5f9;border:1px solid var(--border);border-radius:6px;padding:2px 8px;margin:0 0 6px;}   /* 前回の表・更新中（小さく・表の上） */
+  .jgprev.ng{color:#92400e;background:#fffbeb;border-color:#fcd34d;}   /* 更新できなかった（前回の表のまま） */
+  .jgspin{width:10px;height:10px;border:2px solid #94a3b8;border-top-color:transparent;border-radius:50%;animation:jgspin .8s linear infinite;}
+  .jgprev.ng .jgspin{display:none;}
+  @keyframes jgspin{to{transform:rotate(360deg);}}
+  @media (prefers-reduced-motion:reduce){ .jgspin{animation:none;} }
+  table.c td.norate{color:var(--muted);cursor:help;}   /* 計算しない率（エリア合計の中分類の原価率）の「—」。字の上に乗せると説明（title）・表の下にも1行 */
   .catmk{display:block;color:#b45309;font-weight:700;font-size:12px;white-space:normal;}   /* 列の幅で折り返す（見出しの列を広げない） */
   tr.total .catmk{color:#fcd34d;}
   table.c th .catmk{font-size:11.5px;}
@@ -518,7 +531,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-04a</span></span></div></div>
+  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-10a</span></span></div></div>
   <span class="hsp"></span>
   <div class="hasg" id="hdrAsg" hidden></div>
   <span class="user" id="user"></span>
@@ -571,7 +584,7 @@ let currentAccessToken=null, accessTokenExpiry=0, oauthTokenClient=null, tokenRe
 const TOKEN_STORE_KEY = "hissuru_oauth_token_v1";
 function persistAccessToken_(){ try{ if(currentAccessToken&&accessTokenExpiry) localStorage.setItem(TOKEN_STORE_KEY, JSON.stringify({t:currentAccessToken,e:accessTokenExpiry})); }catch(e){} }
 function restoreAccessToken_(){ try{ const raw=localStorage.getItem(TOKEN_STORE_KEY); if(!raw) return false; const o=JSON.parse(raw); if(!o||!o.t||!o.e||Date.now()>o.e-60000) return false; currentAccessToken=o.t; accessTokenExpiry=o.e; scheduleAccessTokenRefresh_(Math.floor((o.e-Date.now())/1000)+30); return true; }catch(e){ return false; } }
-function clearStoredToken_(){ try{ localStorage.removeItem(TOKEN_STORE_KEY); }catch(e){} }
+function clearStoredToken_(){ try{ localStorage.removeItem(TOKEN_STORE_KEY); }catch(e){} try{ jgcClearAll_(); }catch(e){} }   // ログインの切れ目: 端末に覚えた前回の表も消す
 function ensureOAuthTokenClient_(){
   if(oauthTokenClient) return;
   if(!(window.google && google.accounts && google.accounts.oauth2)) throw new Error("Googleログイン部品が読み込めていません。ページを再読み込みしてください");
@@ -641,10 +654,60 @@ function cached_(key,fn){
   if(/status\.json$/.test(key)) return fn();
   const now=Date.now(), hit=JCACHE.get(key);
   if(hit&&now-hit.t<JCACHE_TTL){ JCACHE.delete(key); JCACHE.set(key,hit); return hit.p; }   // 使ったものを後ろへ（捨てる順を、使っていない順に）
-  const p=fn(); JCACHE.set(key,{t:now,p});
-  p.catch(()=>{ if(JCACHE.get(key)&&JCACHE.get(key).p===p) JCACHE.delete(key); });
+  const p=fn(), e={t:now,p}; JCACHE.set(key,e);
+  p.then(()=>{ e.done=true; },()=>{ if(JCACHE.get(key)===e) JCACHE.delete(key); });   // done＝届いた（jcPeek_）・失敗したものは覚えない
   if(JCACHE.size>JCACHE_MAX) JCACHE.delete(JCACHE.keys().next().value);
   return p;
+}
+/* 店舗事業部会議の表の置き場（本番の名前・ローカルの見本の名前）。slug＝店（空ならエリア合計） */
+const jgPath_=(a,ym,sp,slug)=>[`jigyo/${aslug(a)}__${ym}__${s8(sp)}__${slug||"AREA"}.json`,`jigyo__${aslug(a)}.json`];
+/* 覚えた表の様子（取りに行かない）: "done"＝届いている／"pending"＝取りに行っている途中／null＝覚えていない（5分を過ぎた物も） */
+function jcPeek_(key){ const e=JCACHE.get(key); if(!e||Date.now()-e.t>=JCACHE_TTL) return null; return e.done?"done":"pending"; }
+
+/* ══ 前回の表を先に出す（PO 2026-11-10「案1」）══
+   店舗事業部会議を開いたとき、その人が前に開いた同じ表（同じ回・同じエリア／店）を端末に覚えていれば、すぐにそれを出し、裏で新しい表を取りに行く（jigyoBody_）。
+   守り（端末に覚える物と消す決まり）:
+   ・置き場はアカウントごと（hissuru_jgc_<アカウントの SHA-256 の頭16字>。メールそのものは鍵にしない）。ログインしたら、ほかのアカウントの物は全部消す
+   ・ログインが切れた（サーバーが認証失敗を返した・端末の鍵を消した）ら、全部消す（clearStoredToken_）
+   ・7日より古い物は使わずに消す／覚えるのは、いちばん新しい 6 本・合わせて 60 万字まで（1本 20 万字を超える表は覚えない）。超えたら古い物から消す
+   ・読み書きは try/catch。読めない・壊れている（形が違う）ときは使わずに消し、今までどおり取りに行く
+   ・覚えるのは、サーバーが返した表（表を出すときに使った物）だけ。先読み（adminPrefetch_）は覚えない（メモリだけ） */
+const JGC={ah:"",mem:null,max:6,maxChars:600000,itemMax:200000,days:7};
+const JGC_PRE="hissuru_jgc_";
+async function jgcInit_(){
+  let h="";
+  try{ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode("hissuru-jgc-v1|"+String(authedEmail||"local").trim().toLowerCase()));
+    h=[...new Uint8Array(b)].slice(0,8).map(x=>x.toString(16).padStart(2,"0")).join(""); }catch(e){ h=""; }   // 作れない端末では使わない
+  JGC.ah=h; JGC.mem=null;
+  try{ for(let i=localStorage.length-1;i>=0;i--){ const k=localStorage.key(i); if(k&&k.startsWith(JGC_PRE)&&k!==JGC_PRE+h) localStorage.removeItem(k); } }catch(e){}
+  jgcLoad_();
+}
+function jgcClearAll_(){ JGC.mem=null; try{ for(let i=localStorage.length-1;i>=0;i--){ const k=localStorage.key(i); if(k&&k.startsWith(JGC_PRE)) localStorage.removeItem(k); } }catch(e){} }
+const jgcOk_=x=>!!x&&typeof x.k==="string"&&+x.t>0&&x.d&&typeof x.d==="object"&&Array.isArray(x.d.rows)&&Array.isArray(x.d.columns);
+function jgcLoad_(){
+  if(!JGC.ah) return [];
+  if(JGC.mem) return JGC.mem;
+  let a=[], bad=false;
+  try{ const o=JSON.parse(localStorage.getItem(JGC_PRE+JGC.ah)||"null"); if(o&&o.v===1&&Array.isArray(o.items)) a=o.items; else if(o) bad=true; }catch(e){ bad=true; }
+  const now=Date.now(), keep=a.filter(x=>jgcOk_(x)&&now-x.t<JGC.days*864e5&&x.t<=now+6e4);
+  JGC.mem=keep; if(bad||keep.length!==a.length) jgcSave_();
+  return keep;
+}
+function jgcSave_(){
+  const key=JGC_PRE+JGC.ah, out=[]; let n=0;
+  (JGC.mem||[]).slice().sort((p,q)=>q.t-p.t).forEach(x=>{ if(out.length<JGC.max&&n+(x.n||0)<=JGC.maxChars){ out.push(x); n+=x.n||0; } });
+  JGC.mem=out;
+  for(let i=0;i<2;i++){   // 入らない（端末の置き場がいっぱい）＝いちばん古い物を捨てて1回だけやり直す
+    try{ if(out.length) localStorage.setItem(key,JSON.stringify({v:1,items:out})); else localStorage.removeItem(key); return; }catch(e){ out.pop(); }
+  }
+  try{ localStorage.removeItem(key); }catch(e){} JGC.mem=[];
+}
+function jgcGet_(k){ return jgcLoad_().find(x=>x.k===k)||null; }
+function jgcPut_(k,d){
+  if(!JGC.ah||!d||!Array.isArray(d.rows)) return;
+  let n=0; try{ n=JSON.stringify(d).length; }catch(e){ return; }
+  if(n>JGC.itemMax) return;
+  JGC.mem=jgcLoad_().filter(x=>x.k!==k).concat([{k,t:Date.now(),n,d}]); jgcSave_();
 }
 /* 読んだ表は、覚える前に いつも出さない中分類（愛知の分類・hideCats_）を抜く＝どのモードにも出ない */
 function loadJson(prod,sample){ return cached_("L|"+prod+"|"+sample,()=>loadJson0_(prod,sample).then(hideCats_)); }
@@ -685,8 +748,8 @@ const API={
   byStore:(a,ym,sp,d)=>loadJson(`c/by_store__${aslug(a)}__${dslug(d)}__${ym}__${s8(sp)}.json`,`c__by_store__${aslug(a)}_${dslug(d)}.json`),
   byDept:(a,ym,sp)=>loadJson(`c/by_dept__${aslug(a)}__${ym}__${s8(sp)}.json`,`c__by_dept__${aslug(a)}.json`),
   uneibu:(a,ym,sp)=>loadJson(`c/uneibu_zentai__${aslug(a)}__${ym}__${s8(sp)}.json`,`c__uneibu_zentai__${aslug(a)}.json`),
-  jigyo:(a,ym,sp)=>loadJson(`jigyo/${aslug(a)}__${ym}__${s8(sp)}__AREA.json`,`jigyo__${aslug(a)}.json`),
-  jigyoStore:(a,ym,sp,slug)=>loadJson(`jigyo/${aslug(a)}__${ym}__${s8(sp)}__${slug}.json`,`jigyo__${aslug(a)}.json`),
+  jigyo:(a,ym,sp)=>loadJson(...jgPath_(a,ym,sp,"")),
+  jigyoStore:(a,ym,sp,slug)=>loadJson(...jgPath_(a,ym,sp,slug)),
   shiire:(a,ym,sp,d)=>loadJson(`shiire/${aslug(a)}__${dslug(d)}__${ym}__${s8(sp)}.json`,`shiire__${aslug(a)}_${dslug(d)}.json`),
 };
 
@@ -1000,7 +1063,7 @@ function allDeptNote_(){
    その部門の表はどれも同じ設定で出す: 商品部全体（店の行・◆全店舗合計）・商品部詳細（エリア合計・店）・運営部全体・運営部詳細（エリア合計・店）・
      店舗事業部会議・受払の表・全部門（計）（部門ごとに、その部門の設定で足す）。店舗用の入口・週間・仕入分析・会議用まとめには入れない（週間・仕入分析は一言）。
    数: 部門の計 − 除いた中分類（愛知の2分類など、表に出さない行の値は部門の計の中に残る＝いままでと同じ）。率は足した額から出し直す
-     （c の表＝RATE_OF・sumCells_ と同じ／店舗事業部会議・受払＝jigyoRates_＝HQ の _jigyo_recalc_rates と同じ式）。
+     （c の表＝RATE_OF・sumCells_ と同じ／店舗事業部会議・受払＝jigyoRates_＝HQ の backend〈_jigyo_recalc_rates〉と同じ式・差損率は ÷売上）。
    新分類で分かれた組（SPLIT_GROUPS）の片方だけを入れ、前年が分かれていない月は、その合計の前年比を「—」（理由を表の下に1行）。
    名前は月で違う（旧分類・新分類）: その表にある名前だけを当てる（NFKC でそろえて）。表にある名前が全部「除く」になるときは、絞らない（全部 0 の表にしない）。
    絞っていることを読み違えないよう、同じ琥珀色の印を3か所に: 選ぶ欄の札・上の帯・合計の行の名前（＋表の下の1行と印刷の題）。合計に入れていない行は薄く。 */
@@ -1199,17 +1262,35 @@ function catxUneibu_(d){
   const v=d._cxc.v; v.seen.forEach(a=>cxSeen_(a[0],a[1],a[2]));
   return v;
 }
-/* 店舗事業部会議・受払の表の率（HQ の _jigyo_recalc_rates と同じ式）。keys＝表の率の列 */
-function jigyoRates_(v,keys){
-  const o=Object.assign({},v||{}), g=k=>+o[k]||0, s=g("sales_month"), pp=g("purchase_price_month"), ibk=g("inventory_book_value"), iav=g("inventory_actual_value");
+/* 店舗事業部会議・受払の表の率（HQ の backend＝main.py D30AA838・JIGYO_AREA_RATES_V2 と同じ式・2026-11-08 から本番）。keys＝表の率の列。
+   部門の行・■合計の行（cat なし＝_jigyo_recalc_rates）: 粗利率・値引率・廃棄率・差損率は ÷売上（差損率＝売価差損÷売上。受払表の原本と同じ・帳簿では割らない）／
+     値入率＝(1−仕入原価÷仕入売価)／原価率＝棚卸原価÷実施。
+   エリア合計の中分類の行（cat＝_jigyo_area_cat_rates）: 同じ式。ただし JG_CAT_NORATE の率（原価率）は計算しない（受払表の原本は原価率を出さない＝店の 0 の和＝0 のまま）。
+   計算しない所は、画面では 0.00% でなく「—」で出す（PO 2026-11-10・renderJigyo）。値は変えない。どこを計算しない・「—」にするかの決まりは JG_CAT_NORATE の1か所 */
+const JG_CAT_NORATE={inventory_cost_rate:"エリア合計の中分類は、原価率を出していません"};   // 率の列 → 字の上に乗せたときの説明
+function jigyoRates_(v,keys,cat){
+  const o=Object.assign({},v||{}), g=k=>+o[k]||0, s=g("sales_month"), pp=g("purchase_price_month"), iav=g("inventory_actual_value");
   const R={gross_profit_rate_month:s?g("gross_profit_month")/s*100:0, discount_rate:s?g("discount_amount")/s*100:0, discard_rate:s?g("discard_amount")/s*100:0,
-    purchase_margin_rate:pp?(1-g("purchase_cost_month")/pp)*100:0, inventory_loss_rate:ibk?g("inventory_loss_price")/ibk*100:0, inventory_cost_rate:iav?g("inventory_cost")/iav*100:0};
+    purchase_margin_rate:pp?(1-g("purchase_cost_month")/pp)*100:0, inventory_loss_rate:s?g("inventory_loss_price")/s*100:0,
+    inventory_cost_rate:iav?g("inventory_cost")/iav*100:0};
+  if(cat) Object.keys(JG_CAT_NORATE).forEach(k=>{ delete R[k]; });   // 計算しない（届いた値のまま）
   (keys||[]).forEach(k=>{ if(k in R&&o[k]!=null) o[k]=R[k]; });   // 届いていない（null）マスは「—」のまま
   return o;
 }
+/* 6部門の■合計（PO 2026-11-09「■合計は6部門だけ・外は下に参考」）: 部門の行の額を足し、率は額から（jigyoRates_）。前年も足して、粗利率は額から */
+function jgSum_(list,ak,rk){
+  const add=(keys,pick)=>{ const o={}; keys.forEach(k=>{ let t=null; list.forEach(r=>{ const x=(pick(r)||{})[k]; if(x!=null) t=(t||0)+(+x); }); o[k]=t; }); return o; };
+  const has=(pick,k)=>list.some(r=>(pick(r)||{})[k]!=null);
+  const v=add(ak,r=>r.values); rk.forEach(k=>{ v[k]=has(r=>r.values,k)?0:null; });
+  const yks=[...new Set(list.flatMap(r=>Object.keys(r.yoy||{})))].filter(k=>k!=="gross_profit_rate_month");
+  const y=add(yks,r=>r.yoy); if(has(r=>r.yoy,"gross_profit_rate_month")) y.gross_profit_rate_month=0;
+  return {label:"■ 合計（6部門）",values:jigyoRates_(v,rk),yoy:jigyoYoyRates_(y)};
+}
+/* 名前の無い部門・中分類（受払表の空の行＝<NULL>）は、生の字を出さない */
+const jgName_=(s,dept)=>{ const t=String(s==null?"":s).trim(); return (!t||/^<?NULL>?$/i.test(t))?(dept?"部門名なし":"名前なし"):t; };
 function jigyoYoyRates_(y){ const o=Object.assign({},y||{}); if(o.gross_profit_rate_month!=null){ const s=+o.sales_month||0; o.gross_profit_rate_month=s?(+o.gross_profit_month||0)/s*100:0; } return o; }
 function jgSub_(base,list,keys){ const o=Object.assign({},base||{}); keys.forEach(k=>{ if(o[k]==null) return; let s=+o[k]; list.forEach(v=>{ const x=(v||{})[k]; if(x!=null) s-=+x; }); o[k]=Math.abs(s)<1e-6?0:s; }); return o; }
-/* 店舗事業部会議・受払: 部門の行と ■合計 を出し直す（額は引く・率は jigyoRates_）。rows はエリア合計の中分類の率を出し直したあとの行 */
+/* 店舗事業部会議・受払: 部門の行と ■合計 を出し直す（額は引く・率は jigyoRates_）。rows は率を出し直したあとの6部門の行・grand は6部門の■合計（renderJigyo） */
 function catxJigyo_(rows,grand,ak,rk){
   const by={}, items=[], allEx=[]; let any=false, ny=false;
   const yk=y=>Object.keys(y||{}).filter(k=>k!=="gross_profit_rate_month");
@@ -1504,9 +1585,11 @@ function drawUneibu(mkey){
   /* マスを押す＝その店の運営部詳細を、その行の部門で開く（部門の行・カテゴリの行とも）。合計の行は部門を変えない */
   const cell=(full,dept,inner,k)=>`<td class="gocell" data-go="unei" data-a="${esc(full)}" data-b="${esc(dept||"")}" data-k="${esc(k)}">${inner}</td>`;
   /* 全部門計（2026-10-16b）: いちばん上に。6部門の行の足し算（率は足した額から）＝商品部全体の全部門と同じ数。
-     届いた表の下の合計の行は出さない（回によっては ＳＭ外・経費 など6部門の外の行を含むため。その行は表には残し、下に一言） */
+     届いた表の下の合計の行は出さない（回によっては ＳＭ外・経費 など6部門の外の行を含むため）。
+     6部門の外の行は、店舗事業部会議と同じ決まり（2026-11-09）: 表のいちばん下に区切りの1行「6部門の外（全部門合計に入れていない・参考）」を置き、
+     落ち着いた字で出す（押して下りない・すべて 0 の行と部門は出さない・前年 0 は比べない）。表の下に1行 */
   const deptRows=d.rows.filter(r=>r.type==="dept"&&S.meta.departments.includes(r.dept));
-  const outside=[...new Set(d.rows.filter(r=>r.type==="dept"&&!S.meta.departments.includes(r.dept)).map(r=>r.dept))];
+  const isOut=r=>deptRows.length>0&&!S.meta.departments.includes(r.dept);
   const gOf=r=>xi(r.dept)?xi(r.dept).grand:r.grand, sOf=(r,sh)=>xi(r.dept)?xi(r.dept).stores[sh]:(r.stores||{})[sh];
   if(deptRows.length){
     const gAll=sumCells_(deptRows.map(gOf),d.columns), allMk=cx.any?catxMk_(catxMulti_(cx.info)):"";
@@ -1517,6 +1600,7 @@ function drawUneibu(mkey){
     h+=`<tr class="total" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門合計</td>${cell("","",cellHtml((gt.grand||{})[mkey],col,true),"c:__total__|all")}`+st.map(s=>cell(s.full,"",cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true),"c:"+s.full+"|all")).join("")+`</tr>`; }
   const hid=[];
   d.rows.forEach((r,ri)=>{   // ri（押した所の印に使う）は、隠した行を飛ばしても元の行の番号のまま＝指標を替えても同じ
+    if(isOut(r)) return;   // 6部門の外は、下の参考へ
     const k=(r.dept||"")+"|"+r.category, isCat=r.type!=="dept";
     if(isCat&&zeroCells_(r.grand)&&Object.values(r.stores||{}).every(zeroCells_)){ hid.push([r.dept||"",r.category]); return; }   // すべて 0 の中分類（合計・どの店も・どの指標も）
     const ny=set=>{ const v=isCat&&set.has(k); if(v) noted.add(r.category); return v; };
@@ -1528,7 +1612,18 @@ function drawUneibu(mkey){
     h+=cell("",r.dept,cellHtml(gc,col,false,dx?x.nyG:ny(nyGrand),est(gc)),"c:__total__|"+ri);
     h+=st.map(s=>{ const sc=((dx?x.stores[s.short]:(r.stores&&r.stores[s.short]))||{})[mkey]; return cell(s.full,r.dept,cellHtml(sc,col,false,dx?x.nyS[s.short]:ny(nyStore[s.short]),est(sc)),"c:"+s.full+"|"+ri); }).join("")+`</tr>`;
   });
-  const outNote=(deptRows.length&&outside.length)?`<div class="splitnote">全部門合計は6部門（${esc(S.meta.departments.join("・"))}）の合計です。${esc(outside.join("・"))} の行は入れていません（店舗事業部会議の合計には入っています）。</div>`:"";
+  const out=d.rows.filter(isOut), z0=r=>zeroCells_(r.grand)&&Object.values(r.stores||{}).every(zeroCells_), outShown=[]; let outH="", outHid=0;
+  const oc=c=>`<td>${cellHtml(c,col,false,!(c&&c.yoy))}</td>`;   // 前年 0（前年の受払表に無い）は比べない
+  [...new Set(out.map(r=>r.dept))].forEach(dp=>{
+    const rs=out.filter(r=>r.dept===dp);
+    if(rs.every(z0)){ outHid+=rs.length; return; }
+    outShown.push(jgName_(dp,true));
+    rs.forEach(r=>{ const isCat=r.type!=="dept"; if(isCat&&z0(r)){ outHid++; return; }
+      outH+=`<tr class="outrow${isCat?"":" outdept"}"><td class="h" style="left:0">${esc(isCat?jgName_(r.category!=null?r.category:r.label):withSum_("▶ "+jgName_(r.dept,true)))}</td>`+
+        oc((r.grand||{})[mkey])+st.map(s=>oc(((r.stores||{})[s.short]||{})[mkey])).join("")+`</tr>`; });
+  });
+  if(outH) h+=`<tr class="outsep"><td class="h" style="left:0">6部門の外（全部門合計に入れていない・参考）</td><td colspan="${st.length+1}"></td></tr>`+outH;
+  const outNote=outShown.length?`<div class="splitnote outnote">全部門合計は6部門（${esc(S.meta.departments.join("・"))}）の合計です（店舗事業部会議の■合計も同じ）。この回の受払表は全部の部門の形で届いたため、6部門の外（${esc(outShown.join("・"))}）を表の下に参考で出しています${outHid?"（すべて 0 の行は出していません）":""}。</div>`:"";
   h+=`</tbody></table></div>`;
   $("uTbl").innerHTML=h+outNote+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats)+cx.note;
 }
@@ -1542,37 +1637,65 @@ function cmpCell(cur,prev,isRate,hib,noYoy,estP,curMark){
   else if(noYoy) h+=`<div class="prev">前 \u2014</div>`;
   return h+`</div>`;
 }
-/* opts.catx（本部用の入口だけ）: エリア合計の中分類の率を額から出し直す（届いた表は店の率の和＝HQ の既知の不具合）・中分類を選んだ合計。
+/* opts.catx（本部用の入口・店舗事業部会議と受払の表はいつも渡す。渡さないときは届いた表のまま＝試験で前の版と比べるため）:
+     ①率を backend と同じ式で、いつも額から出し直す（jigyoRates_）: 部門の行・■合計の行（店のタブ・エリア合計とも）と、エリア合計の中分類の行（原価率は除く）。
+       11/08 の backend の直しより前に作った表（部門の行の差損率が ÷帳簿・エリア合計の中分類の率が店の率の和）も、同じ決まりで見える（表の作り直しは要らない）。
+     ②■合計は6部門（S.meta.departments）だけ（PO 2026-11-09）。受払表が全部の部門の形で届いた回（ＳＭ外・経費・空の行）は、6部門の外を■合計の下に
+       区切りの1行「6部門の外（■合計に入れていない・参考）」を置いて落ち着いた字で出す（すべて 0 の行・部門は出さない・前年 0 は比べない）。表の下に1行。
+     ③中分類を選んだ合計（catxJigyo_）。
    opts.onlyDept: その部門の行だけ（受払の表・商品部詳細）。■合計は出さない（部門の行が合計） */
 function renderJigyo(d,opts){
   const o=opts||{}, cols=d.columns, cmp=d.compare||[]; const grp=[];
   const rk=cols.filter(c=>c.type==="rate").map(c=>c.key), ak=cols.filter(c=>c.type!=="rate").map(c=>c.key);
-  let rows=d.rows||[], grand=d.grand;
-  if(o.catx&&d.is_store_view===false&&!d.store) rows=rows.map(r=>r.type==="category"?Object.assign({},r,{values:jigyoRates_(r.values,rk),yoy:r.yoy?jigyoYoyRates_(r.yoy):r.yoy}):r);
-  if(o.onlyDept){ rows=rows.filter(r=>r.dept===o.onlyDept); grand=null; }
+  let rows=d.rows||[], grand=d.grand, out=[];
+  const six=(S.meta&&S.meta.departments)||[], area=!!o.catx&&d.is_store_view===false&&!d.store;   // area＝エリア合計の表（中分類の行の率を出し直す・JG_CAT_NORATE は「—」）
+  if(o.catx){
+    const yr=r=>r.yoy?jigyoYoyRates_(r.yoy):r.yoy;
+    rows=rows.map(r=>r.type==="dept"?Object.assign({},r,{values:jigyoRates_(r.values,rk),yoy:yr(r)})
+      :(area&&r.type==="category"?Object.assign({},r,{values:jigyoRates_(r.values,rk,true),yoy:yr(r)}):r));
+    const dr=rows.filter(r=>r.type==="dept"&&six.includes(r.dept));
+    if(dr.length){ out=rows.filter(r=>!six.includes(r.dept)); rows=rows.filter(r=>six.includes(r.dept)); grand=jgSum_(dr,ak,rk); }
+    else if(grand) grand=Object.assign({},grand,{values:jigyoRates_(grand.values,rk),yoy:yr(grand)});   // 6部門の行が無い表（無い見込み）は、届いた合計の率だけ出し直す
+  }
+  if(o.onlyDept){ rows=rows.filter(r=>r.dept===o.onlyDept); grand=null; out=[]; }
   const cx=o.catx?catxJigyo_(rows,grand,ak,rk):null;
   cols.forEach(c=>{ const g=c.group||""; if(g===""&&grp.length) grp[grp.length-1].span++; else grp.push({g,span:1}); });
   const fv=(c,v)=>v==null?"—":(c.type==="rate"?pct(v):kyen(v));
+  let nrN=0;   // 計算しない率（エリア合計の中分類の原価率）を「—」で出したマスの数＝表の下の1行を出すか
   let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" rowspan="2" style="left:0">部門・カテゴリ</th>`+
     grp.map(g=>`<th colspan="${g.span}" style="text-align:center">${esc(g.g)}</th>`).join("")+(cmp.length?`<th colspan="${cmp.length}" style="text-align:center">前年比較</th>`:"")+`</tr><tr>`+
     cols.map(c=>`<th>${esc(c.sub_header||"")}</th>`).join("")+cmp.map(c=>`<th>${esc(c.label)}</th>`).join("")+`</tr></thead><tbody>`;
   const noYoy=splitNoYoyRows(rows.filter(r=>r.type!=="dept"),r=>({current:(r.values||{}).sales_month,yoy:(r.yoy||{}).sales_month})), noted=new Set();
   const marked=rows.some(r=>r.type==="category"&&r.yoy_est===true);   // 事業部会議の印は、中分類の行に yoy_est（予算の列は無い）
-  const row=(r,cls,x)=>{ const v=(x?x.values:r.values)||{},y=(x?x.yoy:r.yoy)||{};
-    let ny=r.type==="category"&&noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
+  const row=(r,cls,x,ref)=>{ const v=(x?x.values:r.values)||{},y=(x?x.yoy:r.yoy)||{};
+    let ny=!ref&&r.type==="category"&&noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
     if(x&&x.noYoy) ny=true;   // 中分類を選んだ合計で、前年と比べられない組を片方だけ入れた
-    const ep=r.type==="category"&&(marked?r.yoy_est===true:estPrior(d.ym,r.category));
+    if(ref&&zeroCells_(r.yoy)) ny=true;   // 6部門の外: 前年の受払表に無い（前年 0）＝比べない（「前 —」）
+    const ep=!ref&&r.type==="category"&&(marked?r.yoy_est===true:estPrior(d.ym,r.category));
     const mk=key=>(r.type==="category"&&r.cur_est===true&&CUR_EST_KEYS.includes(key))?curEstMark_({cur_est:true}):"";   // 委託の速報の粗利（行の印）
     const xo=r.type==="category"&&cx&&cx.by[r.dept]&&cx.by[r.dept].ex.has(r.category);
-    return `<tr class="${cls}${xo?" catx":""}"><td class="h" style="left:0">${esc(r.type==="dept"?withSum_(r.label):r.label)}${x?catxMk_(x.label):""}${xo?`<br><span class="badge bd-catx">合計に入れていない</span>`:""}</td>`+cols.map(c=>`<td>${v[c.key]!=null&&mk(c.key)?`<span class="cev">${mk(c.key)}${fv(c,v[c.key])}</span>`:fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep,mk(c.key))}</td>`).join("")+`</tr>`; };
+    const lab=ref?(r.type==="dept"?withSum_("▶ "+jgName_(r.dept,true)):jgName_(r.category!=null?r.category:r.label)):(r.type==="dept"?withSum_(r.label):r.label);
+    const nr=c=>area&&r.type==="category"&&JG_CAT_NORATE[c.key]&&v[c.key]!=null;   // 計算しない率＝0.00% でなく「—」（値は変えない）
+    return `<tr class="${cls}${xo?" catx":""}"><td class="h" style="left:0">${esc(lab)}${x?catxMk_(x.label):""}${xo?`<br><span class="badge bd-catx">合計に入れていない</span>`:""}</td>`+cols.map(c=>nr(c)?(nrN++,`<td class="norate" title="${esc(JG_CAT_NORATE[c.key])}">—</td>`):`<td>${v[c.key]!=null&&mk(c.key)?`<span class="cev">${mk(c.key)}${fv(c,v[c.key])}</span>`:fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep,mk(c.key))}</td>`).join("")+`</tr>`; };
   const hid=[];
   rows.forEach(r=>{
     if(r.type==="category"&&zeroCells_(r.values)&&zeroCells_(r.yoy)){ hid.push([r.dept||"",r.category||r.label]); return; }   // すべて 0 の中分類（今年のどの列も・前年も）
     h+=row(r,r.type==="dept"?"subtotal":"datarow",r.type==="dept"&&cx?cx.by[r.dept]:null);
   });
   if(grand) h+=row({label:grand.label||"◆ 合計",values:grand.values,yoy:grand.yoy},"total",cx&&cx.grand);
+  // 6部門の外（参考・■合計に入れていない）: 部門ごとに、すべて 0 の部門（部門の行も中分類も＝空の行の <NULL> など）は出さない。中分類は、すべて 0 の行を出さない
+  const z0=r=>zeroCells_(r.values)&&zeroCells_(r.yoy), outShown=[]; let outH="", outHid=0;
+  [...new Set(out.map(r=>r.dept))].forEach(dp=>{
+    const rs=out.filter(r=>r.dept===dp);
+    if(rs.every(z0)){ outHid+=rs.length; return; }
+    outShown.push(jgName_(dp,true));
+    rs.forEach(r=>{ if(r.type!=="dept"&&z0(r)){ outHid++; return; } outH+=row(r,"outrow"+(r.type==="dept"?" outdept":""),null,true); });
+  });
+  if(outH) h+=`<tr class="outsep"><td class="h" style="left:0">6部門の外（■合計に入れていない・参考）</td><td colspan="${cols.length+cmp.length}"></td></tr>`+outH;
   h+=`</tbody></table></div>`;
-  return h+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_((d._hidCats||[]).filter(x=>!o.onlyDept||x.dept===o.onlyDept))+(cx?cx.note:"");
+  const outNote=outShown.length?`<div class="splitnote outnote">■合計は6部門（${esc(six.join("・"))}）の合計です。この回の受払表は全部の部門の形で届いたため、6部門の外（${esc(outShown.join("・"))}）を■合計の下に参考で出しています${outHid?"（すべて 0 の行は出していません）":""}。</div>`:"";
+  const nrNote=nrN?`<div class="splitnote nrnote">原価率の「—」は、エリア合計の中分類です（受払表の原本に原価率が無いため出していません。部門の行と■合計は出しています）。</div>`:"";
+  return h+outNote+nrNote+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_((d._hidCats||[]).filter(x=>!o.onlyDept||x.dept===o.onlyDept))+(cx?cx.note:"");
 }
 /* 仕入分析（目標粗利率・在庫日数\u2192計算・\u00B110%色） */
 const BDAYS=25; let _shiire=null;
@@ -1759,7 +1882,7 @@ async function checkFreshness_(){
   renderUpBar_(String(now).slice(0,10).replace(/-/g,""),S.meta||{});   // 窓口を増やさない（読んだ meta.json だけ・エリアごとの一覧があればエリアごと）
   const j=liveJudge_(f,now);
   if(j){   // 止まっているときだけ、管理者かを聞く（ふだんは窓口を増やさない）
-    try{ const r=await capi("getMyRights"); if(r&&r.admin) renderCopyBar_(j); }catch(e){}
+    try{ const r=await myRights_(); if(r&&r.admin) renderCopyBar_(j); }catch(e){}
   }
 }
 /* 上の帯（2026-11-02 PO「システム名が重複するので、左上をはっきりと大きく表示できれば1か所で良い」）:
@@ -1818,6 +1941,7 @@ async function startApp_(){
   let booted=false; window.__bootStep="起動";
   setTimeout(()=>{ if(!booted){ const a=$("app"); if(a) a.innerHTML=`<div class="err">起動に時間がかかっています（「${esc(window.__bootStep)}」で停止中）。<br>通信状況をご確認のうえ、再読み込みしてください。</div>`; } }, 12000);
   $("app").innerHTML=`<div class="note">読み込み中…</div>`;
+  jgcInit_();   // 前回の表の置き場をこのアカウントに（ほかのアカウントの物は消す・7日より古い物も）。待たない
   capi("getCommentsSheetUrl").then(u=>{S.sheetUrl=u||"";}).catch(()=>{S.sheetUrl="";});
   try{
     window.__bootStep="データ(meta)取得";
@@ -1893,6 +2017,42 @@ function enter(){
   catxLoad_(); S.uke=!!loadPref_().uke;   // 中分類の絞り込み（部門ごと）と、表の中身（指標｜受払）は、この PC に覚えた物から
   if(S.role==="lead") S.dept=ALL_DEPT;   // 責任者は、はじめから全部門（計）（PO 2026-10-16）。ほかの担当は担当部門から
   S.entered=true; navInit_(); show_({why:"入室"});
+}
+
+/* ══ 管理者だけ、店舗事業部会議のはじめの表を裏で先に取っておく（PO 2026-11-10「管理者でログインした人だけが、裏で先に作っておくように。BY や各部門担当が開くことは稀なので」）══
+   いつ: 入室して最初の画面が出たあと（land_）、手が空いた時（requestIdleCallback・無ければ 1.5 秒後）に、このページで1回だけ。
+   だれ: 管理者かは、サーバーに聞く（getMyRights＝サーバーの ADMIN_EMAILS）。担当（役割）の選び方や、端末の記録では決めない。
+     サーバーが「管理者ではない」と答えたアカウントには、この端末に印（30日・アカウントの SHA-256 の鍵）を残し、次から聞かない（BY・部門担当・店舗は往復を増やさない）。
+     印は「聞かない」ためだけ＝消されても、サーバーに聞くだけ（先読みが走るのは、サーバーが管理者と答えたときだけ）。
+   何を: いちばん新しい回（meta の先頭の年月・その期間の既定）・担当のエリアの、エリア合計の表を1本。メモリ（JCACHE・5分）にだけ置く（端末に保存しない）。
+     押したときは、覚えた表を使う（往復 0）。取りに行っている途中に押したら、その返事を待って使う（2本にしない）。失敗したら黙って捨てる（押したとき、今までどおり取りに行く） */
+const PF={started:false,p:null,key:""};
+const NOTADMIN_DAYS=30, notAdminKey_=()=>"hissuru_notadmin_"+JGC.ah;
+function notAdminMemo_(){ if(!JGC.ah) return false; try{ const t=+localStorage.getItem(notAdminKey_())||0; return t>0&&Date.now()-t<NOTADMIN_DAYS*864e5; }catch(e){ return false; } }
+/* サーバーに管理者かを聞く（答えは、この端末の「管理者ではない」の印にも反映する） */
+async function myRights_(){
+  const r=await capi("getMyRights");
+  if(JGC.ah&&r) try{ if(r.admin) localStorage.removeItem(notAdminKey_()); else localStorage.setItem(notAdminKey_(),String(Date.now())); }catch(e){}
+  return r;
+}
+function adminPrefetch_(){
+  if(PF.started||!S.entered||S.viewMode==="viewer"||!S.meta) return;
+  PF.started=true;
+  const area=(S.asg&&S.asg.area)||S.area, ym=(S.meta.year_months||[])[0]||"";
+  if(!area||!ym) return;
+  const idle=window.requestIdleCallback?(f=>window.requestIdleCallback(f,{timeout:4000})):(f=>setTimeout(f,1500));
+  PF.p=new Promise(res=>idle(()=>res(adminPrefetchRun_(area,ym))));
+}
+async function adminPrefetchRun_(area,ym){
+  try{
+    if(notAdminMemo_()) return "notadmin(memo)";
+    const r=await myRights_(); if(!(r&&r.admin)) return "notadmin";
+    const sn=(ym===S.ym&&area===S.area&&S.snap)?S.snap:(((await API.snapshots(area,ym))||{}).default||"");
+    if(!sn) return "nosnap";
+    const [prod,sample]=jgPath_(area,ym,sn,""); PF.key=prod;
+    await loadJson(prod,sample);
+    return "ok";
+  }catch(e){ return "fail"; }   // 黙って捨てる（覚えた表からも消える＝押したとき、今までどおり取りに行く）
 }
 
 /* ══ 第2便: 押して掘り下げる ══
@@ -2034,6 +2194,7 @@ function land_(seq){
   const L=(window.__navlog=window.__navlog||[]); L.push({why:o.why||"",mode:S.mode,store:storeShortOf_(S.storeTab),dept:S.dept,metric:S.metric,ms});
   if(L.length>200) L.splice(0,L.length-200);
   window.__navN=(window.__navN||0)+1;
+  if(!PF.started) adminPrefetch_();   // 入室して最初の画面が出たあと: 管理者だけ、店舗事業部会議のはじめの表を裏で先に取っておく（手が空いた時に1回）
   // 🕘 履歴へ着く・履歴を開いていた所へ戻る: A・PD の欄は表より後に出るので、欄が出てから（renderComments）着く
   if(cmHere_()&&(o.land==="hist"||(o.restore&&S.hist))){
     const w=document.querySelector("#body .tbl-wrap"), sc=o.sc||{};
@@ -2313,11 +2474,37 @@ async function bodyHtml_(seq){
     return await storeDetailHtml(st,so,null);
   }
   if(S.mode==="運営部全体") return renderUneibu(await API.uneibu(S.area,S.ym,S.snap));
-  if(S.mode==="店舗事業部会議") return renderJigyo(st==="__total__"?await API.jigyo(S.area,S.ym,S.snap):await API.jigyoStore(S.area,S.ym,S.snap,st),{catx:true});
+  if(S.mode==="店舗事業部会議") return await jigyoBody_(st);
   if(S.mode==="仕入分析"&&isAll_(S.dept)) return `<div class="allnote"><span>仕入分析は部門ごとです。部門を選んでください：</span>`+
     S.meta.departments.map(d=>`<button class="btn" data-go="sdept" data-a="${esc(d)}" data-k="n:${esc(d)}">${esc(d)}</button>`).join("")+`</div>`;
   if(S.mode==="仕入分析") return catxNoEffect_([S.dept])+renderShiire(await API.shiire(S.area,S.ym,S.snap,S.dept));
   return "";
+}
+/* 店舗事業部会議の表（前回の表を先に出す・PO 2026-11-10 案1）:
+   ①覚えた表（管理者の先読みを含む）が届いていれば、それを出す（前回の表より新しい）
+   ②端末に前回の同じ表があれば、すぐそれを出し、上に小さく「前回の表（11/09 16:05）・更新中…」。裏で取りに行き、届いたら入れ替えて印を消す（中身が同じなら描き直さない）。
+     取りに行けなかったら、前回の表のまま「更新できませんでした（前回の表です）」
+   ③どちらも無ければ、今までどおり取りに行って出す。出した表は端末に覚える（jgcPut_） */
+async function jigyoBody_(st){
+  const [prod,sample]=jgPath_(S.area,S.ym,S.snap,st==="__total__"?"":st);
+  const peek=jcPeek_("L|"+prod+"|"+sample), p=loadJson(prod,sample);
+  const prev=peek==="done"?null:jgcGet_(prod);
+  if(!prev){ const d=await p; jgcPut_(prod,d); return renderJigyo(d,{catx:true}); }
+  p.then(d=>{ jgcPut_(prod,d); jgPrevDone_(prod,prev.d,d); },()=>jgPrevFail_(prod));
+  return jgPrevBar_(prev.t)+renderJigyo(prev.d,{catx:true});
+}
+const jgWhen_=t=>{ const d=new Date(t), z=n=>String(n).padStart(2,"0"); return `${d.getMonth()+1}/${d.getDate()} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+function jgPrevBar_(t){ return `<div class="jgprev" id="jgPrev" role="status" data-t="${esc(jgWhen_(t))}"><span class="jgspin" aria-hidden="true"></span>前回の表（${esc(jgWhen_(t))}）・更新中…</div>`; }
+function jgHere_(prod){ return S.mode==="店舗事業部会議"&&jgPath_(S.area,S.ym,S.snap,S.storeTab==="__total__"?"":S.storeTab)[0]===prod; }   // いまも同じ表を見ているか
+function jgPrevDone_(prod,old,d){
+  if(!jgHere_(prod)) return;   // 別の表へ移った（入れ替えない）
+  let same=false; try{ same=JSON.stringify(old)===JSON.stringify(d); }catch(e){}
+  if(same){ const b=$("jgPrev"); if(b) b.remove(); return; }   // 中身が同じ＝描き直さない（印だけ消す）
+  redrawTable_();   // 新しい表で描き直す（覚えた表が届いているので、往復しない・印は出ない）
+}
+function jgPrevFail_(prod){
+  if(!jgHere_(prod)) return;
+  const b=$("jgPrev"); if(b){ b.className="jgprev ng"; b.textContent=`更新できませんでした（前回の表です・${b.getAttribute("data-t")||""}）`; }
 }
 function onArea(v){ nav_({area:v,snap:"",storeTab:"__total__"},{why:"エリア"}); }
 function onYm(v){ nav_({ym:v,snap:""},{why:"年月"}); }
@@ -2976,7 +3163,7 @@ async function renderDataManage(){
       `<div class="lb" style="margin-top:6px">PCのファイルを選んで上げます（管理者は、ドライブからも選べます。スプレッドシートはxlsxへ自動変換）。ファイル名は自由\u2014\u2014名前から<b>年度・エリアを自動判定</b>し「{年度}_{エリア}.xlsx」へ正規化して取込みます。何度でも<b>積み上げ</b>OK、同じファイル・同じ 年度\u00D7エリア の<b>重複は自動排除</b>。<b>東北は3エリア（北東北・宮城・山形）が1冊のままでOK</b>（取込時に自動分割）。判定できなかった行（赤）だけ年度・エリアを選んでください。</div>`+
       `<div id="dmBudQ" style="margin-top:6px"></div><div id="dmBudMsg"></div></div>`;
   await refreshDmStatus_();
-  try{ const r=await capi("getMyRights"); const b=$("dmDriveBtns"); if(b&&r&&r.admin) b.style.display=""; }catch(e){ /* 出さないまま（サーバーも通さない） */ }
+  try{ const r=await myRights_(); const b=$("dmDriveBtns"); if(b&&r&&r.admin) b.style.display=""; }catch(e){ /* 出さないまま（サーバーも通さない） */ }
 }
 /* 取込状況パネルの再取得。アップロード直後は「取込状況」が固まって見え、反映済みかどうか
    分からなくなる誤認（2026-09-08 発生）を防ぐため、アップロード完了時にも呼ぶ。 */
