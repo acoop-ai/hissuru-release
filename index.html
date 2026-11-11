@@ -403,6 +403,12 @@
   .wk tr.total td.sel{background:#1e293b;} .wk tr.total td.cmp{background:#334155;} .wk tr.total td.est,.wk tr.total td.gE{color:#e2e8f0;}
   .wk .neg{color:var(--bad);} .wk tr.total .neg{color:#fca5a5;}
   .wk .qchip{display:inline-block;border-radius:999px;background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-size:11px;font-weight:700;padding:0 7px;cursor:pointer;}
+  /* 累計の表の 🔎 の印（11-11a）: 週の表の qchip と同じ色。店×部門の行＝⚠、合計の行（含んでいる店×部門）＝⚠ と件数を小さく。すみか＝行の名前のすぐ右（数字の列に重ねない） */
+  .qm{display:inline-block;margin-left:6px;border-radius:999px;background:#fffbeb;border:1px solid #f59e0b;color:#92400e;font-size:11px;font-weight:700;line-height:15px;padding:0 6px;cursor:pointer;vertical-align:1px;white-space:nowrap;font-style:normal;text-decoration:none;}
+  .qm:hover{background:#fef3c7;}
+  .qm.sum{font-weight:600;font-size:10.5px;padding:0 5px;background:#fff7ed;border-color:#fdba74;color:#9a3412;}
+  td.qmc{position:relative;}
+  td.qmc>.qm{position:absolute;top:1px;right:1px;margin:0;font-size:10px;line-height:13px;padding:0 4px;}   /* 運営部全体のマス（店×部門）: マスの右上の角 */
   .wk .ivgrid{border-collapse:collapse;font-size:12px;}
   .wk .ivgrid th{font-weight:600;color:#475569;padding:3px 4px;white-space:nowrap;font-size:11px;}
   .wk .ivgrid td{padding:2px 3px;text-align:center;border-top:1px solid #f1f5f9;}
@@ -417,6 +423,7 @@
   .wk .q-card .qp{font-size:11px;color:var(--muted);} .wk .q-card svg{display:block;margin-top:3px;}
   .wk .q-panel{border:1px solid var(--border);border-radius:12px;background:#fff;padding:12px 14px;}
   .wk .q-rule{font-size:12.5px;color:#334155;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:7px 10px;line-height:1.7;}
+  .wk .q-excl{margin-top:6px;background:#fffbeb;border-color:#fcd34d;}   /* 問いから外した店×部門（作る側の meta.rules.q_exclude）*/
   .wk .q-ai{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:13px;line-height:1.65;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:9px 12px;margin:8px 0;}
   .wk .q-ai .k{font-weight:700;color:#075985;white-space:nowrap;} .wk .q-ai .hd{grid-column:1/3;font-size:12px;color:#0369a1;font-weight:700;}
   .wk .q-heat{border-collapse:collapse;font-size:12.5px;width:100%;}
@@ -539,7 +546,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-10b</span></span></div></div>
+  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-11a</span></span></div></div>
   <span class="hsp"></span>
   <div class="hasg" id="hdrAsg" hidden></div>
   <span class="user" id="user"></span>
@@ -1062,14 +1069,14 @@ function renderSection(d,opts){
     (d.grand_total.cells.sales_month||{}).current===(d.dept_totals[0].cells.sales_month||{}).current;
   // 中分類を選んだ合計（本部用の入口だけ・o.catx）。部門ごとに、その部門の設定で部門の行を出し直す。何も絞らない部門は、いままでと同じ字
   const cx=o.catx?catxSection_(d):null;
-  if(d.grand_total&&!dup) h+=totalRow(d.grand_total,cols,true,2,null,"",cx&&cx.any?cx.grand:null);
+  if(d.grand_total&&!dup) h+=totalRow(d.grand_total,cols,true,2,null,"",cx&&cx.any?cx.grand:null,qmA_(qmStore_(),"*"));
   const dtMap={}; (d.dept_totals||[]).forEach(t=>dtMap[t.dept]=t);
   const noYoy=splitNoYoyRows(d.rows,r=>(r.cells||{}).sales_month||null), noted=new Set();
   const marked=estMarked_(d.rows.map(r=>r.cells));
   let prevDept=null; const hid=[];
   d.rows.forEach(r=>{
     if(r.dept!==prevDept && dtMap[r.dept]){ h+=totalRow(dtMap[r.dept],cols,false,2,dg(r.dept),
-      (r.dept===S.dept&&o.deptGo)?" curdept":"",cx?cx.by[r.dept]:null); }
+      (r.dept===S.dept&&o.deptGo)?" curdept":"",cx?cx.by[r.dept]:null,qmA_(qmStore_(),r.dept)); }
     prevDept=r.dept;
     if(zeroCells_(r.cells)){ hid.push([r.dept||"",r.category]); return; }   // すべて 0 の中分類は出さない（部門の行は上で出している）
     const ny=noYoy.has((r.dept||"")+"|"+r.category); if(ny) noted.add(r.category);
@@ -1091,9 +1098,9 @@ function renderSection(d,opts){
 }
 /* 部門の行・全体の合計の行（見出しの列2つの表）: 部門の欄に名前、カテゴリの欄に「合計」。
    x（中分類を選んだ合計・catxSection_）: 出し直した数 x.cells・名前の下に（ベーカリーを除く）・前年と比べられない組を片方だけ入れたときは前年比「—」 */
-function totalRow(t,cols,dark,hspan,g,cls,x){
+function totalRow(t,cols,dark,hspan,g,cls,x,qa){
   const [name,sum]=totalLabels_(t.label), cs=x?x.cells:t.cells;
-  return `<tr class="${dark?"total":"subtotal"}${g?" go":""}${cls||""}"${goAttr_(g)}><td class="h" style="left:0">${goLabel_(name,g)}</td><td class="h h2">${esc(sum)}${x?catxMk_(x.label):""}</td>`+
+  return `<tr class="${dark?"total":"subtotal"}${g?" go":""}${cls||""}"${goAttr_(g)}${qa||""}><td class="h" style="left:0">${goLabel_(name,g)}</td><td class="h h2">${esc(sum)}${x?catxMk_(x.label):""}</td>`+
     cols.map(c=>`<td>${cellHtml(cs[c.key],c,dark,!!(x&&x.noYoy))}</td>`).join("")+`</tr>`;
 }
 /* 集計表（by_store 行=店舗 / by_dept 行=部門）: \u25C6合計\u2192行 */
@@ -1614,7 +1621,7 @@ async function redrawTable_(){
   window.__navN=(window.__navN||0)+1;
 }
 /* 表を描いたあと（drawBody・redrawTable_ の両方） */
-function afterTable_(){ if(S.mode==="運営部全体"&&$("uTbl")) drawUneibu(S.metric); sokCurEst_(); catxMarks_(); }
+function afterTable_(){ const u=S.mode==="運営部全体"&&$("uTbl"); if(u) drawUneibu(S.metric); sokCurEst_(); catxMarks_(); if(!u) qmMark_(); }   // qmMark_＝🔎 の印（運営部全体は drawUneibu の中で）
 /* 戻るの吹き出し・移ったときの一言に足す字（その見方の、中分類の絞り込みと受払） */
 function cxDesc_(v){
   let s=""; if(v.uke&&CM_MODES.includes(v.mode)&&v.view==="cum") s+="・受払";
@@ -1647,10 +1654,10 @@ function renderRollup(d,headLabel,labelOf,opts){
     cols.map(c=>{ const g=o.headGo?o.headGo(c):null;
       return `<th${g?` class="go"`:""}${goAttr_(g)}>${esc(c.label)}<span class="u">${c.type==="amount"?"千円":"%"}</span>${g?`<span class="gch" aria-hidden="true">›</span>`:""}</th>`; }).join("")+`</tr></thead><tbody>`;
   const tg=o.totalGo||null;
-  if(d.grand_total) h+=`<tr class="total${tg?" go":""}"${goAttr_(tg)}><td class="h" style="left:0">${goLabel_(d.grand_total.label||"\u25C6 合計",tg)}${catxMk_(d.grand_total._mk)}</td>`+cols.map(c=>`<td>${cellHtml(d.grand_total.cells[c.key],c,true,!!d.grand_total._noYoy)}</td>`).join("")+`</tr>`;
+  if(d.grand_total) h+=`<tr class="total${tg?" go":""}"${goAttr_(tg)}${o.qmTotal||""}><td class="h" style="left:0">${goLabel_(d.grand_total.label||"\u25C6 合計",tg)}${catxMk_(d.grand_total._mk)}</td>`+cols.map(c=>`<td>${cellHtml(d.grand_total.cells[c.key],c,true,!!d.grand_total._noYoy)}</td>`).join("")+`</tr>`;
   d.rows.forEach(r=>{
     const g=o.rowGo?o.rowGo(r):null;
-    h+=`<tr class="datarow${g?" go":""}${o.rowCls?o.rowCls(r):""}"${goAttr_(g)}><td class="h" style="left:0">${goLabel_(labelOf(r),g)}${catxMk_(r._mk)}</td>`+cols.map(c=>{
+    h+=`<tr class="datarow${g?" go":""}${o.rowCls?o.rowCls(r):""}"${goAttr_(g)}${o.qm?o.qm(r):""}><td class="h" style="left:0">${goLabel_(labelOf(r),g)}${catxMk_(r._mk)}</td>`+cols.map(c=>{
       let cls=""; if(c.key==="gross_profit_month"&&r.alerts){ cls=r.alerts.gp_negative?" gp-neg":(r.alerts.loss_alert?" gp-loss":""); }
       return `<td class="${cls}">${cellHtml(r.cells[c.key],c,false,!!r._noYoy)}</td>`;
     }).join("")+`</tr>`;
@@ -1681,7 +1688,7 @@ function drawUneibu(mkey){
   st.forEach(s=>nyStore[s.short]=splitNoYoyRows(cats,r=>((r.stores||{})[s.short]||{}).sales_month||null));
   const noted=new Set();
   /* マスを押す＝その店の運営部詳細を、その行の部門で開く（部門の行・カテゴリの行とも）。合計の行は部門を変えない */
-  const cell=(full,dept,inner,k)=>`<td class="gocell" data-go="unei" data-a="${esc(full)}" data-b="${esc(dept||"")}" data-k="${esc(k)}">${inner}</td>`;
+  const cell=(full,dept,inner,k,qa)=>`<td class="gocell" data-go="unei" data-a="${esc(full)}" data-b="${esc(dept||"")}" data-k="${esc(k)}"${qa||""}>${inner}</td>`;   // qa＝🔎 の印を付けるマス（店×部門・合計）
   /* 全部門計（2026-10-16b）: いちばん上に。6部門の行の足し算（率は足した額から）＝商品部全体の全部門と同じ数。
      届いた表の下の合計の行は出さない（回によっては ＳＭ外・経費 など6部門の外の行を含むため）。
      6部門の外の行は、店舗事業部会議と同じ決まり（2026-11-09）: 表のいちばん下に区切りの1行「6部門の外（全部門合計に入れていない・参考）」を置き、
@@ -1692,8 +1699,8 @@ function drawUneibu(mkey){
   if(deptRows.length){
     const gAll=sumCells_(deptRows.map(gOf),d.columns), allMk=cx.any?catxMk_(catxMulti_(cx.info)):"";
     const nyA=deptRows.some(r=>xi(r.dept)&&xi(r.dept).nyG), nyAS=sh=>deptRows.some(r=>xi(r.dept)&&xi(r.dept).nyS[sh]);
-    h+=`<tr class="total${isAll_(S.dept)?" curdept":""}" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門合計${allMk}</td>${cell("","",cellHtml(gAll[mkey],col,true,nyA),"c:__total__|all")}`+
-      st.map(s=>{ const c=sumCells_(deptRows.map(r=>sOf(r,s.short)),d.columns); return cell(s.full,"",cellHtml(c[mkey],col,true,nyAS(s.short)),"c:"+s.full+"|all"); }).join("")+`</tr>`;
+    h+=`<tr class="total${isAll_(S.dept)?" curdept":""}" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門合計${allMk}</td>${cell("","",cellHtml(gAll[mkey],col,true,nyA),"c:__total__|all",qmA_("*","*"))}`+
+      st.map(s=>{ const c=sumCells_(deptRows.map(r=>sOf(r,s.short)),d.columns); return cell(s.full,"",cellHtml(c[mkey],col,true,nyAS(s.short)),"c:"+s.full+"|all",qmA_(qmSlug_(s.full),"*")); }).join("")+`</tr>`;
   } else if(d.grand_total){ const gt=d.grand_total;   // 部門の行が無い表は、届いた合計の行をそのまま
     h+=`<tr class="total" data-k="d:${ALL_DEPT}"><td class="h" style="left:0">◆ 全部門合計</td>${cell("","",cellHtml((gt.grand||{})[mkey],col,true),"c:__total__|all")}`+st.map(s=>cell(s.full,"",cellHtml((gt.stores&&gt.stores[s.short]||{})[mkey],col,true),"c:"+s.full+"|all")).join("")+`</tr>`; }
   const hid=[];
@@ -1707,8 +1714,8 @@ function drawUneibu(mkey){
     const x=xi(r.dept), dx=!isCat&&x, xo=isCat&&x&&x.ex.has(r.category);   // dx＝出し直した部門の行・xo＝合計に入れていない中分類
     const gc=(dx?x.grand:(r.grand||{}))[mkey];
     h+=`<tr class="${r.type==="dept"?"subtotal":"datarow"}${cur}${xo?" catx":""}"${r.type==="dept"?` data-k="d:${esc(r.dept)}"`:""}><td class="h" style="left:0">${esc(isCat?r.label:withSum_(r.label))}${dx?catxMk_(x.label):""}${xo?`<br><span class="badge bd-catx">合計に入れていない</span>`:""}</td>`;
-    h+=cell("",r.dept,cellHtml(gc,col,false,dx?x.nyG:ny(nyGrand),est(gc)),"c:__total__|"+ri);
-    h+=st.map(s=>{ const sc=((dx?x.stores[s.short]:(r.stores&&r.stores[s.short]))||{})[mkey]; return cell(s.full,r.dept,cellHtml(sc,col,false,dx?x.nyS[s.short]:ny(nyStore[s.short]),est(sc)),"c:"+s.full+"|"+ri); }).join("")+`</tr>`;
+    h+=cell("",r.dept,cellHtml(gc,col,false,dx?x.nyG:ny(nyGrand),est(gc)),"c:__total__|"+ri,isCat?"":qmA_("*",r.dept));
+    h+=st.map(s=>{ const sc=((dx?x.stores[s.short]:(r.stores&&r.stores[s.short]))||{})[mkey]; return cell(s.full,r.dept,cellHtml(sc,col,false,dx?x.nyS[s.short]:ny(nyStore[s.short]),est(sc)),"c:"+s.full+"|"+ri,isCat?"":qmA_(qmSlug_(s.full),r.dept)); }).join("")+`</tr>`;
   });
   const out=d.rows.filter(isOut), z0=r=>zeroCells_(r.grand)&&Object.values(r.stores||{}).every(zeroCells_), outShown=[]; let outH="", outHid=0;
   const oc=c=>`<td>${cellHtml(c,col,false,!(c&&c.yoy))}</td>`;   // 前年 0（前年の受払表に無い）は比べない
@@ -1724,6 +1731,7 @@ function drawUneibu(mkey){
   const outNote=outShown.length?`<div class="splitnote outnote">全部門合計は6部門（${esc(S.meta.departments.join("・"))}）の合計です（店舗事業部会議の■合計も同じ）。この回の受払表は全部の部門の形で届いたため、6部門の外（${esc(outShown.join("・"))}）を表の下に参考で出しています${outHid?"（すべて 0 の行は出していません）":""}。</div>`:"";
   h+=`</tbody></table></div>`;
   $("uTbl").innerHTML=h+outNote+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats)+cx.note;
+  qmMark_();   // 指標のタブを替えたときも（表だけ描き直す）
 }
 /* 事業部会議（18列2段＋前年比較3列） */
 function cmpCell(cur,prev,isRate,hib,noYoy,estP,curMark){
@@ -1774,7 +1782,8 @@ function renderJigyo(d,opts){
     const xo=r.type==="category"&&cx&&cx.by[r.dept]&&cx.by[r.dept].ex.has(r.category);
     const lab=ref?(r.type==="dept"?withSum_("▶ "+jgName_(r.dept,true)):jgName_(r.category!=null?r.category:r.label)):(r.type==="dept"?withSum_(r.label):r.label);
     const nr=c=>area&&r.type==="category"&&JG_CAT_NORATE[c.key]&&v[c.key]!=null;   // 計算しない率＝0.00% でなく「—」（値は変えない）
-    return `<tr class="${cls}${xo?" catx":""}"><td class="h" style="left:0">${esc(lab)}${x?catxMk_(x.label):""}${xo?`<br><span class="badge bd-catx">合計に入れていない</span>`:""}</td>`+cols.map(c=>nr(c)?(nrN++,`<td class="norate" title="${esc(JG_CAT_NORATE[c.key])}">—</td>`):`<td>${v[c.key]!=null&&mk(c.key)?`<span class="cev">${mk(c.key)}${fv(c,v[c.key])}</span>`:fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep,mk(c.key))}</td>`).join("")+`</tr>`; };
+    const qa=ref?"":cls==="total"?qmA_(qmStore_(),"*"):r.type==="dept"?qmA_(qmStore_(),r.dept):"";   // 🔎 の印を付ける行（店×部門・合計）
+    return `<tr class="${cls}${xo?" catx":""}"${qa}><td class="h" style="left:0">${esc(lab)}${x?catxMk_(x.label):""}${xo?`<br><span class="badge bd-catx">合計に入れていない</span>`:""}</td>`+cols.map(c=>nr(c)?(nrN++,`<td class="norate" title="${esc(JG_CAT_NORATE[c.key])}">—</td>`):`<td>${v[c.key]!=null&&mk(c.key)?`<span class="cev">${mk(c.key)}${fv(c,v[c.key])}</span>`:fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep,mk(c.key))}</td>`).join("")+`</tr>`; };
   const hid=[];
   rows.forEach(r=>{
     if(r.type==="category"&&zeroCells_(r.values)&&zeroCells_(r.yoy)){ hid.push([r.dept||"",r.category||r.label]); return; }   // すべて 0 の中分類（今年のどの列も・前年も）
@@ -2149,6 +2158,8 @@ async function adminPrefetchRun_(area,ym){
     if(!sn) return "nosnap";
     const [prod,sample]=jgPath_(area,ym,sn,""); PF.key=prod;
     await loadJson(prod,sample);
+    // 11-11a: 🔎 の印の当たり（週の表のエリアのファイル）も一緒に取っておく＝押したとき、表と同時に印が付く。週の目次がまだなら待つ（入室のときに取りかけの物を使う）
+    try{ if(!WK.meta) await wkLoadMeta_(); if(WK.meta) await qmLoad_(area); }catch(e){}
     return "ok";
   }catch(e){ return "fail"; }   // 黙って捨てる（覚えた表からも消える＝押したとき、今までどおり取りに行く）
 }
@@ -2235,6 +2246,7 @@ document.addEventListener("click",e=>{
   const cd=q("[data-cdel]"); if(cd){ cDel(cd.dataset.cdel); return; }
   const hc=q("[data-hk]"); if(hc){ histShow_(hc.dataset.hk,+hc.dataset.hj,hc); return; }
   const hw=q("[data-hweek]"); if(hw){ histGoWeek_(+hw.dataset.hweek); return; }
+  if(q("[data-wgo]")) return;   // 行の中の 🔎 の印（data-wgo）を押した＝印の方だけ（行を押して下りるのはしない）
   const t=q("[data-go]"); if(!t||!S.entered) return;
   const go=t.dataset.go, a=t.dataset.a||"", b=t.dataset.b||"", k=t.dataset.k||"";
   if(go==="shohin"||go==="unei"){
@@ -2552,7 +2564,8 @@ async function bodyHtml_(seq){
       rowGo:r=>({go:"shohin",a:r.store_full||"",k:"r:"+(r.store_full||r.store),title:`押すと、${r.label||r.store}の部門ごとの計（商品部詳細）`}),
       totalGo:{go:"shohin",a:"",k:"r:__total__",title:"押すと、エリア合計の部門ごとの計（商品部詳細）"},
       headGo:c=>({go:"metric",a:c.key,k:"h:"+c.key,title:`押すと、この指標（${c.label}）を、部門・カテゴリ×店で並べます（運営部全体）`}),
-      headSub:d.grand_total._mk?"各店も "+d.grand_total._mk:"", tail:d._cx?d._cx.note:""
+      headSub:d.grand_total._mk?"各店も "+d.grand_total._mk:"", tail:d._cx?d._cx.note:"",
+      qm:r=>qmA_(qmSlug_(r.store_full||r.store),"*"), qmTotal:qmA_("*","*")
     });
   }
   if(S.mode==="商品部全体"){
@@ -2561,14 +2574,15 @@ async function bodyHtml_(seq){
       rowGo:r=>({go:"shohin",a:r.store_full||"",k:"r:"+(r.store_full||r.store),title:`押すと、${r.label||r.store}の${S.dept}の明細と A・PD（商品部詳細）`}),
       totalGo:{go:"shohin",a:"",k:"r:__total__",title:`押すと、エリア合計の${S.dept}の明細と A・PD（商品部詳細）`},
       headGo:c=>({go:"metric",a:c.key,k:"h:"+c.key,title:`押すと、この指標（${c.label}）を、部門・カテゴリ×店で並べます（運営部全体）`}),
-      headSub:d._cx&&d._cx.label?"各店も "+d._cx.label:"", tail:d._cx?d._cx.note:""
+      headSub:d._cx&&d._cx.label?"各店も "+d._cx.label:"", tail:d._cx?d._cx.note:"",
+      qm:r=>qmA_(qmSlug_(r.store_full||r.store),S.dept), qmTotal:qmA_("*",S.dept)
     });
   }
   if(S.mode==="運営部詳細"){
     if(st==="__total__"){ const d=await catxByDept_(await API.byDept(S.area,S.ym,S.snap));
       return renderRollup(d,"部門",r=>r.label||r.dept,{
         rowGo:r=>({go:"cdept",a:r.dept,k:"d:"+r.dept,title:`押すと、下の運営部の A・PD を ${r.dept} に替えます`}),
-        rowCls:r=>r.dept===S.dept?" curdept":"", tail:d._cx?d._cx.note:""}); }
+        rowCls:r=>r.dept===S.dept?" curdept":"", tail:d._cx?d._cx.note:"", qm:r=>qmA_("*",r.dept), qmTotal:qmA_("*","*")}); }
     return await storeDetailHtml(st,so,null);
   }
   if(S.mode==="運営部全体") return renderUneibu(await API.uneibu(S.area,S.ym,S.snap));
@@ -3817,6 +3831,7 @@ function wkAttach_(){
   if(!S.entered||!wkOn_()) return;
   const f=$("wkFindSlot"); if(f&&!f.firstChild) f.innerHTML=wkFindBox_();
   const g=$("wkSegSlot"); if(g&&!g.firstChild&&TREE.includes(S.mode)) g.innerHTML=wkSeg_();
+  qmMark_();   // 累計の表が出ていれば、🔎 の印（当たりは裏で取る）
 }
 /* 選ぶ帯の右端: 「累計｜週間」（段の地図の4つのときだけ）と印刷。累計でも週間でも同じ所に出す */
 function wkSelRight_(){
@@ -3971,7 +3986,8 @@ function wkCount_(area,qid){
   const i=wkWi_(), pm=wkPeriodMonth_(), got=wkAreaHasMonth_(area,pm);
   if(qid&&!got&&wkQPer_(qid)==="m") return null;
   if(qid&&wkQPer_(qid)==="w"&&wkAreaHasWeek_(area,i)===false) return null;   // その週の受払がまだ（0 と言わない）
-  const hid=wkHidHits_(area).filter(h=>(!qid||h.q===qid)&&((h.w!=null&&h.w===i)||(got&&pm&&h.ym===pm))).length;   // 抜いた愛知の分類の当たり
+  const exH=(WK.A&&WK.A.area===area&&Array.isArray(WK.A.hits))?WK.A.hits.filter(h=>!wkHitOk_(h,area)):[];   // 外した店×部門の当たり（作る側がまだ数えていた間）
+  const hid=wkHidHits_(area).concat(exH).filter(h=>(!qid||h.q===qid)&&((h.w!=null&&h.w===i)||(got&&pm&&h.ym===pm))).length;   // 抜いた愛知の分類の当たり
   return Math.max(0,Object.entries(a.hit_counts).filter(([q])=>!qid||q===qid).reduce((t,[,v])=>t+((v.w||[])[i]||0)+((got&&pm&&v.m&&v.m[pm])||0),0)-hid);
 }
 /* 読んだエリアのファイルから抜いた当たり（hideCats_・愛知の分類）。meta の hit_counts は作る側が数えた数なので、ここで引く。
@@ -4363,6 +4379,117 @@ function wkChip_(hits,slug,dept){
   const patch={view:"find",q:by[0].q.id,qopen:one?`${S.area}|${slug}|${dept}`:""};
   return `<span class="qchip"${wkGo_(patch,"","気になる所",slug===WK_AREA?"wkc:qpanel":"q:"+slug)} title="${esc("この週の気になる所（月の問いは、その時点の月末確定）: "+by.map(x=>x.q.short+" "+x.n).join("・"))}">${hs.length}件 ›</span>`;
 }
+/* ══ 🔎 気になる所の印を、累計の表にも（11-11a・PO 11/10「推奨通りで、次の版で」）══
+   店舗事業部会議・累計の表（商品部全体・商品部詳細・運営部詳細・運営部全体）の、店×部門の行に ⚠。合計の行（部門の合計・6部門の合計・エリア・店全体）は、
+   含んでいる店×部門の当たりを ⚠ と件数で小さく。字の上に乗せると理由、押すと 🔎 のその件へ（wkChip_ と同じ動き・戻るは「← ひとつ前に戻る」）。
+   - 当たり＝週の表のエリアのファイルの hits（作る側が決めたもの・画面は並べるだけ）。その時点の決め方は qmWhen_ の1か所
+   - 読み込みは表を待たせない: 表を出したあと裏で取り（同じエリア・同じ build なら、このページでは1回）、届いたら印を付ける。管理者の先読みでも一緒に取る
+   - 印を付ける行は、描く所が data-qm（店|部門・* は全部）を付ける。印を付けるのは qmMark_ だけ（表を描いた・当たりが届いた・週の目次が届いた） */
+const QM={m:new Map()};   // 「エリア|build」→ {hits, p}
+const QM_MODES=["店舗事業部会議","商品部全体","商品部詳細","運営部詳細","運営部全体"];
+function qmOn_(){ return wkOn_()&&S.view==="cum"&&QM_MODES.includes(S.mode)&&!!wkAreaMeta_(); }
+function qmStore_(){ return STORE_MODES.includes(S.mode)&&S.storeTab&&S.storeTab!=="__total__"?S.storeTab:"*"; }
+function qmSlug_(name){ if(!name) return "*"; const s=(S.stores||[]).find(x=>x.full===name||x.short===name||x.slug===name); return s?s.slug:null; }
+function qmA_(st,dp){ return st==null?"":` data-qm="${esc(st+"|"+(dp||"*"))}"`; }
+/* その時点（1か所）: 週の問い＝表の回の日を含む週（月末確定〈05-2〉の回は、その月の最後の日を含む週）・月の問い＝表の月の月末確定（届いていれば当たりがある）。
+   回の日が週の表の外（古い月・まだ週の表に無い週）なら、週の問いは無し。wm＝月の問いを 🔎 で開く週（その月の月末を含む週＝🔎 の月がその月になる） */
+function qmWhen_(){
+  if(!WK.meta) return null;
+  const sel=(S.snaps||[]).find(x=>x.snapshot===S.snap)||null, k=s8(S.snap||"");
+  const me=(sel?String(sel.file_type||"")==="05-2":false)||/99$/.test(k);
+  const iso=me&&S.ym?wkYmEnd_(S.ym):(/^\d{8}$/.test(k)?`${k.slice(0,4)}-${k.slice(4,6)}-${k.slice(6,8)}`:null);
+  const W=WK.meta.weeks, at=d=>{ if(d) for(let i=0;i<W.length;i++) if(W[i].start<=d&&d<=W[i].end) return i; return null; };
+  return {wi:at(iso), ym:S.ym||null, wm:at(S.ym?wkYmEnd_(S.ym):null)};
+}
+function qmKey_(area){ return WK.meta?(area||S.area)+"|"+WK.meta.build:""; }
+/* いまの表の、その時点の当たり。null＝まだ届いていない */
+function qmHits_(){
+  const e=QM.m.get(qmKey_()); if(!e||!e.hits) return null;
+  const w=qmWhen_(); if(!w) return [];
+  return e.hits.filter(h=>((w.wi!=null&&h.w!=null&&h.w===w.wi)||(w.ym&&h.ym&&h.ym===w.ym))&&wkHitOk_(h,S.area));   // 外した店×部門の分は数えない
+}
+/* エリアの当たりを読む（裏で・表は待たない）。同じエリア・同じ build ならページの中で1回（取りかけなら、その返事を待つ）。失敗は黙って捨てる（次に表を描いたとき、もう一度） */
+function qmLoad_(area){
+  area=area||S.area;
+  if(!WK.meta) return Promise.resolve(null);
+  const am=((WK.meta.areas)||[]).find(x=>x.area===area); if(!am) return Promise.resolve(null);
+  const key=qmKey_(area), e=QM.m.get(key);
+  if(e) return e.p||Promise.resolve(e.hits);
+  const x={hits:null,p:null}; QM.m.set(key,x);
+  x.p=wkLoad_(am.file).then(d=>{ x.hits=(d&&Array.isArray(d.hits))?d.hits:[]; x.p=null;
+      if(d&&d.build&&qmKey_(area)!==key) QM.m.set(qmKey_(area),x);   // 読んでいる間に目次が新しくなった（wkLoad_ が WK.meta を替えた）
+      if(qmOn_()&&area===S.area) qmMark_(); return x.hits; },
+    ()=>{ QM.m.delete(key); return null; });
+  return x.p;
+}
+const qmQShort_=q=>q.short.replace(/（[^）]*）$/,"");
+/* 印1つ。m＝その行の当たり・st|dp＝行（* は全部）・w＝その時点 */
+function qmChip_(m,st,dp,w){
+  const qs=wkQs_(), by=qs.map(q=>({q,n:m.filter(h=>h.q===q.id).length})).filter(x=>x.n).sort((a,b)=>b.n-a.n);
+  if(!by.length) return "";
+  const one=st!=="*"&&dp!=="*", top=by[0].q, mon=!m.some(h=>h.q===top.id&&h.w!=null);   // いちばん多い問いが月の当たりだけ＝🔎 は月末を含む週で開く
+  const patch={view:"find",q:top.id,qopen:one?`${S.area}|${st}|${dp}`:""}, wi=mon?w.wm:w.wi;
+  if(wi!=null) patch.wi=wi;
+  if(!TREE.includes(S.mode)) patch.mode="商品部全体";   // 🔎 は段の地図の4つの中で開く（店舗事業部会議からは商品部全体の 🔎）
+  const ym=h=>h.ym?`${wkYm_(h.ym)}の月末確定: `:"";
+  let tip;
+  if(one) tip="気になる所（🔎）\n"+m.map(h=>`・${qmQShort_(qs.find(q=>q.id===h.q)||{short:h.q})}: ${ym(h)}${h.c?h.c+"・":""}${h.t||h.k||""}`).join("\n")+"\n押すと、🔎 気になる所のこの件へ";
+  else {
+    const ss=[...new Set(m.map(h=>h.s))].map(s=>s===WK_AREA?"エリア":wkStoreName_(s)), ds=[...new Set(m.map(h=>h.d))];
+    tip=`気になる所 ${m.length}件（この行に入っている${st==="*"?"店":"部門"}の分）\n`+by.map(x=>`・${qmQShort_(x.q)} ${x.n}`).join("\n")+
+      `\n${st==="*"?"店: "+ss.slice(0,6).join("・")+(ss.length>6?` ほか ${ss.length-6}`:""):"部門: "+ds.join("・")}\n押すと、🔎 気になる所へ`;
+  }
+  return `<span class="qm${one?"":" sum"}"${wkGo_(patch,"","気になる所",st==="*"?"wkc:qpanel":"q:"+st)} title="${esc(tip)}" aria-label="${esc(tip.split("\n")[0])}">⚠${one?"":" "+m.length}</span>`;
+}
+/* 表に印を付ける（付け直す）。当たりがまだ届いていなければ、裏で取りに行き、届いたらここへ戻る */
+function qmMark_(){
+  const root=$("body"); if(!root) return;
+  root.querySelectorAll(".qm").forEach(e=>{ const p=e.parentNode; e.remove(); if(p&&p.classList) p.classList.remove("qmc"); });
+  if(!qmOn_()) return;
+  const hs=qmHits_();
+  if(hs==null){ qmLoad_(); return; }
+  if(!hs.length) return;
+  const w=qmWhen_();
+  root.querySelectorAll("[data-qm]").forEach(el=>{
+    const [st,dp]=String(el.getAttribute("data-qm")||"").split("|"); if(!st) return;
+    const m=hs.filter(h=>(st==="*"||h.s===st)&&(dp==="*"||h.d===dp)); if(!m.length) return;
+    const td=el.tagName==="TD"?el:(el.querySelector("td.h2")||el.querySelector("td.h")); if(!td) return;   // 見出しの列が2つの表（部門｜カテゴリ）は「合計」の欄に＝細い部門の列を広げない（表が横にずれない）
+    if(el.tagName==="TD") td.classList.add("qmc");
+    td.insertAdjacentHTML("beforeend",qmChip_(m,st,dp,w));
+  });
+}
+/* 問いから外した店×部門（HQ と決めた形・11/10 ゲート2）: weekly/meta.json の rules.q_exclude
+   [{q:["inv_week","inv_odd:週"], area:"北関東", slug:"s0000000", store:"（店の名前）", depts:["畜産","水産","惣菜"], why:"…店のため", date, by}]
+   q の「:週」＝その問いの週の分だけ（月末の分は外さない）・「:月」＝月末の分だけ・何も付かない＝両方。店は slug で合わせる（store は表示と確かめ用）。
+   外したマス: 🔎 の店×部門の表では q_depts の外と同じ「対象外」（字の上に乗せると why）・⚠ の印と 🔎 の数には数えない（作る側も作らなくなるが、画面でも念のため外す）。
+   週の棚卸の型（inv_type）は事実の記録なので変えない。載っていなければ何も変えない */
+const wkArr_=v=>Array.isArray(v)?v:(v==null?[]:[v]);
+function wkQEx_(){ const L=((WK.meta&&WK.meta.rules)||{}).q_exclude; return Array.isArray(L)?L.filter(x=>x&&typeof x==="object"):[]; }
+/* 問い qid・店 slug・部門 dept が外れているか。part＝"w"（週の分）／"m"（月末の分）／null（問いの全部が外れているか＝🔎 のマスを「対象外」にするか）。当てはまる1件を返す */
+function wkQExOf_(qid,area,slug,dept,part){
+  for(const x of wkQEx_()){
+    if(x.area&&x.area!==area) continue;
+    if(x.slug?x.slug!==slug:!(x.store&&wkStoreName_(slug)===x.store)) continue;
+    const ds=wkArr_(x.depts||x.dept); if(ds.length&&!ds.includes(dept)) continue;
+    for(const q of wkArr_(x.q)){
+      const [id,suf]=String(q).split(":"); if(id!==qid) continue;
+      const p=suf==="週"?"w":suf==="月"?"m":null;
+      if(p===null||p===part||(part===null&&wkQPer_(qid)===p)) return x;   // part＝null: 問いが週だけ（月だけ）で、外したのも同じ分なら全部
+    }
+  }
+  return null;
+}
+/* 当たり h（エリア area）を数えるか（外した店×部門の分は数えない） */
+function wkHitOk_(h,area){ return !h||!wkQEx_().length||!wkQExOf_(h.q,area,h.s,h.d,h.w!=null?"w":"m"); }
+function wkExWhy_(x){ const why=String(x.why||x.reason||"").trim(); return why?why.replace(/ため$/,"")+"ため":"作る側の決まりで"; }
+/* 🔎 の問いの説明の下に、外した店×部門（いまのエリア）。載っていなければ何も出さない */
+function wkQExcl_(qid){
+  const xs=wkQEx_().filter(x=>(!x.area||x.area===S.area)&&wkArr_(x.q).some(q=>String(q).split(":")[0]===qid));
+  if(!xs.length) return "";
+  return `<div class="q-rule q-excl"><b>外しています</b>　`+xs.map(x=>{ const ds=wkArr_(x.depts||x.dept).join("・"), suf=(wkArr_(x.q).find(q=>String(q).split(":")[0]===qid)||"").split(":")[1];
+    const part=suf==="週"&&wkQPer_(qid)!=="w"?"（週の分だけ・月末の分は数えます）":suf==="月"&&wkQPer_(qid)!=="m"?"（月末の分だけ・週の分は数えます）":"";
+    return esc(`${x.store||wkStoreName_(x.slug)||""}${ds?"の"+ds:""}は、${wkExWhy_(x)}外しています${part}。`); }).join("<br>")+`</div>`;
+}
 /* 運営部全体: 行＝部門・列＝店（選んだ週・選んだ指標） */
 function wkUneibuHtml_(){
   const m=wkUMetric_(), i=wkWi_(), am=wkAreaMeta_();
@@ -4392,7 +4519,7 @@ function wkQs_(){
 }
 function wkQ_(){ const qs=wkQs_(); return qs.find(x=>x.id===S.q)||qs[0]; }
 /* いまのエリアの、選んだ期間の当たり（qid＝問い。null なら全部） */
-function wkHitsNow_(qid){ const i=wkWi_(), pm=wkPeriodMonth_(); return (WK.A.hits||[]).filter(h=>(!qid||h.q===qid)&&((h.w!=null&&h.w===i)||(h.ym&&h.ym===pm))); }
+function wkHitsNow_(qid){ const i=wkWi_(), pm=wkPeriodMonth_(); return (WK.A.hits||[]).filter(h=>(!qid||h.q===qid)&&((h.w!=null&&h.w===i)||(h.ym&&h.ym===pm))&&wkHitOk_(h,S.area)); }   // 外した店×部門の分は数えない
 function wkPeriodLabel_(q){ const pm=wkPeriodMonth_(), w=WK.meta.weeks[wkWi_()]; const wl=`${wkMd_(w.start)}〜${wkMd_(w.end)} の週${wkAreaWeekHas_(wkWi_())?"":`（${S.area}は受払がまだ）`}`;
   const yet=wkAreaHasMonth_(S.area,pm)?"":`（${S.area}はまだ）`;
   return q.per==="w"?wl:q.per==="m"?(pm?`${wkYm_(pm)}の月末確定${yet}`:"月末確定なし"):`${wl} ＋ ${pm?wkYm_(pm)+"の月末"+yet:""}`; }
@@ -4432,7 +4559,7 @@ function wkFindHtml_(){
     return `<button class="pill ${a.area===S.area?"on":""}"${a.area===S.area?"":wkGo_({area:a.area,qopen:"",storeTab:"__total__"},"","エリア","wkc:qpanel")}${ay?` title="${esc(tip)}"`:""}>${esc(a.area)} ${ay?"<b>まだ</b>":`<b>${c==null?"—":c}</b> か所`}</button>`; }).join("");
   return (wNo?wkNoDataHtml_(WK_AREA,WK_ALL,i):"")+`<div class="q-grid">${cards}</div>`+
     `<div class="q-panel" data-k="wkc:qpanel"><h3 style="margin:0 0 6px;font-size:16px">${esc(q.title)}　<span class="lb">${esc(wkPeriodLabel_(q))}</span></h3>`+
-    `<div class="q-rule"><b>決まり（目安）</b>　${q.rule}</div>`+
+    `<div class="q-rule"><b>決まり（目安）</b>　${q.rule}</div>`+wkQExcl_(q.id)+
     `<div class="q-sum">${pills}<span class="heatleg">当たりの数 <i style="background:#fde7dc"></i>1 <i style="background:#f7b899"></i>2〜3 <i style="background:#ef8a5e"></i>4〜6 <i style="background:#d9622b"></i>7〜 <i style="background:repeating-linear-gradient(135deg,#f8fafc 0 3px,#e2e8f0 3px 6px)"></i>対象外</span></div>`+
     `<div class="q-ai"><div class="hd">AI のひとこと（決まりから組んだ文）</div><span class="k">いまの状況</span><span>${ai.now}</span><span class="k">次にすること</span><span>${ai.next}</span><span class="k">なぜ</span><span>${ai.why}</span></div>`+
     (yet?`<div class="lb" style="margin-top:8px">${esc(S.area)}の${yet==="m"?esc(wkYm_(pm))+"の月末確定が届く":"この週の受払が上がる"}と、ここに店 × 部門の表が出ます。</div>`:wkHeat_(q,hits))+(q.id==="inv_week"?wkInvTypeTable_():"")+`</div>`;
@@ -4448,8 +4575,11 @@ function wkHeat_(q,hits){
     h+=`<tr data-k="q:${esc(st.slug)}"><td class="h">${esc(st.name)}${st.end?`<span class="lb">（〜${wkMd_(st.end)}）</span>`:""}</td>`+cols.map(c=>{
       const d=c==="（店全体）"?WK_ALL:c;
       if(!wkQIn_(q.id,d)) return `<td class="out">対象外</td>`;
+      const ex=wkQExOf_(q.id,S.area,st.slug,d,null);
+      if(ex) return `<td class="out qex" title="${esc("外しています: "+wkExWhy_(ex))}">対象外</td>`;   // 問いから外した店×部門（rules.q_exclude）
+      const px=wkQExOf_(q.id,S.area,st.slug,d,"w")||wkQExOf_(q.id,S.area,st.slug,d,"m"), pt=px?` title="${esc((wkQExOf_(q.id,S.area,st.slug,d,"w")?"週の分":"月末の分")+"は外しています: "+wkExWhy_(px))}"`:"";
       const n=hs.filter(x=>x.d===d).length, key=`${S.area}|${st.slug}|${d}`;
-      if(!n){ const iw=q.id==="inv_week"?wkInvWeek_(st.slug,d,wkWi_()):null; return `<td class="zero">${iw&&iw.nth>1&&iw.st==="入っている"?'<span class="sym ok">●</span>':"·"}</td>`; }
+      if(!n){ const iw=q.id==="inv_week"?wkInvWeek_(st.slug,d,wkWi_()):null; return `<td class="zero"${pt}>${iw&&iw.nth>1&&iw.st==="入っている"?'<span class="sym ok">●</span>':"·"}</td>`; }
       const lab=(q.id==="inv_week"&&n===1)?(hs.find(x=>x.d===d).k==="なし"?"○ なし":"◐ 一部"):n;
       return `<td class="hit ${S.qopen===key?"open":""}" style="background:${wkHeatBg_(n)};${n>6?"color:#fff":""}"${wkGo_({qopen:S.qopen===key?"":key},"","マス","q:"+st.slug)} title="押すと、このすぐ下に中身">${lab}</td>`; }).join("")+`</tr>`;
     if(S.qopen&&S.qopen.startsWith(S.area+"|"+st.slug+"|")){
