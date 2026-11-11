@@ -499,7 +499,15 @@
   .jgprev.ng .jgspin{display:none;}
   @keyframes jgspin{to{transform:rotate(360deg);}}
   @media (prefers-reduced-motion:reduce){ .jgspin{animation:none;} }
-  table.c td.norate{color:var(--muted);cursor:help;}   /* 計算しない率（エリア合計の中分類の原価率）の「—」。字の上に乗せると説明（title）・表の下にも1行 */
+  table.c td.norate{color:var(--muted);cursor:help;}
+  /* 表の見出し・左の列を送っても残す（2026-11-10・fhSync_）: 2段の見出しの2段めは1段めの下に止める／写しの入れ物（#fhead）は上の帯のすぐ下に出す・印刷しない */
+  table.c thead tr+tr th{top:var(--fh1,0px);}
+  #fhead{position:fixed;z-index:34;overflow:hidden;box-shadow:0 2px 4px rgba(15,23,42,.12);pointer-events:auto;}
+  #fhead table{border-collapse:collapse;}
+  .wk .ivgrid>thead>tr>th:first-child,.wk .ivgrid>tbody>tr>td.h{position:sticky;left:0;z-index:2;background:#fff;}   /* 週の棚卸の表: 左の列（店・部門）を残す */
+  .wk .q-heat>thead>tr>th:first-child,.wk .q-heat>tbody>tr>td.h{position:sticky;left:0;z-index:2;}   /* 🔎 の表: 左の列（店）を残す（背景は元の色） */
+  .wk .q-list>thead>tr>th:first-child,.wk .q-list>tbody>tr>td:first-child{position:sticky;left:0;z-index:1;background:#f8fafc;}   /* 🔎 のマスを押した中身の表: 左の列（カテゴリ）を残す */
+  @media print{ #fhead{display:none !important;} }   /* 計算しない率（エリア合計の中分類の原価率）の「—」。字の上に乗せると説明（title）・表の下にも1行 */
   .catmk{display:block;color:#b45309;font-weight:700;font-size:12px;white-space:normal;}   /* 列の幅で折り返す（見出しの列を広げない） */
   tr.total .catmk{color:#fcd34d;}
   table.c th .catmk{font-size:11.5px;}
@@ -531,7 +539,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-10a</span></span></div></div>
+  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-10b</span></span></div></div>
   <span class="hsp"></span>
   <div class="hasg" id="hdrAsg" hidden></div>
   <span class="user" id="user"></span>
@@ -908,6 +916,96 @@ function fixHcols_(){
 }
 if(typeof MutationObserver!=="undefined"&&document.body) new MutationObserver(fixHcols_).observe(document.body,{childList:true,subtree:true});
 window.addEventListener("resize",fixHcols_);
+
+/* ══ 表の見出しと左の列を、送っても残す（2026-11-10 PO「スクロールでヘッダやサイドが消えずに残るのを標準」・ui_design_principles.md 原則4）══
+   どの表にも同じ部品1つ（表ごとに書かない）。
+   ・枠（.tbl-wrap・.hwrap など）の中では、本物の見出しが sticky で残る。2段の見出しは、2段めを1段めの高さ（--fh1）の下に止める（2段とも残す）
+   ・ページを縦に送って、本物の見出しが上の帯（上の帯・パンくず）の下へ隠れた間だけ、見出しの写しを position:fixed で上の帯のすぐ下に出す（#fhead）
+     上の帯の下端は毎回測る（高さを書き込まない）。表（枠）を過ぎたら消す
+   ・写しは、本物の表の1行から列の幅を写す（表を描き直した・幅が変わった・タブを替えたときだけ測る＝送るたびには測らない）
+   ・横の送り: 写しの入れ物（overflow:hidden）を、本物の枠と同じだけ横に送る＝左の固定列（th.h・th.h2・th.il・左を止めた表）は本物と同じく残る
+   ・写しの見出しを押すと、本物の見出しを押したのと同じ（列の見出しから運営部全体へ・履歴の週など）。読み上げ・Tab は本物だけ（aria-hidden・tabindex=-1）
+   ・送る・幅が変わる・描き直しの合図は requestAnimationFrame で1コマに1回にまとめる。印刷では出さない */
+const FH={box:null,cur:null,clone:null,raf:0,dirty:true,list:[],m:null};
+function fhInit_(){
+  if(FH.box||typeof document==="undefined"||!document.body||typeof requestAnimationFrame==="undefined") return;
+  const b=document.createElement("div"); b.id="fhead"; b.setAttribute("aria-hidden","true"); b.hidden=true; document.body.appendChild(b); FH.box=b;
+  b.addEventListener("click",fhClick_);
+  window.addEventListener("scroll",fhKick_,{passive:true,capture:true});   // capture＝枠の中の送りも拾う
+  window.addEventListener("resize",()=>{ FH.dirty=true; fhKick_(); });
+  if(typeof MutationObserver!=="undefined") new MutationObserver(ms=>{ if(ms.some(m=>!b.contains(m.target))){ FH.dirty=true; fhKick_(); } }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["hidden","open"]});
+  fhKick_();
+}
+function fhKick_(){ if(!FH.raf) FH.raf=requestAnimationFrame(()=>{ FH.raf=0; fhSync_(); }); }
+/* 横に送れる枠（overflow-x）・縦に送れる枠（overflow-y）。すぐ上とは限らないので上へたどる（表の中の表は、外の表の枠） */
+function fhWrap_(t,ax){ for(let p=t.parentNode;p&&p!==document.body&&p.nodeType===1;p=p.parentNode){ if(/auto|scroll|hidden/.test(getComputedStyle(p)[ax])&&p.id!=="fhead") return p; } return null; }
+/* 上に貼り付いている帯（上の帯・パンくず）の下端 */
+function fhTop_(){ let y=0; [document.querySelector("header"),document.getElementById("navbar")].forEach(e=>{ if(!e) return; const r=e.getBoundingClientRect(); if(r.height&&r.top<=y+1&&r.bottom>y) y=r.bottom; }); return y; }
+/* 表を描き直した・幅が変わったときだけ: 見出しのある表を集め、2段の見出しの2段めを止める高さ（--fh1）を入れる。
+   --fh1 は見出しの2段めの行（tr）に入れる（変わる所を見出しの行の中だけにする）。先に全部の表の高さを読み、あとでまとめて書く（読む・書くを交互にしない） */
+function fhCollect_(){
+  FH.list=[...document.querySelectorAll("table")].filter(t=>!(FH.box&&FH.box.contains(t))&&t.tHead&&t.tHead.rows.length&&t.tBodies.length&&t.tBodies[0].rows.length)
+    .map(t=>({t,wy:fhWrap_(t,"overflowY")}));   // 縦の枠は、集めるときに1回だけ探す（送るたびに上へたどらない）
+  const put=[];
+  FH.list.forEach(({t})=>{ const r=t.tHead.rows; if(r.length<2) return; let top=0;
+    for(let k=1;k<r.length;k++){ top+=Math.round(r[k-1].getBoundingClientRect().height); if(top>0) put.push([r[k],top+"px"]); } });
+  put.forEach(([tr,v])=>{ if(tr.style.getPropertyValue("--fh1")!==v) tr.style.setProperty("--fh1",v); });
+}
+/* 列の幅: 本物の表の、ひとつも結ばれていない（colspan の無い）行から */
+function fhWidths_(t){
+  let n=0; [...t.rows].forEach(r=>{ let c=0; [...r.cells].forEach(x=>{ c+=x.colSpan; }); if(c>n) n=c; });
+  const rows=[...t.tBodies[0].rows].slice(0,40).concat([...t.tHead.rows]);
+  for(const r of rows){ const cs=r.cells; if(cs.length!==n||[...cs].some(x=>x.colSpan!==1)) continue; const w=[...cs].map(x=>x.getBoundingClientRect().width); if(w.every(x=>x>0)) return w; }
+  return null;
+}
+function fhMake_(t){
+  const b=FH.box; b.textContent=""; b.className=t.closest(".wk")?"wk":"";   // 週の画面の表は .wk の中で形が決まる
+  const c=document.createElement("table"); c.className=t.className; const st=t.getAttribute("style"); if(st) c.setAttribute("style",st);
+  c.style.margin="0"; c.style.tableLayout="fixed"; c.style.maxWidth="none"; c.style.minWidth="0";
+  const cg=document.createElement("colgroup"); c.appendChild(cg);
+  const h=t.tHead.cloneNode(true); h.querySelectorAll("[id]").forEach(e=>e.removeAttribute("id")); h.querySelectorAll("button,a,[tabindex]").forEach(e=>e.setAttribute("tabindex","-1"));
+  c.appendChild(h); b.appendChild(c); FH.clone=c; FH.cur=t; FH.m=null;
+}
+/* 写しの見出しを押した＝本物の同じ所を押す（同じ行・同じ列・中の釦） */
+function fhClick_(e){
+  const t=FH.cur, c=FH.clone; if(!t||!c) return;
+  const cell=e.target.closest&&e.target.closest("th,td"); if(!cell) return;
+  const ri=[...c.tHead.rows].indexOf(cell.parentNode), ci=[...cell.parentNode.cells].indexOf(cell);
+  const real=t.tHead.rows[ri]&&t.tHead.rows[ri].cells[ci]; if(!real) return;
+  const btn=e.target.closest("button,a"), list=btn?[...cell.querySelectorAll("button,a")]:null, rb=btn?real.querySelectorAll("button,a")[list.indexOf(btn)]:null;
+  e.preventDefault(); e.stopPropagation(); (rb||real).click();
+}
+function fhHide_(){ if(FH.box&&!FH.box.hidden){ FH.box.hidden=true; } }
+function fhSync_(){
+  if(!FH.box) return;
+  if(FH.dirty){ FH.dirty=false; fhCollect_(); if(FH.cur&&!FH.list.some(x=>x.t===FH.cur)) FH.cur=null; FH.m=null; }
+  const y=fhTop_();
+  let pick=null;   // いちばん内側（後ろ）の、本物の見出しが上の帯の下へ隠れていて、まだ表の中にいる表
+  for(const {t,wy} of FH.list){
+    const h0=t.tHead.rows[0].cells[0]; if(!h0) continue;
+    const hr=h0.getBoundingClientRect(); if(!hr.height) continue;   // 見えていない（たたんだ・隠したタブ）
+    const hh=t.tHead.getBoundingClientRect().height, tr=t.getBoundingClientRect();
+    const bottom=wy?Math.min(tr.bottom,wy.getBoundingClientRect().bottom):tr.bottom;
+    if(hr.top<y-1&&bottom>y+hh+24&&tr.top<y) pick=t;
+  }
+  if(!pick){ fhHide_(); return; }
+  if(pick!==FH.cur||!FH.clone||FH.clone.tHead.rows.length!==pick.tHead.rows.length) fhMake_(pick);
+  const t=FH.cur, b=FH.box;
+  if(!FH.m){   // 測るのは、描き直し・幅の変化・表が替わったときだけ
+    const w=fhWidths_(t); if(!w){ fhHide_(); return; }
+    const cg=FH.clone.firstChild; cg.textContent=""; w.forEach(x=>{ const col=document.createElement("col"); col.style.width=x+"px"; cg.appendChild(col); });
+    const wx=fhWrap_(t,"overflowX"), tr=t.getBoundingClientRect();
+    FH.clone.style.width=tr.width+"px";
+    let bg="#fff"; for(let e=t;e&&e.nodeType===1;e=e.parentNode){ const c=getComputedStyle(e).backgroundColor; if(c&&c!=="rgba(0, 0, 0, 0)"&&c!=="transparent"){ bg=c; break; } }
+    FH.m={wx,bg,off:wx?tr.left-(wx.getBoundingClientRect().left+wx.clientLeft)+wx.scrollLeft:0};
+  }
+  const m=FH.m, fr=m.wx?m.wx.getBoundingClientRect():t.getBoundingClientRect();
+  b.style.top=y+"px"; b.style.left=(fr.left+(m.wx?m.wx.clientLeft:0))+"px"; b.style.width=(m.wx?m.wx.clientWidth:fr.width)+"px"; b.style.background=m.bg;
+  FH.clone.style.marginLeft=m.off+"px";
+  if(b.hidden) b.hidden=false;
+  b.scrollLeft=m.wx?m.wx.scrollLeft:0;   // 横の送り（左の固定列は sticky で本物と同じく残る）
+}
+fhInit_();
 
 /* 縦積みセル（金額=計/実績/前/計比/前比、率=実績/前/前差/計差） */
 /* セルは全列とも「計 → 実績 → 前年 → 計画差 → 前年差」の5段固定。
