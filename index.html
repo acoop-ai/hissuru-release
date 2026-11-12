@@ -514,7 +514,7 @@
   .wk .ivgrid>thead>tr>th:first-child,.wk .ivgrid>tbody>tr>td.h{position:sticky;left:0;z-index:2;background:#fff;}   /* 週の棚卸の表: 左の列（店・部門）を残す */
   .wk .q-heat>thead>tr>th:first-child,.wk .q-heat>tbody>tr>td.h{position:sticky;left:0;z-index:2;}   /* 🔎 の表: 左の列（店）を残す（背景は元の色） */
   .wk .q-list>thead>tr>th:first-child,.wk .q-list>tbody>tr>td:first-child{position:sticky;left:0;z-index:1;background:#f8fafc;}   /* 🔎 のマスを押した中身の表: 左の列（カテゴリ）を残す */
-  @media print{ #fhead{display:none !important;} }   /* 計算しない率（エリア合計の中分類の原価率）の「—」。字の上に乗せると説明（title）・表の下にも1行 */
+  @media print{ #fhead{display:none !important;} }   /* 計算しない率（JG_CAT_NORATE）の「—」（td.norate）。字の上に乗せると説明（title）・表の下にも1行。その列を外している間（JG_HIDE_COLS）は出ない */
   .catmk{display:block;color:#b45309;font-weight:700;font-size:12px;white-space:normal;}   /* 列の幅で折り返す（見出しの列を広げない） */
   tr.total .catmk{color:#fcd34d;}
   table.c th .catmk{font-size:11.5px;}
@@ -546,7 +546,7 @@
 <body>
 <header>
   <span class="logo">AC</span>
-  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-11a</span></span></div></div>
+  <div class="brand"><h1>ヒッスル</h1><div class="bsub"><span class="hmode" id="hdrMode"><span class="hstep">C：Check</span>数値確認・本番データ</span><span class="bname">PDCA プラットフォーム・<span class="build">build web-2026-11-11b</span></span></div></div>
   <span class="hsp"></span>
   <div class="hasg" id="hdrAsg" hidden></div>
   <span class="user" id="user"></span>
@@ -1371,8 +1371,22 @@ function catxUneibu_(d){
    部門の行・■合計の行（cat なし＝_jigyo_recalc_rates）: 粗利率・値引率・廃棄率・差損率は ÷売上（差損率＝売価差損÷売上。受払表の原本と同じ・帳簿では割らない）／
      値入率＝(1−仕入原価÷仕入売価)／原価率＝棚卸原価÷実施。
    エリア合計の中分類の行（cat＝_jigyo_area_cat_rates）: 同じ式。ただし JG_CAT_NORATE の率（原価率）は計算しない（受払表の原本は原価率を出さない＝店の 0 の和＝0 のまま）。
-   計算しない所は、画面では 0.00% でなく「—」で出す（PO 2026-11-10・renderJigyo）。値は変えない。どこを計算しない・「—」にするかの決まりは JG_CAT_NORATE の1か所 */
+   計算しない所は、画面では 0.00% でなく「—」で出す（PO 2026-11-10・renderJigyo）。値は変えない。どこを計算しない・「—」にするかの決まりは JG_CAT_NORATE の1か所。
+   いまの JG_CAT_NORATE は原価率だけ＝原価率の列を外している間（下の JG_HIDE_COLS・11-11b）は、「—」も表の下の1行も出ない（列が無い）。列を戻せば 11-11a と同じに出る */
 const JG_CAT_NORATE={inventory_cost_rate:"エリア合計の中分類は、原価率を出していません"};   // 率の列 → 字の上に乗せたときの説明
+/* 画面に出さない列（受払表の列の key → 見出しの名前）。決まりはこの1か所（PO 2026-11-11「原価はA案でいったん外しましょう」＝原価率の列ごと外す・build web-2026-11-11b）。
+   効く所: 店舗事業部会議（店のタブ・エリア合計・中分類の絞り込み）と受払の表（商品部詳細・運営部詳細）＝どれも renderJigyo の jgShowCols_ で列を選ぶ。
+   外すのは見せ方だけ: 届いた表の値・率の出し直し（jigyoRates_）・■合計（jgSum_）・中分類の絞り込み（catxJigyo_）は全部の列のまま（値はファイルに残る・outbox・GAS・数字のバックヤードは変えない）。
+   戻すときは、ここから消すだけ（11-11a と字まで同じに戻る＝tests/test_cost_1111b.js）。
+   わけ（Dev 11/11）: 受払表の原本の中分類の原価率は全部 0（原本が出していない）。部門の行と■合計は数字のバックヤードが 棚卸原価÷実施 で作るが、値が出るのは売価で棚卸する部門（グロッサリー・日配）だけ・■合計は生鮮の原価の棚卸が分子に入って高めに出る */
+const JG_HIDE_COLS={inventory_cost_rate:"原価率"};
+function jgShowCols_(cols){
+  // 外した列が、まとまりの見出し（group）を持つ最初の列なら、その名前を次に出す列へ渡す（2段の見出しのまとまりを崩さない）
+  const out=[]; let carry=null;
+  (cols||[]).forEach(c=>{ if(JG_HIDE_COLS[c.key]){ if(c.group) carry=c.group; return; }
+    out.push(carry!=null&&!c.group?Object.assign({},c,{group:carry}):c); carry=null; });
+  return out;
+}
 function jigyoRates_(v,keys,cat){
   const o=Object.assign({},v||{}), g=k=>+o[k]||0, s=g("sales_month"), pp=g("purchase_price_month"), iav=g("inventory_actual_value");
   const R={gross_profit_rate_month:s?g("gross_profit_month")/s*100:0, discount_rate:s?g("discount_amount")/s*100:0, discard_rate:s?g("discard_amount")/s*100:0,
@@ -1569,14 +1583,14 @@ document.addEventListener("keydown",e=>{
 });
 
 /* ── 受払の数（2026-11-01・PO「元々あった生の受払データ確認機能が消えているので、在庫金額などを見られるように」）──
-   商品部詳細・運営部詳細の表の上に「表の中身：指標｜受払」。受払＝いま見ている店（かエリア合計）の、受払表の18列（jigyo の表のまま・前年比較3列つき）。
+   商品部詳細・運営部詳細の表の上に「表の中身：指標｜受払」。受払＝いま見ている店（かエリア合計）の、受払表の列（jigyo の表のまま・JG_HIDE_COLS の列は出さない・前年比較3列つき）。
    商品部詳細は、その部門の行だけ。はじめの1回だけ1本読む（覚える）。中分類の絞り込みもここに当てる。切り替えは、この PC に覚える */
 function ukeHere_(){ return S.viewMode!=="viewer"&&S.view==="cum"&&CM_MODES.includes(S.mode); }
 function ukeSegHtml_(){
   // 字だけの短い釦（2026-11-02）。中身の説明はホバー（title）
   return `<span class="ukeseg" role="group" aria-label="表の中身"><span class="lb">表の中身</span>`+
     `<button type="button" class="${S.uke?"":"on"}" aria-pressed="${!S.uke}" data-uke="0" title="売上・粗利…（計画・前年比）">指標</button>`+
-    `<button type="button" class="${S.uke?"on":""}" aria-pressed="${!!S.uke}" data-uke="1" title="在庫・仕入・棚卸（受払表の18列＋前年比較）">受払</button></span>`;
+    `<button type="button" class="${S.uke?"on":""}" aria-pressed="${!!S.uke}" data-uke="1" title="在庫・仕入・棚卸（受払表の列＋前年比較）">受払</button></span>`;   // 11-11b: 列の数は書かない（原価率をいったん外した・戻しても字はそのまま）
 }
 function ukeSet_(on){ on=!!on; if(on===!!S.uke||!ukeHere_()) return; savePref_({uke:on}); return tblNav_({uke:on},false); }
 async function ukeHtml_(st,so){
@@ -1733,7 +1747,7 @@ function drawUneibu(mkey){
   $("uTbl").innerHTML=h+outNote+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_(d._hidCats)+cx.note;
   qmMark_();   // 指標のタブを替えたときも（表だけ描き直す）
 }
-/* 事業部会議（18列2段＋前年比較3列） */
+/* 事業部会議（受払表の列〈JG_HIDE_COLS の列は出さない〉を2段＋前年比較3列） */
 function cmpCell(cur,prev,isRate,hib,noYoy,estP,curMark){
   if(cur==null) return `<div class="cell n">\u2014</div>`;
   if(noYoy) prev=null;  // 新分類で分かれた中分類は前年と比べない
@@ -1744,15 +1758,16 @@ function cmpCell(cur,prev,isRate,hib,noYoy,estP,curMark){
   return h+`</div>`;
 }
 /* opts.catx（本部用の入口・店舗事業部会議と受払の表はいつも渡す。渡さないときは届いた表のまま＝試験で前の版と比べるため）:
-     ①率を backend と同じ式で、いつも額から出し直す（jigyoRates_）: 部門の行・■合計の行（店のタブ・エリア合計とも）と、エリア合計の中分類の行（原価率は除く）。
+     ①率を backend と同じ式で、いつも額から出し直す（jigyoRates_）: 部門の行・■合計の行（店のタブ・エリア合計とも）と、エリア合計の中分類の行（JG_CAT_NORATE の率は除く）。
+     ⓪出す列は jgShowCols_（JG_HIDE_COLS の列を出さない・11-11b）。計算は全部の列のまま（all）。
        11/08 の backend の直しより前に作った表（部門の行の差損率が ÷帳簿・エリア合計の中分類の率が店の率の和）も、同じ決まりで見える（表の作り直しは要らない）。
      ②■合計は6部門（S.meta.departments）だけ（PO 2026-11-09）。受払表が全部の部門の形で届いた回（ＳＭ外・経費・空の行）は、6部門の外を■合計の下に
        区切りの1行「6部門の外（■合計に入れていない・参考）」を置いて落ち着いた字で出す（すべて 0 の行・部門は出さない・前年 0 は比べない）。表の下に1行。
      ③中分類を選んだ合計（catxJigyo_）。
    opts.onlyDept: その部門の行だけ（受払の表・商品部詳細）。■合計は出さない（部門の行が合計） */
 function renderJigyo(d,opts){
-  const o=opts||{}, cols=d.columns, cmp=d.compare||[]; const grp=[];
-  const rk=cols.filter(c=>c.type==="rate").map(c=>c.key), ak=cols.filter(c=>c.type!=="rate").map(c=>c.key);
+  const o=opts||{}, all=d.columns, cols=jgShowCols_(all), cmp=d.compare||[]; const grp=[];   // all＝計算に使う全部の列・cols＝出す列（JG_HIDE_COLS を除く・11-11b）
+  const rk=all.filter(c=>c.type==="rate").map(c=>c.key), ak=all.filter(c=>c.type!=="rate").map(c=>c.key);
   let rows=d.rows||[], grand=d.grand, out=[];
   const six=(S.meta&&S.meta.departments)||[], area=!!o.catx&&d.is_store_view===false&&!d.store;   // area＝エリア合計の表（中分類の行の率を出し直す・JG_CAT_NORATE は「—」）
   if(o.catx){
@@ -1767,7 +1782,7 @@ function renderJigyo(d,opts){
   const cx=o.catx?catxJigyo_(rows,grand,ak,rk):null;
   cols.forEach(c=>{ const g=c.group||""; if(g===""&&grp.length) grp[grp.length-1].span++; else grp.push({g,span:1}); });
   const fv=(c,v)=>v==null?"—":(c.type==="rate"?pct(v):kyen(v));
-  let nrN=0;   // 計算しない率（エリア合計の中分類の原価率）を「—」で出したマスの数＝表の下の1行を出すか
+  const nrL=new Set();   // 計算しない率（JG_CAT_NORATE）を「—」で出した列の名前＝表の下の1行に出す（出す列に無ければ空＝1行も出ない）
   let h=`<div class="tbl-wrap"><table class="c"><thead><tr><th class="h" rowspan="2" style="left:0">部門・カテゴリ</th>`+
     grp.map(g=>`<th colspan="${g.span}" style="text-align:center">${esc(g.g)}</th>`).join("")+(cmp.length?`<th colspan="${cmp.length}" style="text-align:center">前年比較</th>`:"")+`</tr><tr>`+
     cols.map(c=>`<th>${esc(c.sub_header||"")}</th>`).join("")+cmp.map(c=>`<th>${esc(c.label)}</th>`).join("")+`</tr></thead><tbody>`;
@@ -1783,7 +1798,7 @@ function renderJigyo(d,opts){
     const lab=ref?(r.type==="dept"?withSum_("▶ "+jgName_(r.dept,true)):jgName_(r.category!=null?r.category:r.label)):(r.type==="dept"?withSum_(r.label):r.label);
     const nr=c=>area&&r.type==="category"&&JG_CAT_NORATE[c.key]&&v[c.key]!=null;   // 計算しない率＝0.00% でなく「—」（値は変えない）
     const qa=ref?"":cls==="total"?qmA_(qmStore_(),"*"):r.type==="dept"?qmA_(qmStore_(),r.dept):"";   // 🔎 の印を付ける行（店×部門・合計）
-    return `<tr class="${cls}${xo?" catx":""}"${qa}><td class="h" style="left:0">${esc(lab)}${x?catxMk_(x.label):""}${xo?`<br><span class="badge bd-catx">合計に入れていない</span>`:""}</td>`+cols.map(c=>nr(c)?(nrN++,`<td class="norate" title="${esc(JG_CAT_NORATE[c.key])}">—</td>`):`<td>${v[c.key]!=null&&mk(c.key)?`<span class="cev">${mk(c.key)}${fv(c,v[c.key])}</span>`:fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep,mk(c.key))}</td>`).join("")+`</tr>`; };
+    return `<tr class="${cls}${xo?" catx":""}"${qa}><td class="h" style="left:0">${esc(lab)}${x?catxMk_(x.label):""}${xo?`<br><span class="badge bd-catx">合計に入れていない</span>`:""}</td>`+cols.map(c=>nr(c)?(nrL.add(c.sub_header||c.key),`<td class="norate" title="${esc(JG_CAT_NORATE[c.key])}">—</td>`):`<td>${v[c.key]!=null&&mk(c.key)?`<span class="cev">${mk(c.key)}${fv(c,v[c.key])}</span>`:fv(c,v[c.key])}</td>`).join("")+cmp.map(c=>`<td>${cmpCell(v[c.key],y[c.key],c.type==="rate",c.higher_is_better,ny,ep,mk(c.key))}</td>`).join("")+`</tr>`; };
   const hid=[];
   rows.forEach(r=>{
     if(r.type==="category"&&zeroCells_(r.values)&&zeroCells_(r.yoy)){ hid.push([r.dept||"",r.category||r.label]); return; }   // すべて 0 の中分類（今年のどの列も・前年も）
@@ -1801,7 +1816,8 @@ function renderJigyo(d,opts){
   if(outH) h+=`<tr class="outsep"><td class="h" style="left:0">6部門の外（■合計に入れていない・参考）</td><td colspan="${cols.length+cmp.length}"></td></tr>`+outH;
   h+=`</tbody></table></div>`;
   const outNote=outShown.length?`<div class="splitnote outnote">■合計は6部門（${esc(six.join("・"))}）の合計です。この回の受払表は全部の部門の形で届いたため、6部門の外（${esc(outShown.join("・"))}）を■合計の下に参考で出しています${outHid?"（すべて 0 の行は出していません）":""}。</div>`:"";
-  const nrNote=nrN?`<div class="splitnote nrnote">原価率の「—」は、エリア合計の中分類です（受払表の原本に原価率が無いため出していません。部門の行と■合計は出しています）。</div>`:"";
+  const nrJ=[...nrL].join("・");   // 列の名前は JG_CAT_NORATE の列の見出しから（字に決め打ちしない）
+  const nrNote=nrJ?`<div class="splitnote nrnote">${esc(nrJ)}の「—」は、エリア合計の中分類です（受払表の原本に${esc(nrJ)}が無いため出していません。部門の行と■合計は出しています）。</div>`:"";
   return h+outNote+nrNote+splitNote(noted)+estNote(d.ym,marked,h)+curEstNote_(h)+zeroNote_(hid)+hidNote_((d._hidCats||[]).filter(x=>!o.onlyDept||x.dept===o.onlyDept))+(cx?cx.note:"");
 }
 /* 仕入分析（目標粗利率・在庫日数\u2192計算・\u00B110%色） */
